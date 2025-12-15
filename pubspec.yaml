@@ -1,0 +1,79 @@
+name: prueba_de_riverpod
+description: Mi portfolio web profesional como desarrollador Full-Stack.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # --- GESTIÓN DE ESTADO (Versiones estables 2.x que funcionaron) ---
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5 
+
+  # --- Routing (GoRouter) ---
+  go_router: ^14.8.0 
+
+  # --- Backend & DB (Supabase y .env) ---
+  supabase_flutter: ^2.10.3
+  flutter_dotenv: ^5.2.1 
+
+  # --- UI & Animaciones (Lottie, AnimateDo, Shimmer) ---
+  lottie: ^3.3.1
+  animate_do: ^4.2.0
+  font_awesome_flutter: ^10.9.1
+  shimmer: ^3.0.0 
+
+  # --- Utilidades ---
+  url_launcher: ^6.3.2 
+  intl: ^0.20.2 
+  video_player: ^2.10.0
+  shared_preferences: ^2.5.3 
+  responsive_builder: ^0.7.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  # Versiones de lints compatibles con Dart 3.10.x
+  flutter_lints: ^5.0.0 
+
+  # --- GENERADORES DE CÓDIGO (Alineados a Riverpod 2.x) ---
+  build_runner: ^2.4.11
+  custom_lint: ^0.6.4   
+  riverpod_generator: ^2.3.5 
+  riverpod_lint: ^2.3.10 
+  flutter_launcher_icons: ^0.14.4
+
+# Configuración de assets (Icons, etc.)
+flutter_icons:
+  android: false
+  ios: false
+  remove_alpha_ios: true
+  image_path: "assets/images/favicon.png"
+  web:
+    generate: true
+    image_path: "assets/images/favicon.png"
+    background_color: "#000000"
+    theme_color: "#000000"
+
+flutter:
+  uses-material-design: true
+  generate: true 
+
+  assets:
+    - .env
+    - assets/fonts/
+    - assets/images/
+    - assets/icons/ 
+    - assets/animations/ 
+    - assets/videos/ 
+
+  fonts:
+    - family: Oxanium
+      fonts:
+        - asset: assets/fonts/Oxanium-VariableFont_wght.ttf
