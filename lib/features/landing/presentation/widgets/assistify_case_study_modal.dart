@@ -40,11 +40,16 @@ class AssistifyCaseStudyModal extends StatelessWidget {
               ),
               child: Row(
                 children: [
+                  // --- IMAGEN OPTIMIZADA ---
                   Image.asset(
                     'assets/icons/logo_assistify.png',
                     height: 48,
-                    filterQuality: FilterQuality.medium,
-                    isAntiAlias: true,
+                    width: 48,
+                    fit: BoxFit.contain,
+                    // TRUCO PRO 1: High usa interpolación bicúbica (más suave y nítida)
+                    filterQuality: FilterQuality.high, 
+                    // TRUCO PRO 2: Suaviza los bordes serrados
+                    isAntiAlias: true, 
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -82,11 +87,10 @@ class AssistifyCaseStudyModal extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SectionTitle('El Problema', Icons.warning_amber_rounded, colorScheme),
+                    _SectionTitle('El Dolor (Problema)', Icons.warning_amber_rounded, colorScheme),
                     const SizedBox(height: 8),
-                    // --- TEXTO REESCRITO ---
                     Text(
-                      'Cuando un alumno cancela, el profesor pierde tiempo valioso revisando manualmente toda su agenda para encontrar huecos libres, ofrecerlos y esperar respuestas (que a menudo son negativas), reiniciando un ciclo interminable de mensajes.',
+                      'Coordinar cambios de horario por WhatsApp es un trabajo no remunerado que consume horas. Además, cuando un alumno cancela sobre la hora, ese "hueco" suele quedar vacío, lo que significa dinero perdido irreuperable para el profesor.',
                       style: textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 24),
@@ -94,32 +98,29 @@ class AssistifyCaseStudyModal extends StatelessWidget {
                     _SectionTitle('La Solución', Icons.lightbulb_outline, colorScheme),
                     const SizedBox(height: 12),
                     
-                    _FeatureItem(
-                      'Adiós a la "Agenda de Papel"',
-                      'Control total desde el celular. Creación de horarios, gestión de alumnos y visualización completa del mes de un vistazo.',
+                    // --- FEATURES MEJORADOS ---
+                    const _FeatureItem(
+                      'Autogestión Total',
+                      'El alumno cancela y busca su propio horario de recuperación desde la App. Elimina el 100% de la carga operativa manual.',
                     ),
-                    _FeatureItem(
-                      'Sistema Justo de Créditos',
-                      'Si un alumno cancela a tiempo, recibe un "Crédito" para reagendarse él mismo buscando su propio hueco en la app. El profesor se olvida de coordinar recuperatorios.',
+                    const _FeatureItem(
+                      'Ingresos Blindados',
+                      'El sistema de Créditos y Listas de Espera rellena automáticamente los huecos libres. Tu agenda (y tu bolsillo) siempre llenos.',
                     ),
-                    _FeatureItem(
-                      'Lista de Espera Inteligente',
-                      'Si se libera un lugar, la app avisa y ocupa el hueco automáticamente con alumnos en espera. Cero horas muertas.',
+                    const _FeatureItem(
+                      'Cero Fricción (WhatsApp)',
+                      'Si hay un cambio, Assistify te avisa por WhatsApp automáticamente. No necesitas entrar a la App para estar informado.',
                     ),
-                    _FeatureItem(
-                      'Notificaciones Automáticas',
-                      'Integración con WhatsApp para avisar cambios o inscripciones al instante. Ni el profesor ni el alumno necesitan entrar a la app para estar al tanto de todo.',
-                    ),
-                     _FeatureItem(
-                      'Diseño Intuitivo',
-                      'Interfaz pensada para que cualquier profesor, independientemente de su nivel tecnológico, pueda usarla desde el primer día.',
+                     const _FeatureItem(
+                      'Control Operativo Total',
+                      'Crea clases, ajusta cupos en tiempo real y administra el padrón de alumnos con total libertad. Tu academia bajo control.',
                     ),
 
                     const SizedBox(height: 24),
                     _SectionTitle('Resultados', Icons.trending_up, colorScheme),
                     const SizedBox(height: 8),
                     Text(
-                      'Una herramienta que ahorra horas de gestión administrativa al mes y elimina la fricción con los alumnos al momento de recuperar clases. Disponible hoy mismo en las tiendas.',
+                      'Una herramienta que elimina el 90% de la carga administrativa y mejora la relación con los alumnos al ofrecerles flexibilidad inmediata. Disponible hoy mismo.',
                       style: textTheme.bodyMedium,
                     ),
                     
@@ -235,14 +236,9 @@ class _FeatureItem extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            margin: const EdgeInsets.only(top: 4),
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: themeColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.check_rounded, size: 16, color: themeColor),
+          Padding(
+            padding: const EdgeInsets.only(top: 2.0), 
+            child: Icon(Icons.check, size: 20, color: themeColor),
           ),
           const SizedBox(width: 12),
           Expanded(

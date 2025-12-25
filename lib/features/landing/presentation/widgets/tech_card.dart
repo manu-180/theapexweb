@@ -10,7 +10,6 @@ class TechCard extends ConsumerStatefulWidget {
     super.key,
     required this.theme,
     required this.title,
-    // CAMBIO 1: Ahora aceptamos un Widget genérico, no solo un IconData
     required this.icon, 
     required this.bullets,
     required this.accentColor,
@@ -20,7 +19,6 @@ class TechCard extends ConsumerStatefulWidget {
 
   final AppTheme theme;
   final String title;
-  // CAMBIO 2: Tipo de dato actualizado
   final Widget icon; 
   final List<String> bullets;
   final Color accentColor;
@@ -33,8 +31,7 @@ class TechCard extends ConsumerStatefulWidget {
 
 class _TechCardState extends ConsumerState<TechCard> {
   bool _isHovering = false;
-  final GlobalKey _cardKey = GlobalKey();
-
+  
   void _onHover(bool isHovering) {
     setState(() => _isHovering = isHovering);
 
@@ -48,9 +45,9 @@ class _TechCardState extends ConsumerState<TechCard> {
 
  void _onClick() {
     if (widget.onTapOverride != null) {
-      widget.onTapOverride!(); // Si hay una acción personalizada, úsala
+      widget.onTapOverride!(); 
     } else {
-      ref.read(dynamicThemeProvider.notifier).setTheme(widget.theme); // Si no, comportamiento default
+      ref.read(dynamicThemeProvider.notifier).setTheme(widget.theme);
     }
   }
 
@@ -69,12 +66,12 @@ class _TechCardState extends ConsumerState<TechCard> {
         valueListenable: widget.mousePos,
         builder: (context, mouseOffset, child) {
           Offset localLightPos = Offset.zero;
-          final RenderBox? renderBox = _cardKey.currentContext?.findRenderObject() as RenderBox?;
           Size? size;
-
-          if (renderBox != null) {
-            localLightPos = renderBox.globalToLocal(mouseOffset);
-            size = renderBox.size;
+          
+          final renderObject = context.findRenderObject();
+          if (renderObject is RenderBox && renderObject.hasSize) {
+            localLightPos = renderObject.globalToLocal(mouseOffset);
+            size = renderObject.size;
           }
 
           final borderGradient = RadialGradient(
@@ -97,7 +94,6 @@ class _TechCardState extends ConsumerState<TechCard> {
           );
 
           return AnimatedContainer(
-            key: _cardKey,
             duration: const Duration(milliseconds: 150),
             curve: Curves.easeOut,
             transform: _isHovering ? (Matrix4.identity()..scale(1.02)) : Matrix4.identity(),
@@ -113,8 +109,7 @@ class _TechCardState extends ConsumerState<TechCard> {
               ],
             ),
             padding: const EdgeInsets.all(2.5), 
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+            child: Container(
               decoration: BoxDecoration(
                 color: _isHovering ? hoverColor : surfaceColor,
                 borderRadius: BorderRadius.circular(13.5), 
@@ -133,21 +128,21 @@ class _TechCardState extends ConsumerState<TechCard> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                widget.title,
-                                style: themeData.textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: widget.accentColor,
+                              Expanded(
+                                child: Text(
+                                  widget.title,
+                                  style: themeData.textTheme.headlineSmall?.copyWith(
+                                    fontWeight: FontWeight.w900, // <--- CAMBIO: Título más grueso
+                                    color: widget.accentColor,
+                                  ),
                                 ),
                               ),
-                              // Contenedor circular para el icono/imagen
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
                                   color: widget.accentColor.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
-                                // CAMBIO 3: Renderizamos el widget que nos pasan directamente
                                 child: widget.icon, 
                               ),
                             ],
@@ -163,7 +158,7 @@ class _TechCardState extends ConsumerState<TechCard> {
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Icon(Icons.check_circle_rounded, size: 20, color: widget.accentColor),
+                                    Icon(Icons.check, size: 18, color: widget.accentColor),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(

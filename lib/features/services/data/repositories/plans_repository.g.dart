@@ -8,9 +8,7 @@ part of 'plans_repository.dart';
 
 String _$plansRepositoryHash() => r'f154e072a4aa818ac08f3c433e167f7a240d0fd9';
 
-/// Provider para el repositorio de planes
-///
-/// Copied from [plansRepository].
+/// See also [plansRepository].
 @ProviderFor(plansRepository)
 final plansRepositoryProvider = AutoDisposeProvider<PlansRepository>.internal(
   plansRepository,

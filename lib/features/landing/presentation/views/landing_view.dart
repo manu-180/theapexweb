@@ -3,12 +3,10 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-// Eliminé la importación de lottie ya que no se usa
 import 'package:prueba_de_riverpod/core/config/theme/app_theme.dart';
 import 'package:prueba_de_riverpod/core/config/theme/app_theme_providers.dart';
 import 'package:prueba_de_riverpod/features/landing/presentation/widgets/assistify_case_study_modal.dart';
 import 'package:prueba_de_riverpod/features/landing/presentation/widgets/tech_card.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 
 class LandingView extends ConsumerStatefulWidget {
   const LandingView({super.key});
@@ -29,22 +27,25 @@ class _LandingViewState extends ConsumerState<LandingView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Ya no necesitamos 'themeConfig' para el Lottie, pero lo dejamos por si usas algo más
-    // final themeConfig = ref.watch(currentAppThemeConfigProvider); 
+
+    // Ajustamos la altura aquí para mantener uniformidad.
+    // Usamos 600 como definiste para que entren cómodos los items.
+    const double cardHeight = 590; 
+    const double cardWidth = 350;
 
     return MouseRegion(
       onHover: (event) {
         _mousePosNotifier.value = event.position;
       },
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24), // Aumenté padding superior
+        padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 24),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1600),
+            constraints: const BoxConstraints(maxWidth: 1200),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // --- SECCIÓN DE TÍTULOS (Sin Lottie) ---
+                // --- SECCIÓN DE TÍTULOS ---
                 FadeInDown(
                   duration: const Duration(milliseconds: 800),
                   child: Text(
@@ -69,54 +70,71 @@ class _LandingViewState extends ConsumerState<LandingView> {
                     textAlign: TextAlign.center,
                   ),
                 ),
-                const SizedBox(height: 80), // Más aire antes de las cards
+                const SizedBox(height: 80),
 
-                // --- Sección de Cards ---
-                ResponsiveBuilder(
-                  builder: (context, sizingInfo) {
-                    final bool isMobile = sizingInfo.isMobile || sizingInfo.isTablet;
+                // --- STACK TECNOLÓGICO (Wrap Nivelado) ---
+                Wrap(
+                  spacing: 24,    
+                  runSpacing: 24, 
+                  alignment: WrapAlignment.center,
+                  children: [
+                    // --- FLUTTER ---
+                    Container(
+                      constraints: const BoxConstraints(maxWidth: cardWidth),
+                      height: cardHeight, 
+                      child: _FlutterCard(_mousePosNotifier),
+                    ),
                     
-                    if (isMobile) {
-                      return Column(
-                        children: [
-                          _FlutterCard(_mousePosNotifier),
-                          const SizedBox(height: 24),
-                          _SupabaseCard(_mousePosNotifier),
-                          const SizedBox(height: 24),
-                          _RiverpodCard(_mousePosNotifier),
-                          const SizedBox(height: 24),
-                          _AssistifyCard(_mousePosNotifier),
-                        ],
-                      );
-                    }
+                    // --- SUPABASE ---
+                    Container(
+                      constraints: const BoxConstraints(maxWidth: cardWidth),
+                      height: cardHeight, 
+                      child: _SupabaseCard(_mousePosNotifier),
+                    ),
+                    
+                    // --- RIVERPOD ---
+                    Container(
+                      constraints: const BoxConstraints(maxWidth: cardWidth),
+                      height: cardHeight, 
+                      child: _RiverpodCard(_mousePosNotifier),
+                    ),
+                  ],
+                ),
 
-                    // Layout Desktop
-                    return Column(
-                      children: [
-                        IntrinsicHeight( // Asegura que todas tengan la misma altura visual si el contenido varía
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(child: _FlutterCard(_mousePosNotifier)),
-                              const SizedBox(width: 24),
-                              Expanded(child: _SupabaseCard(_mousePosNotifier)),
-                              const SizedBox(width: 24),
-                              Expanded(child: _RiverpodCard(_mousePosNotifier)),
-                            ],
-                          ),
+                const SizedBox(height: 60),
+
+                // --- PROYECTO DESTACADO ---
+                FadeInUp(
+                  delay: const Duration(milliseconds: 500),
+                  child: Column(
+                    children: [
+                       // CAMBIO AQUÍ: Título explicativo y profesional
+                       Text(
+                        'Desarrollo Integral: De la Idea al Lanzamiento',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 28, // Un poco más grande para destacar
                         ),
-                        const SizedBox(height: 24),
-                        // Fila inferior para Assistify (centrado)
-                        Row(
-                          children: [
-                            const Spacer(flex: 1), // Espacio vacío a la izquierda
-                            Expanded(flex: 2, child: _AssistifyCard(_mousePosNotifier)), // Ocupa el centro
-                            const Spacer(flex: 1), // Espacio vacío a la derecha
-                          ],
-                        )
-                      ],
-                    );
-                  },
+                      ),
+                      const SizedBox(height: 8),
+                      // Subtítulo opcional para reforzar (Apps en tiendas / Escritorio)
+                      Text(
+                        'Aplicaciones móviles en tiendas y software de escritorio a medida.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 500), 
+                        child: _AssistifyCard(_mousePosNotifier),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -127,7 +145,7 @@ class _LandingViewState extends ConsumerState<LandingView> {
   }
 }
 
-// --- Widgets privados para las Cards ---
+// --- TEXTOS HUMANIZADOS PARA VENDER ---
 
 class _FlutterCard extends StatelessWidget {
   final ValueNotifier<Offset> mousePos;
@@ -140,13 +158,14 @@ class _FlutterCard extends StatelessWidget {
       mousePos: mousePos,
       theme: AppTheme.flutter,
       title: 'Flutter',
-      // AHORA PASAMOS UN WIDGET ICON COMPLETO
       icon: const Icon(FontAwesomeIcons.flutter, size: 28, color: accentColor),
       accentColor: accentColor,
       bullets: const [
-        'Ahorro inteligente: Desarrollo simultáneo para iOS, Android y Web con un solo código.',
-        'Experiencia Premium: Fluidez nativa (60fps) que enamora a tus usuarios.',
-        'Time-to-Market: Tu producto en el mercado en tiempo récord.',
+        'Aplicaciones Ultrarrápidas: Tiempos de carga mínimos que retienen clientes.', 
+        'Experiencia Premium: Fluidez visual y animaciones profesionales.',
+        'Time-to-Market: Tu producto listo para lanzar en tiempo récord.',
+        'Gráficos de Alta Calidad: Renderizado nítido en cualquier dispositivo.', 
+        'Diseño Adaptativo: Se ve increíble en celulares, tablets y web.',
       ],
     );
   }
@@ -163,13 +182,14 @@ class _SupabaseCard extends StatelessWidget {
       mousePos: mousePos,
       theme: AppTheme.supabase,
       title: 'Supabase',
-      // AHORA PASAMOS UN WIDGET ICON COMPLETO
       icon: const Icon(FontAwesomeIcons.bolt, size: 28, color: accentColor),
       accentColor: accentColor,
       bullets: const [
-        'Seguridad Grado Bancario: Protección total de datos y usuarios.',
-        'Escalabilidad Automática: Soporta desde tu primer cliente hasta millones sin caerse.',
-        'Tiempo Real: Actualizaciones instantáneas (stock, chats, notificaciones).',
+        'Seguridad Bancaria: Protección total de los datos de tus usuarios.',
+        'Escalabilidad Automática: Crece de 1 a 1 millón de usuarios sin caídas.',
+        'Tiempo Real: Actualizaciones instantáneas (stock, chats, alertas).',
+        'Base de Datos Robusta: Tecnología SQL confiable y potente.',
+        'Acceso Simplificado: Inicia sesión con Google o Apple en un clic.', 
       ],
     );
   }
@@ -186,19 +206,18 @@ class _RiverpodCard extends StatelessWidget {
       mousePos: mousePos,
       theme: AppTheme.riverpod,
       title: 'Riverpod',
-      // AHORA PASAMOS UN WIDGET ICON COMPLETO
       icon: const Icon(FontAwesomeIcons.water, size: 28, color: accentColor),
       accentColor: accentColor,
       bullets: const [
-        'Inversión a Largo Plazo: Arquitectura limpia que permite que tu proyecto crezca años sin volverse un caos.',
-        'Mantenimiento Económico: Agregar nuevas funciones en el futuro cuesta menos horas de desarrollo.',
-        'Estabilidad "A prueba de balas": Minimiza errores y cierres inesperados de la app.',
+        'Arquitectura Sólida: Tu proyecto puede crecer años sin volverse un caos.',
+        'Inversión Eficiente: Actualizar tu app en el futuro es más rápido y económico.',
+        'Estabilidad Total: Minimiza errores y cierres inesperados de la app.',
+        'Calidad Asegurada: Código preparado para detectar fallos antes de salir.', 
+        'Datos 100% Confiables: Tus usuarios nunca verán información errónea o vieja.',
       ],
     );
   }
 }
-
-// En lib/features/landing/presentation/views/landing_view.dart
 
 class _AssistifyCard extends ConsumerWidget {
   final ValueNotifier<Offset> mousePos;
@@ -209,30 +228,26 @@ class _AssistifyCard extends ConsumerWidget {
     return TechCard(
       mousePos: mousePos,
       theme: AppTheme.assistify,
-      title: 'Mi Proyecto: Assistify',
+      title: 'Assistify: App en Producción',
       
       onTapOverride: () {
-        // 1. Cambiar el tema visual
         ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify);
         
-        // 2. Abrir Modal con Animación Fluida (showGeneralDialog)
         showGeneralDialog(
           context: context,
-          barrierDismissible: true, // Permite cerrar clicando afuera
+          barrierDismissible: true, 
           barrierLabel: 'Cerrar',
-          barrierColor: Colors.black.withOpacity(0.6), // Fondo oscurecido
-          transitionDuration: const Duration(milliseconds: 500), // Duración más lenta para suavidad
+          barrierColor: Colors.black.withOpacity(0.6), 
+          transitionDuration: const Duration(milliseconds: 500), 
           pageBuilder: (context, animation, secondaryAnimation) {
             return const AssistifyCaseStudyModal();
           },
           transitionBuilder: (context, animation, secondaryAnimation, child) {
-            // Usamos una curva "Cubic" que empieza rápido y frena suavemente al final
             final curvedValue = Curves.easeOutCubic.transform(animation.value);
-            
             return Transform.scale(
-              scale: 0.95 + (0.05 * curvedValue), // Efecto sutil: crece del 95% al 100%
+              scale: 0.95 + (0.05 * curvedValue), 
               child: Opacity(
-                opacity: curvedValue, // Aparece progresivamente (Fade In)
+                opacity: curvedValue, 
                 child: child,
               ),
             );
@@ -244,14 +259,21 @@ class _AssistifyCard extends ConsumerWidget {
         'assets/icons/logo_assistify.png',
         height: 28,
         fit: BoxFit.contain,
-        filterQuality: FilterQuality.medium,
+        filterQuality: FilterQuality.high,
         isAntiAlias: true,
       ),
       accentColor: const Color(0xFF00A8E8),
       bullets: const [
-        'Adiós a coordinar por WhatsApp: Gestión automática de horarios y alumnos en un solo lugar.',
-        'Sistema de Créditos: Si un alumno cancela, recupera su clase automáticamente sin que tengas que intervenir.',
-        'Listas de Espera Inteligentes: La app rellena los huecos libres avisando a los interesados por ti.',
+        // 1. EL KILLER FEATURE (WhatsApp)
+        'Notificaciones WhatsApp: El profesor recibe alertas de cambios sin necesidad de abrir la App.',
+        // 2. EL DOLOR RESUELTO (Coordinación)
+        'Adiós a la Agenda de Papel: Los alumnos cancelan y recuperan clases solos mediante Créditos.',
+        // 3. LA MAGIA TÉCNICA (Listas de espera)
+        'Listas de Espera Inteligentes: El sistema rellena huecos libres automáticamente con alumnos en espera.',
+        // 4. EL ROL DE ADMIN
+        'Panel de Administración: Gestión total de horarios, altas, bajas y asignación de créditos.',
+        // 5. LA AUTORIDAD (Stores)
+        'Despliegue Real: Aplicación activa y descargable en Play Store y App Store.',
       ],
     );
   }

@@ -1,109 +1,128 @@
 // Archivo: lib/features/services/data/repositories/plans_repository.dart
+import 'package:flutter/material.dart';
+import 'package:prueba_de_riverpod/features/services/domain/models/case_study_model.dart';
 import 'package:prueba_de_riverpod/features/services/domain/models/plan_model.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'plans_repository.g.dart';
 
-/// Un repositorio que contiene los datos estáticos de los planes de servicio.
 class PlansRepository {
-  /// Lista de planes de desarrollo web
   final List<ServicePlan> webPlans = const [
     ServicePlan(
       id: 'web_basic',
-      name: 'Sitio de Presentación',
+      name: 'Presencia Digital Profesional',
       price: 300000,
+      originalPrice: 400000,
       type: PlanType.web,
-      description: 'Una landing page profesional para establecer tu presencia en línea.',
+      description: 'Tu carta de presentación al mundo. Ideal para profesionales que necesitan validar su marca.',
+      // --- CASOS DE ÉXITO (Plan 300k) ---
+      caseStudies: [
+        CaseStudy(
+          name: 'Simon Mindset',
+          logoAsset: 'assets/icons/simon_logo.png', 
+          url: 'https://simonmindset.com',
+          brandColor: Color(0xFF8B0000), // Rojo oscuro elegante
+        ),
+        CaseStudy(
+          name: 'Pérez Yeregui',
+          logoAsset: 'assets/icons/perez_logo.png',
+          url: 'https://perez-yeregui2.vercel.app',
+          // CAMBIO: Gris pizarra (extraído de la imagen de la web)
+          brandColor: Color(0xFF5B5663), 
+        ),
+      ],
       features: [
-        'Diseño 100% responsive (adaptable)',
-        'Formulario de Contacto',
-        'Botón de WhatsApp',
-        'Hosting Básico (1 año)',
+        'Diseño a Medida (Sin plantillas)',
+        'Información optimizada para vender',
+        'Carga ultrarrápida (Flutter Web)',
+        'Hosting incluido', 
       ],
     ),
     ServicePlan(
-      id: 'web_ecommerce',
-      name: 'E-Commerce Integrado',
+      id: 'web_interactive',
+      name: 'Web Interactiva + Backend',
       price: 600000,
+      originalPrice: 860000,
       type: PlanType.web,
-      description: 'Una tienda virtual completa con sistema de ventas y gestión.',
+      description: 'Pasa al siguiente nivel. Automatiza el contacto con tus clientes y muestra contenido dinámico.',
+      // --- CASOS DE ÉXITO (Plan 600k) ---
+      caseStudies: [
+        CaseStudy(
+          name: 'Assistify',
+          logoAsset: 'assets/icons/logo_assistify.png',
+          url: 'https://assistify.lat',
+          brandColor: Color(0xFF00A8E8), // Cyan de la marca
+        ),
+      ],
       features: [
-        'Todo en el plan Básico',
-        'Catálogo de productos',
-        'Carrito de compras',
-        'Integración con Mercado Pago',
-        'Panel de gestión de pedidos',
+        'Todo lo del plan Presencia',
+        'Backend conectado (Supabase)',
+        'Formularios con auto-respuesta (Email)',
+        'Galería Multimedia / Videos',
       ],
     ),
     ServicePlan(
       id: 'web_premium',
-      name: 'Sistema a Medida + App de Gestión',
+      name: 'Sistema de Gestión Integral',
       price: 900000,
+      originalPrice: 1500000,
       type: PlanType.web,
-      description: 'Solución web completa más una app de escritorio para gestión interna.',
+      description: 'Profesionaliza tu gestión. Una web para tus clientes y una App privada para controlar el negocio.',
+      // --- CASOS DE ÉXITO (Plan 900k) ---
+      caseStudies: [
+        CaseStudy(
+          name: 'Pulpiprint',
+          logoAsset: 'assets/icons/pulpiprint_logo.png',
+          url: 'https://pulpiprint.com',
+          brandColor: Color(0xFF7E57C2), // Lila fuerte
+        ),
+        CaseStudy(
+          name: 'MNL Tecno',
+          logoAsset: 'assets/icons/mnl_logo.png',
+          url: 'https://mnltecno.com',
+          brandColor: Color(0xFF0277BD), // Azul técnico
+        ),
+      ],
       features: [
-        'Todo en el plan E-Commerce',
-        'App de escritorio (Windows/Mac) para gestionar la web',
-        'Funcionalidades a medida',
-        'Base de datos dedicada',
+        'Web de Ventas Completa',
+        'App de Escritorio (Admin Dashboard)',
+        'Panel de Métricas y Reportes', 
+        'Gestión de Stock y Usuarios (Roles)', 
+        'Soporte prioritario',
       ],
     ),
   ];
 
-  /// Lista de planes de creación de videos con IA
   final List<ServicePlan> videoPlans = const [
     ServicePlan(
       id: 'video_1',
-      name: 'Starter Pack',
+      name: 'Prueba Piloto',
       price: 10000,
       type: PlanType.video,
-      description: '1 Video con IA',
-      features: ['1 Video', 'Guion y Voz IA', 'Formato vertical (Reels/TikTok)'],
-    ),
-    ServicePlan(
-      id: 'video_2',
-      name: 'Creator Duo',
-      price: 16000,
-      type: PlanType.video,
-      description: '2 Videos con IA',
-      features: ['2 Videos', 'Guion y Voz IA', 'Formato vertical (Reels/TikTok)'],
+      description: 'Ideal para probar el impacto de la IA en tu marca.',
+      features: ['1 Video Vertical', 'Guion estratégico', 'Voz Neural Realista'],
     ),
     ServicePlan(
       id: 'video_4',
-      name: 'Social Pack',
-      price: 24000,
+      name: 'Pack Semanal',
+      price: 35000,
+      originalPrice: 40000, 
       type: PlanType.video,
-      description: '4 Videos con IA',
-      features: ['4 Videos', 'Guion y Voz IA', 'Formato vertical (Reels/TikTok)'],
+      description: 'Cubrimos tu presencia en redes durante un mes.',
+      features: ['4 Videos Verticales', 'Edición dinámica', 'Música en tendencia'],
     ),
-     ServicePlan(
-      id: 'video_6',
-      name: 'Business Pack',
-      price: 36000,
-      type: PlanType.video,
-      description: '6 Videos con IA',
-      features: ['6 Videos', 'Guion y Voz IA', 'Formato vertical (Reels/TikTok)'],
-    ),
-     ServicePlan(
-      id: 'video_8',
-      name: 'Growth Pack',
-      price: 44000,
-      type: PlanType.video,
-      description: '8 Videos con IA',
-      features: ['8 Videos', 'Guion y Voz IA', 'Formato vertical (Reels/TikTok)'],
-    ),
-     ServicePlan(
+    ServicePlan(
       id: 'video_10',
-      name: 'Agency Pack',
-      price: 50000,
+      name: 'Estrategia Viral',
+      price: 80000,
+      originalPrice: 100000, 
       type: PlanType.video,
-      description: '10 Videos con IA',
-      features: ['10 Videos', 'Guion y Voz IA', 'Formato vertical (Reels/TikTok)'],
+      description: 'Contenido masivo para inundar las redes.',
+      features: ['10 Videos de alto impacto', 'Adaptación a tendencias', 'Entrega prioritaria'],
     ),
   ];
 }
 
-/// Provider para el repositorio de planes
 @riverpod
 PlansRepository plansRepository(PlansRepositoryRef ref) {
   return PlansRepository();
