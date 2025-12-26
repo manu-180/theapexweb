@@ -47,24 +47,27 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
     super.dispose();
   }
 
-  void _syncTabWithRoute() {
-    if (!mounted) return;
-    final String location = GoRouterState.of(context).uri.path;
-    int index = _navItems.indexWhere((item) => item['path'] == location);
-    
-    if (index == -1) {
-        if (location.startsWith('/services')) index = 1;
-        else index = 0;
-    }
+  // En lib/core/widgets/main_layout.dart
 
-    if (_tabController.index != index) {
-      _tabController.animateTo(index,
-        duration: const Duration(milliseconds: 800),
-        curve: Curves.easeOutQuart,
-      );
-    }
+void _syncTabWithRoute() {
+  if (!mounted) return;
+  final String location = GoRouterState.of(context).uri.path;
+  int index = _navItems.indexWhere((item) => item['path'] == location);
+  
+  if (index == -1) {
+      if (location.startsWith('/services')) index = 1;
+      else index = 0;
   }
 
+  if (_tabController.index != index) {
+    // AJUSTE DE VELOCIDAD: 500ms es el equilibrio perfecto entre sutil y rápido
+    _tabController.animateTo(
+      index,
+      duration: const Duration(milliseconds: 500), 
+      curve: Curves.easeOutCubic, // Cambiamos a easeOutCubic para que el freno sea más natural
+    );
+  }
+}
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncTabWithRoute());
