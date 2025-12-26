@@ -39,7 +39,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
       length: _navItems.length, 
       vsync: this,
       // Reducimos la duración base para que los clics manuales sean instantáneos
-      animationDuration: const Duration(milliseconds: 200),
+      animationDuration: const Duration(milliseconds: 300),
     );
   }
 
