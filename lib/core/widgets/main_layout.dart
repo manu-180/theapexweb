@@ -1,3 +1,4 @@
+// Archivo: lib/core/widgets/main_layout.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -37,7 +38,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
     _tabController = TabController(
       length: _navItems.length, 
       vsync: this,
-      animationDuration: const Duration(milliseconds: 700),
+      // Reducimos la duración base para que los clics manuales sean instantáneos
+      animationDuration: const Duration(milliseconds: 200),
     );
   }
 
@@ -47,27 +49,26 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
     super.dispose();
   }
 
-  // En lib/core/widgets/main_layout.dart
+  void _syncTabWithRoute() {
+    if (!mounted) return;
+    final String location = GoRouterState.of(context).uri.path;
+    int index = _navItems.indexWhere((item) => item['path'] == location);
+    
+    if (index == -1) {
+        if (location.startsWith('/services')) index = 1;
+        else index = 0;
+    }
 
-void _syncTabWithRoute() {
-  if (!mounted) return;
-  final String location = GoRouterState.of(context).uri.path;
-  int index = _navItems.indexWhere((item) => item['path'] == location);
-  
-  if (index == -1) {
-      if (location.startsWith('/services')) index = 1;
-      else index = 0;
+    if (_tabController.index != index) {
+      // VELOCIDAD OPTIMIZADA: 200ms con curva easeOutExpo para máxima fluidez
+      _tabController.animateTo(
+        index,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutExpo,
+      );
+    }
   }
 
-  if (_tabController.index != index) {
-    // AJUSTE DE VELOCIDAD: 500ms es el equilibrio perfecto entre sutil y rápido
-    _tabController.animateTo(
-      index,
-      duration: const Duration(milliseconds: 100), 
-      curve: Curves.easeOutCubic, // Cambiamos a easeOutCubic para que el freno sea más natural
-    );
-  }
-}
   @override
   Widget build(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncTabWithRoute());
@@ -75,7 +76,8 @@ void _syncTabWithRoute() {
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     
-    final isMobile = screenWidth < 800; 
+    // Breakpoint a 1050px para evitar colisiones entre el logo y el menú
+    final isMobile = screenWidth < 1050; 
 
     final String location = GoRouterState.of(context).uri.path;
     int currentIndex = _navItems.indexWhere((item) => item['path'] == location);
@@ -95,7 +97,6 @@ void _syncTabWithRoute() {
           Expanded(
             child: Scaffold(
               appBar: AppBar(
-                // titleSpacing: 0 elimina el espacio vacío entre el logo y el inicio de las acciones
                 titleSpacing: 10,
                 title: GestureDetector(
                   onTap: () => context.goNamed('home'),
@@ -105,7 +106,6 @@ void _syncTabWithRoute() {
                 automaticallyImplyLeading: false, 
                 actions: [
                   if (!isMobile) ...[
-                    // IntrinsicWidth hace que el TabBar solo ocupe el espacio de sus letras
                     IntrinsicWidth(
                       child: TabBar(
                         controller: _tabController,
@@ -119,7 +119,6 @@ void _syncTabWithRoute() {
                         labelColor: Colors.transparent, 
                         unselectedLabelColor: Colors.transparent, 
                         padding: EdgeInsets.zero,
-                        // Reducimos el padding horizontal entre los botones del menú para ganar espacio
                         labelPadding: const EdgeInsets.symmetric(horizontal: 12), 
                         onTap: (index) => context.goNamed(_navItems[index]['name']),
                         tabs: _navItems.asMap().entries.map((entry) {
@@ -163,6 +162,7 @@ class _HoverableTab extends StatefulWidget {
   final String text;
   final bool isSelected;
   const _HoverableTab({required this.text, required this.isSelected});
+
   @override
   State<_HoverableTab> createState() => _HoverableTabState();
 }
@@ -219,10 +219,9 @@ class _BrandLogo extends ConsumerWidget {
 
         const SizedBox(width: 12),
         
-        // El texto ahora es flexible: si el menú lo empuja, oculta el apellido
         Flexible(
           child: Text(
-          'Manuel Navarro',
+            screenWidth < 1150 ? 'Manuel' : 'Manuel Navarro',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,

@@ -5,15 +5,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:prueba_de_riverpod/features/services/data/repositories/plans_repository.dart';
 import 'package:prueba_de_riverpod/features/services/presentation/widgets/plan_card.dart';
+import 'package:prueba_de_riverpod/features/shared/widgets/footer.dart'; // Importante
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ServicesView extends ConsumerStatefulWidget {
-  // Recibimos el índice inicial (0 para webs, 1 para apps)
   final int initialIndex;
   
   const ServicesView({
     super.key,
-    this.initialIndex = 0, // Por defecto webs
+    this.initialIndex = 0,
   });
 
   @override
@@ -21,18 +21,15 @@ class ServicesView extends ConsumerStatefulWidget {
 }
 
 class _ServicesViewState extends ConsumerState<ServicesView> {
-  late int _selectedIndex; // Usamos 'late' porque lo iniciamos en initState
+  late int _selectedIndex;
   final ValueNotifier<Offset> _mousePos = ValueNotifier(Offset.zero);
 
   @override
   void initState() {
     super.initState();
-    // Inicializamos con el valor que viene del Router
     _selectedIndex = widget.initialIndex;
   }
 
-  // MÉTODO CLAVE:
-  // Detecta si el widget se actualizó (ej: clic en footer estando ya en services)
   @override
   void didUpdateWidget(ServicesView oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -109,28 +106,24 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
                     duration: const Duration(milliseconds: 500),
                     child: ScreenTypeLayout.builder(
                       key: ValueKey<int>(_selectedIndex), 
-                      
-                      // --- VERSIÓN MOBILE (CORREGIDA) ---
                       mobile: (context) => ListView.separated(
-  shrinkWrap: true,
-  physics: const NeverScrollableScrollPhysics(),
-  itemCount: currentPlans.length,
-  separatorBuilder: (_, __) => const SizedBox(height: 32), // Un poco más de espacio entre cards
-  itemBuilder: (context, index) => Center( // <--- CENTRAMOS LA CARD
-    child: ConstrainedBox(
-      constraints: const BoxConstraints(
-        maxWidth: 350, // <--- FORZAMOS EL MISMO ANCHO QUE EN DESKTOP
-        maxHeight: 560, // Ajustamos altura por si el contenido es largo
-      ),
-      child: PlanCard(
-        plan: currentPlans[index],
-        mousePos: _mousePos,
-      ),
-    ),
-  ),
-),
-
-                      // --- VERSIÓN DESKTOP ---
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: currentPlans.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 32),
+                        itemBuilder: (context, index) => Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxWidth: 350,
+                              maxHeight: 560,
+                            ),
+                            child: PlanCard(
+                              plan: currentPlans[index],
+                              mousePos: _mousePos,
+                            ),
+                          ),
+                        ),
+                      ),
                       desktop: (context) => Wrap(
                         spacing: 24,
                         runSpacing: 24,
@@ -147,7 +140,6 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
                     ),
                   ),
 
-                  // --- TARJETA DE CONFIANZA ---
                   const SizedBox(height: 60),
                   FadeInUp(
                     delay: const Duration(milliseconds: 400),
@@ -160,11 +152,9 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
               ),
             ),
             
-            // --- FOOTER ESTÁ EN EL LAYOUT, NO AQUI ---
-            // Nota: En el diseño actual el footer lo maneja MainLayout o esta vista
-            // si quieres que scrollee junto con el contenido.
-            // Si el footer estaba aquí antes, descomenta la siguiente línea:
-            // const Footer(), 
+            // --- EL FOOTER VA AQUÍ (Al final de la columna principal) ---
+            const SizedBox(height: 60),
+            const Footer(),
           ],
         ),
       ),
@@ -174,7 +164,6 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
   Widget _buildToggleItem(String text, int index) {
     final isSelected = _selectedIndex == index;
     final theme = Theme.of(context);
-    
     return GestureDetector(
       onTap: () => setState(() => _selectedIndex = index),
       child: AnimatedContainer(
@@ -196,10 +185,9 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
   }
 }
 
-// --- WIDGET DE CONFIANZA / EXPERIENCIA ---
 class _TrustCard extends StatelessWidget {
   final ValueNotifier<Offset> mousePos;
-  final int selectedIndex; // 0 = Web, 1 = App
+  final int selectedIndex;
 
   const _TrustCard({
     required this.mousePos,
@@ -209,7 +197,6 @@ class _TrustCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
     final isApp = selectedIndex == 1;
     final brandColor = theme.colorScheme.primary; 
     
