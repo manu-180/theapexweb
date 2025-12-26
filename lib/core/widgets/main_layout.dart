@@ -77,7 +77,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
     final screenWidth = MediaQuery.of(context).size.width;
     
     // Breakpoint a 1050px para evitar colisiones entre el logo y el menú
-    final isMobile = screenWidth < 1050; 
+    final isMobile = screenWidth < 800; 
 
     final String location = GoRouterState.of(context).uri.path;
     int currentIndex = _navItems.indexWhere((item) => item['path'] == location);
@@ -221,7 +221,7 @@ class _BrandLogo extends ConsumerWidget {
         
         Flexible(
           child: Text(
-            screenWidth < 1150 ? 'Manuel' : 'Manuel Navarro',
+           'Manuel Navarro',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,

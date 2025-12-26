@@ -94266,7 +94266,7 @@ if(q.d!==r)q.ii(r,B.ht,B.H)},
 H(a){var s,r,q,p,o,n,m,l,k,j,i,h,g=this,f=null,e={}
 $.a2.RG$.push(new A.az2(g))
 s=A.R(a)
-r=A.bc(a,f,t.w).w.a.a<1050
+r=A.bc(a,f,t.w).w.a.a<800
 q=A.aIA(a).b.gc_()
 p=g.y
 o=e.a=B.b.x8(p,new A.az3(q))
@@ -94324,19 +94324,20 @@ A.axZ.prototype={
 $0(){return this.a.d=!1},
 $S:0}
 A.VV.prototype={
-kn(a,b){var s=null,r=A.R(a),q=b.hX($.aLU(),t.va).a,p=A.bc(a,s,t.w).w,o=A.b([],t.p)
-if(q===B.c7){q=new A.aT(new Float64Array(16))
-q.cU()
-q.k5(0.7,1.1,0.7,1)
-o.push(A.yf(B.M,A.dc(B.pr,r.ax.b,s,s,22),s,q,!0))}else if(q.ga1E()!=null){q=q.ga1E()
-q.toString
-o.push(A.adx(q,s,B.bJ,B.h_,28,!1,s))}else if(q.ga0H()!=null){q=q.ga0H()
-q.toString
-o.push(A.dc(q,r.ax.b,s,s,24))}o.push(B.iR)
-q=p.a.a<1150?"Manuel":"Manuel Navarro"
-p=r.ok.r
-o.push(new A.jH(1,B.d1,A.aW(q,s,B.bC,s,!1,p==null?s:p.atk(r.ax.b,B.U,1),s,s),s))
-return A.cB(o,B.x,B.r,B.ap,0)}}
+kn(a,b){var s,r=null,q=A.R(a),p=b.hX($.aLU(),t.va).a
+A.bc(a,r,t.w).toString
+s=A.b([],t.p)
+if(p===B.c7){p=new A.aT(new Float64Array(16))
+p.cU()
+p.k5(0.7,1.1,0.7,1)
+s.push(A.yf(B.M,A.dc(B.pr,q.ax.b,r,r,22),r,p,!0))}else if(p.ga1E()!=null){p=p.ga1E()
+p.toString
+s.push(A.adx(p,r,B.bJ,B.h_,28,!1,r))}else if(p.ga0H()!=null){p=p.ga0H()
+p.toString
+s.push(A.dc(p,q.ax.b,r,r,24))}s.push(B.iR)
+p=q.ok.r
+s.push(new A.jH(1,B.d1,A.aW("Manuel Navarro",r,B.bC,r,!1,p==null?r:p.atk(q.ax.b,B.U,1),r,r),r))
+return A.cB(s,B.x,B.r,B.ap,0)}}
 A.Z5.prototype={
 kn(a,b){var s,r,q,p,o,n,m=null,l=A.R(a).ax,k=A.bc(a,m,t.w).w,j=l.k2,i=l.RG
 if(i==null)i=j
