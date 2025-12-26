@@ -63,7 +63,7 @@ void _syncTabWithRoute() {
     // AJUSTE DE VELOCIDAD: 500ms es el equilibrio perfecto entre sutil y rápido
     _tabController.animateTo(
       index,
-      duration: const Duration(milliseconds: 500), 
+      duration: const Duration(milliseconds: 300), 
       curve: Curves.easeOutCubic, // Cambiamos a easeOutCubic para que el freno sea más natural
     );
   }
