@@ -37,7 +37,7 @@ class MercadoPagoRepository {
       }
       
       final response = await _supabase.functions.invoke(
-        'create-preference-mp',
+        'create-preference-manuel',
         headers: {
           'Content-Type': 'application/json',
           // Usamos la anonKey recuperada correctamente si no hay JWT

@@ -28,8 +28,7 @@ class _LandingViewState extends ConsumerState<LandingView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Ajustamos la altura aquí para mantener uniformidad.
-    // Usamos 600 como definiste para que entren cómodos los items.
+    // Ajustamos la altura y ancho para mantener uniformidad
     const double cardHeight = 590; 
     const double cardWidth = 350;
 
@@ -72,9 +71,9 @@ class _LandingViewState extends ConsumerState<LandingView> {
                 ),
                 const SizedBox(height: 80),
 
-                // --- STACK TECNOLÓGICO (Wrap Nivelado) ---
+                // --- STACK TECNOLÓGICO (Cards de arriba) ---
                 Wrap(
-                  spacing: 24,    
+                  spacing: 24,     
                   runSpacing: 24, 
                   alignment: WrapAlignment.center,
                   children: [
@@ -103,23 +102,21 @@ class _LandingViewState extends ConsumerState<LandingView> {
 
                 const SizedBox(height: 60),
 
-                // --- PROYECTO DESTACADO ---
+                // --- PROYECTO DESTACADO (Card de abajo) ---
                 FadeInUp(
                   delay: const Duration(milliseconds: 500),
                   child: Column(
                     children: [
-                       // CAMBIO AQUÍ: Título explicativo y profesional
                        Text(
                         'Desarrollo Integral: De la Idea al Lanzamiento',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.titleLarge?.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.bold,
-                          fontSize: 28, // Un poco más grande para destacar
+                          fontSize: 28,
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // Subtítulo opcional para reforzar (Apps en tiendas / Escritorio)
                       Text(
                         'Aplicaciones móviles en tiendas y software de escritorio a medida.',
                         textAlign: TextAlign.center,
@@ -129,8 +126,9 @@ class _LandingViewState extends ConsumerState<LandingView> {
                       ),
                       const SizedBox(height: 30),
                       
+                      // AQUÍ ESTÁ EL CAMBIO: maxWidth pasó de 500 a 800
                       ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 500), 
+                        constraints: const BoxConstraints(maxWidth: 800), 
                         child: _AssistifyCard(_mousePosNotifier),
                       ),
                     ],
@@ -145,7 +143,7 @@ class _LandingViewState extends ConsumerState<LandingView> {
   }
 }
 
-// --- TEXTOS HUMANIZADOS PARA VENDER ---
+// --- WIDGETS PRIVADOS PARA LAS CARDS ---
 
 class _FlutterCard extends StatelessWidget {
   final ValueNotifier<Offset> mousePos;
@@ -230,6 +228,7 @@ class _AssistifyCard extends ConsumerWidget {
       theme: AppTheme.assistify,
       title: 'Assistify: App en Producción',
       
+      // Animación suave del modal
       onTapOverride: () {
         ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify);
         
@@ -264,15 +263,10 @@ class _AssistifyCard extends ConsumerWidget {
       ),
       accentColor: const Color(0xFF00A8E8),
       bullets: const [
-        // 1. EL KILLER FEATURE (WhatsApp)
         'Notificaciones WhatsApp: El profesor recibe alertas de cambios sin necesidad de abrir la App.',
-        // 2. EL DOLOR RESUELTO (Coordinación)
         'Adiós a la Agenda de Papel: Los alumnos cancelan y recuperan clases solos mediante Créditos.',
-        // 3. LA MAGIA TÉCNICA (Listas de espera)
-        'Listas de Espera Inteligentes: El sistema rellena huecos libres automáticamente con alumnos en espera.',
-        // 4. EL ROL DE ADMIN
+        'Listas de Espera Inteligentes: El sistema rellena huecos libres automáticamente.',
         'Panel de Administración: Gestión total de horarios, altas, bajas y asignación de créditos.',
-        // 5. LA AUTORIDAD (Stores)
         'Despliegue Real: Aplicación activa y descargable en Play Store y App Store.',
       ],
     );

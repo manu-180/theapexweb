@@ -87,7 +87,7 @@ class AssistifyCaseStudyModal extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _SectionTitle('El Dolor (Problema)', Icons.warning_amber_rounded, colorScheme),
+                    _SectionTitle('El Problema', Icons.warning_amber_rounded, colorScheme),
                     const SizedBox(height: 8),
                     Text(
                       'Coordinar cambios de horario por WhatsApp es un trabajo no remunerado que consume horas. Además, cuando un alumno cancela sobre la hora, ese "hueco" suele quedar vacío, lo que significa dinero perdido irreuperable para el profesor.',

@@ -7,6 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'plans_repository.g.dart';
 
 class PlansRepository {
+  // --- PLANES WEB ---
   final List<ServicePlan> webPlans = const [
     ServicePlan(
       id: 'web_basic',
@@ -15,20 +16,19 @@ class PlansRepository {
       originalPrice: 400000,
       type: PlanType.web,
       description: 'Tu carta de presentación al mundo. Ideal para profesionales que necesitan validar su marca.',
-      // --- CASOS DE ÉXITO (Plan 300k) ---
+      idealFor: 'Profesionales independientes (Abogados, Contadores, Psicólogos) que necesitan validar su autoridad y ser encontrados en Google.',
       caseStudies: [
         CaseStudy(
           name: 'Simon Mindset',
           logoAsset: 'assets/icons/simon_logo.png', 
           url: 'https://simonmindset.com',
-          brandColor: Color(0xFF8B0000), // Rojo oscuro elegante
+          brandColor: Color(0xFF8B0000),
         ),
         CaseStudy(
           name: 'Pérez Yeregui',
           logoAsset: 'assets/icons/perez_logo.png',
           url: 'https://perez-yeregui2.vercel.app',
-          // CAMBIO: Gris pizarra (extraído de la imagen de la web)
-          brandColor: Color(0xFF5B5663), 
+          brandColor: Color(0xFF5B5663),
         ),
       ],
       features: [
@@ -45,13 +45,13 @@ class PlansRepository {
       originalPrice: 860000,
       type: PlanType.web,
       description: 'Pasa al siguiente nivel. Automatiza el contacto con tus clientes y muestra contenido dinámico.',
-      // --- CASOS DE ÉXITO (Plan 600k) ---
+      idealFor: 'Pequeñas empresas o Startups que buscan automatizar la atención al cliente, agendar citas y capturar leads.',
       caseStudies: [
         CaseStudy(
           name: 'Assistify',
           logoAsset: 'assets/icons/logo_assistify.png',
           url: 'https://assistify.lat',
-          brandColor: Color(0xFF00A8E8), // Cyan de la marca
+          brandColor: Color(0xFF00A8E8),
         ),
       ],
       features: [
@@ -68,19 +68,19 @@ class PlansRepository {
       originalPrice: 1500000,
       type: PlanType.web,
       description: 'Profesionaliza tu gestión. Una web para tus clientes y una App privada para controlar el negocio.',
-      // --- CASOS DE ÉXITO (Plan 900k) ---
+      idealFor: 'Negocios en expansión que requieren control operativo total: gestión de stock, usuarios y métricas.',
       caseStudies: [
         CaseStudy(
           name: 'Pulpiprint',
           logoAsset: 'assets/icons/pulpiprint_logo.png',
           url: 'https://pulpiprint.com',
-          brandColor: Color(0xFF7E57C2), // Lila fuerte
+          brandColor: Color(0xFF7E57C2),
         ),
         CaseStudy(
           name: 'MNL Tecno',
           logoAsset: 'assets/icons/mnl_logo.png',
           url: 'https://mnltecno.com',
-          brandColor: Color(0xFF0277BD), // Azul técnico
+          brandColor: Color(0xFF0277BD),
         ),
       ],
       features: [
@@ -93,32 +93,57 @@ class PlansRepository {
     ),
   ];
 
-  final List<ServicePlan> videoPlans = const [
+  // --- PLANES DE APPS ---
+  final List<ServicePlan> appPlans = const [
     ServicePlan(
-      id: 'video_1',
-      name: 'Prueba Piloto',
-      price: 10000,
-      type: PlanType.video,
-      description: 'Ideal para probar el impacto de la IA en tu marca.',
-      features: ['1 Video Vertical', 'Guion estratégico', 'Voz Neural Realista'],
+      id: 'app_mvp',
+      name: 'App MVP (Lanzamiento)',
+      price: 1200000,
+      originalPrice: 1600000, // Agregamos descuento aquí también para consistencia
+      type: PlanType.app,
+      description: 'Producto Mínimo Viable: Lo esencial para salir al mercado y validar tu negocio rápido.',
+      idealFor: 'Emprendedores que necesitan lanzar ya mismo para buscar inversores o primeros usuarios.',
+      features: [
+        'Desarrollo Híbrido (Android & iOS)',
+        'Funcionalidades Core (Lo vital)',
+        'Autenticación Segura',
+        'Publicación en Tiendas',
+        'Pago Único (Sin mensualidades)'
+      ],
     ),
     ServicePlan(
-      id: 'video_4',
-      name: 'Pack Semanal',
-      price: 35000,
-      originalPrice: 40000, 
-      type: PlanType.video,
-      description: 'Cubrimos tu presencia en redes durante un mes.',
-      features: ['4 Videos Verticales', 'Edición dinámica', 'Música en tendencia'],
+      id: 'app_pro',
+      name: 'App Corporativa Full',
+      // PRECIO TOTAL: 2.7M (Pero con descuento visual desde 3.6M)
+      price: 2700000,
+      originalPrice: 3600000, 
+      type: PlanType.app,
+      description: 'Solución robusta llave en mano. Desarrollo completo estimado en 90 días.',
+      idealFor: 'Empresas que quieren digitalizar operaciones complejas o crear un canal de ventas propio.',
+      features: [
+        'Todo lo del plan MVP',
+        'Panel Admin (Web o Escritorio)', // Opción flexible
+        'Notificaciones Push & Pagos',
+        'Soporte Post-Lanzamiento (3 meses)',
+        'Financiación: 3 cuotas de \$900.000' // EL GANCHO DE VENTA
+      ],
     ),
+    // --- EL PLAN "UBER" ---
     ServicePlan(
-      id: 'video_10',
-      name: 'Estrategia Viral',
-      price: 80000,
-      originalPrice: 100000, 
-      type: PlanType.video,
-      description: 'Contenido masivo para inundar las redes.',
-      features: ['10 Videos de alto impacto', 'Adaptación a tendencias', 'Entrega prioritaria'],
+      id: 'app_platform',
+      name: 'Plataforma a Medida',
+      price: 0, 
+      isCustom: true,
+      type: PlanType.app,
+      description: 'Arquitectura compleja tipo Uber/Rappi. Modelo de Partner Tecnológico.',
+      idealFor: 'Startups financiadas que requieren un equipo técnico dedicado y mantenimiento continuo.',
+      features: [
+        'Geolocalización en Tiempo Real',
+        'Arquitectura de Microservicios',
+        'Múltiples Apps (Cliente/Chofer/Admin)',
+        'Infraestructura Escalable (AWS)',
+        'Modelo de Retainer Mensual'
+      ],
     ),
   ];
 }
