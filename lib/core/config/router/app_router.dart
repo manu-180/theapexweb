@@ -19,16 +19,10 @@ GoRouter goRouter(GoRouterRef ref) {
     initialLocation: '/',
     navigatorKey: _rootNavigatorKey,
     routes: [
-      // --- ShellRoute para el Layout Principal ---
-      // 
-      // Este ShellRoute envuelve todas las rutas hijas con el MainLayout.
       ShellRoute(
-        // El 'builder' del ShellRoute renderiza el MainLayout
         builder: (context, state, child) {
-          // 'child' es la vista que coincide con la ruta (ej. LandingView)
           return MainLayout(child: child); 
         },
-        // --- Rutas Hijas (las páginas de tu app) ---
         routes: [
           GoRoute(
             path: '/',
@@ -38,7 +32,12 @@ GoRouter goRouter(GoRouterRef ref) {
           GoRoute(
             path: '/services',
             name: 'services',
-            builder: (context, state) => const ServicesView(),
+            builder: (context, state) {
+              // AQUÍ ESTÁ EL CAMBIO:
+              // Leemos el 'extra' que nos manda el footer. Si no hay nada, es 0 (Webs).
+              final index = state.extra as int? ?? 0;
+              return ServicesView(initialIndex: index);
+            },
           ),
           GoRoute(
             path: '/about',

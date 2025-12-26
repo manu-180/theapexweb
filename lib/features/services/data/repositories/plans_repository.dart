@@ -11,7 +11,7 @@ class PlansRepository {
   final List<ServicePlan> webPlans = const [
     ServicePlan(
       id: 'web_basic',
-      name: 'Presencia Digital Profesional',
+      name: 'Presencia Digital',
       price: 300000,
       originalPrice: 400000,
       type: PlanType.web,
@@ -20,15 +20,26 @@ class PlansRepository {
       caseStudies: [
         CaseStudy(
           name: 'Simon Mindset',
-          logoAsset: 'assets/icons/simon_logo.png', 
+          logoAsset: 'assets/icons/simon_logo.png', // Mantiene imagen
           url: 'https://simonmindset.com',
           brandColor: Color(0xFF8B0000),
+          logoBgColor: Colors.black, 
         ),
         CaseStudy(
           name: 'Pérez Yeregui',
-          logoAsset: 'assets/icons/perez_logo.png',
+          // SIN logoAsset
+          logoLetter: 'P', // <--- NUEVO: Letra P
           url: 'https://perez-yeregui2.vercel.app',
           brandColor: Color(0xFF5B5663),
+          logoBgColor: Color(0xFF5B5663), // Fondo Gris
+        ),
+        CaseStudy(
+          name: 'Metal Wailers',
+          // SIN logoAsset
+          logoLetter: 'M', // <--- NUEVO: Letra M
+          url: 'https://metalwailers.com',
+          brandColor: Color(0xFF263238), 
+          logoBgColor: Colors.black, // Fondo Negro
         ),
       ],
       features: [
@@ -99,7 +110,7 @@ class PlansRepository {
       id: 'app_mvp',
       name: 'App MVP (Lanzamiento)',
       price: 1200000,
-      originalPrice: 1600000, // Agregamos descuento aquí también para consistencia
+      originalPrice: 1600000, 
       type: PlanType.app,
       description: 'Producto Mínimo Viable: Lo esencial para salir al mercado y validar tu negocio rápido.',
       idealFor: 'Emprendedores que necesitan lanzar ya mismo para buscar inversores o primeros usuarios.',
@@ -114,7 +125,6 @@ class PlansRepository {
     ServicePlan(
       id: 'app_pro',
       name: 'App Corporativa Full',
-      // PRECIO TOTAL: 2.7M (Pero con descuento visual desde 3.6M)
       price: 2700000,
       originalPrice: 3600000, 
       type: PlanType.app,
@@ -122,13 +132,12 @@ class PlansRepository {
       idealFor: 'Empresas que quieren digitalizar operaciones complejas o crear un canal de ventas propio.',
       features: [
         'Todo lo del plan MVP',
-        'Panel Admin (Web o Escritorio)', // Opción flexible
+        'Panel Admin (Web o Escritorio)', 
         'Notificaciones Push & Pagos',
         'Soporte Post-Lanzamiento (3 meses)',
-        'Financiación: 3 cuotas de \$900.000' // EL GANCHO DE VENTA
+        'Financiación: 3 cuotas de \$900.000'
       ],
     ),
-    // --- EL PLAN "UBER" ---
     ServicePlan(
       id: 'app_platform',
       name: 'Plataforma a Medida',

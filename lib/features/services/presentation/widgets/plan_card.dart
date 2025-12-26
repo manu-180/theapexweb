@@ -204,7 +204,7 @@ class _PlanCardState extends ConsumerState<PlanCard> {
                                       child: widget.plan.isCustom
                                         ? // CASO A MEDIDA
                                           Text(
-                                            "Consultar", 
+                                            "A medida", 
                                             textAlign: TextAlign.center,
                                             style: theme.textTheme.headlineMedium?.copyWith(
                                               fontWeight: FontWeight.bold,

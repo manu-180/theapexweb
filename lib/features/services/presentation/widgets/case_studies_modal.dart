@@ -29,10 +29,9 @@ class CaseStudiesModal extends StatelessWidget {
     
     return Container(
       width: double.infinity,
-      // Altura dinámica pero limitada para que no tape toda la pantalla en desktop
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.8,
-        maxWidth: 600, // En escritorio se verá centrado y no estirado
+        maxWidth: 600, 
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       decoration: BoxDecoration(
@@ -42,7 +41,7 @@ class CaseStudiesModal extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // --- Handle (Barrita gris para arrastrar) ---
+          // --- Handle ---
           Container(
             width: 40,
             height: 4,
@@ -87,7 +86,6 @@ class CaseStudiesModal extends StatelessWidget {
                     height: 80,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      // Degradado sutil basado en el color de la marca
                       gradient: LinearGradient(
                         colors: [
                           project.brandColor.withOpacity(0.15),
@@ -104,12 +102,12 @@ class CaseStudiesModal extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     child: Row(
                       children: [
-                        // --- Logo del Proyecto ---
+                        // --- Logo Circular ---
                         Container(
                           width: 56,
                           height: 56,
                           decoration: BoxDecoration(
-                            color: Colors.white, // Fondo blanco para que el logo resalte
+                            color: project.logoBgColor ?? Colors.white,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -119,15 +117,34 @@ class CaseStudiesModal extends StatelessWidget {
                               )
                             ],
                           ),
-                          padding: const EdgeInsets.all(8), // Padding interno para el logo
-                          child: Image.asset(
-                            project.logoAsset,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) => Icon(
-                              Icons.broken_image, 
-                              color: theme.colorScheme.onSurface,
-                              size: 20,
-                            ),
+                          // LÓGICA DE RENDERIZADO: ¿Letra o Imagen?
+                          child: Center(
+                            child: project.logoLetter != null
+                                ? Text(
+                                    project.logoLetter!,
+                                    style: const TextStyle(
+                                      color: Colors.white, // Letra Blanca
+                                      fontSize: 28,        // Grande
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Oxanium', // Fuente consistente
+                                    ),
+                                  )
+                                : Padding(
+                                    // Reduje el padding de 8 a 6 para que el logo se vea un poco más grande
+                                    padding: const EdgeInsets.all(6.0),
+                                    // CORRECCIÓN: Quitamos el ClipOval aquí.
+                                    // El contenedor ya es circular (shape: BoxShape.circle).
+                                    // La imagen debe ajustarse adentro sin recortarse.
+                                    child: Image.asset(
+                                      project.logoAsset!,
+                                      fit: BoxFit.contain, // Se ajusta sin salirse
+                                      errorBuilder: (context, error, stackTrace) => Icon(
+                                        Icons.broken_image, 
+                                        color: theme.colorScheme.onSurface,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -164,7 +181,6 @@ class CaseStudiesModal extends StatelessWidget {
                           ),
                         ),
                         
-                        // --- Icono de Flecha ---
                         Icon(
                           FontAwesomeIcons.chevronRight, 
                           size: 16, 

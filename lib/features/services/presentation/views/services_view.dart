@@ -8,16 +8,40 @@ import 'package:prueba_de_riverpod/features/services/presentation/widgets/plan_c
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ServicesView extends ConsumerStatefulWidget {
-  const ServicesView({super.key});
+  // Recibimos el índice inicial (0 para webs, 1 para apps)
+  final int initialIndex;
+  
+  const ServicesView({
+    super.key,
+    this.initialIndex = 0, // Por defecto webs
+  });
 
   @override
   ConsumerState<ServicesView> createState() => _ServicesViewState();
 }
 
 class _ServicesViewState extends ConsumerState<ServicesView> {
-  // 0 = Web, 1 = Apps
-  int _selectedIndex = 0; 
+  late int _selectedIndex; // Usamos 'late' porque lo iniciamos en initState
   final ValueNotifier<Offset> _mousePos = ValueNotifier(Offset.zero);
+
+  @override
+  void initState() {
+    super.initState();
+    // Inicializamos con el valor que viene del Router
+    _selectedIndex = widget.initialIndex;
+  }
+
+  // MÉTODO CLAVE:
+  // Detecta si el widget se actualizó (ej: clic en footer estando ya en services)
+  @override
+  void didUpdateWidget(ServicesView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialIndex != oldWidget.initialIndex) {
+      setState(() {
+        _selectedIndex = widget.initialIndex;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,92 +54,117 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
         _mousePos.value = event.position;
       },
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
         child: Column(
           children: [
-            FadeInDown(
-              child: Text(
-                'Mis Servicios',
-                style: theme.textTheme.displayMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            FadeInDown(
-              delay: const Duration(milliseconds: 200),
-              child: Text(
-                'Soluciones tecnológicas diseñadas para escalar tu negocio',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            const SizedBox(height: 40),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+              child: Column(
+                children: [
+                  FadeInDown(
+                    child: Text(
+                      'Mis Servicios',
+                      style: theme.textTheme.displayMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FadeInDown(
+                    delay: const Duration(milliseconds: 200),
+                    child: Text(
+                      'Soluciones tecnológicas diseñadas para escalar tu negocio',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
 
-            // --- TOGGLE SWITCH ---
-            FadeIn(
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(50),
-                  border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildToggleItem("Desarrollo Web", 0),
-                    const SizedBox(width: 4),
-                    _buildToggleItem("Aplicaciones Móviles", 1),
-                  ],
-                ),
+                  // --- TOGGLE SWITCH ---
+                  FadeIn(
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(50),
+                        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildToggleItem("Desarrollo Web", 0),
+                          const SizedBox(width: 4),
+                          _buildToggleItem("Aplicaciones Móviles", 1),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 48),
+
+                  // --- LISTA DE PLANES ---
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 500),
+                    child: ScreenTypeLayout.builder(
+                      key: ValueKey<int>(_selectedIndex), 
+                      
+                      // --- VERSIÓN MOBILE (CORREGIDA) ---
+                      mobile: (context) => ListView.separated(
+  shrinkWrap: true,
+  physics: const NeverScrollableScrollPhysics(),
+  itemCount: currentPlans.length,
+  separatorBuilder: (_, __) => const SizedBox(height: 32), // Un poco más de espacio entre cards
+  itemBuilder: (context, index) => Center( // <--- CENTRAMOS LA CARD
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: 350, // <--- FORZAMOS EL MISMO ANCHO QUE EN DESKTOP
+        maxHeight: 560, // Ajustamos altura por si el contenido es largo
+      ),
+      child: PlanCard(
+        plan: currentPlans[index],
+        mousePos: _mousePos,
+      ),
+    ),
+  ),
+),
+
+                      // --- VERSIÓN DESKTOP ---
+                      desktop: (context) => Wrap(
+                        spacing: 24,
+                        runSpacing: 24,
+                        alignment: WrapAlignment.center,
+                        children: currentPlans.map((plan) => SizedBox(
+                          width: 350,
+                          height: 500, 
+                          child: PlanCard(
+                            plan: plan,
+                            mousePos: _mousePos,
+                          ),
+                        )).toList(),
+                      ),
+                    ),
+                  ),
+
+                  // --- TARJETA DE CONFIANZA ---
+                  const SizedBox(height: 60),
+                  FadeInUp(
+                    delay: const Duration(milliseconds: 400),
+                    child: _TrustCard(
+                      mousePos: _mousePos,
+                      selectedIndex: _selectedIndex,
+                    ),
+                  ),
+                ],
               ),
             ),
             
-            const SizedBox(height: 48),
-
-            // --- LISTA DE PLANES ---
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 500),
-              child: ScreenTypeLayout.builder(
-                key: ValueKey<int>(_selectedIndex), 
-                mobile: (context) => ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: currentPlans.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 24),
-                  itemBuilder: (context, index) => PlanCard(
-                    plan: currentPlans[index],
-                    mousePos: _mousePos,
-                  ),
-                ),
-                desktop: (context) => Wrap(
-                  spacing: 24,
-                  runSpacing: 24,
-                  alignment: WrapAlignment.center,
-                  children: currentPlans.map((plan) => SizedBox(
-                    width: 350,
-                    height: 500, 
-                    child: PlanCard(
-                      plan: plan,
-                      mousePos: _mousePos,
-                    ),
-                  )).toList(),
-                ),
-              ),
-            ),
-
-            // --- TARJETA DE EXPERIENCIA (ASSISTIFY) ---
-            if (_selectedIndex == 1) ...[
-              const SizedBox(height: 60),
-              FadeInUp(
-                delay: const Duration(milliseconds: 400),
-                child: _TrustCard(mousePos: _mousePos),
-              ),
-            ],
+            // --- FOOTER ESTÁ EN EL LAYOUT, NO AQUI ---
+            // Nota: En el diseño actual el footer lo maneja MainLayout o esta vista
+            // si quieres que scrollee junto con el contenido.
+            // Si el footer estaba aquí antes, descomenta la siguiente línea:
+            // const Footer(), 
           ],
         ),
       ),
@@ -147,42 +196,57 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
   }
 }
 
-// --- WIDGET DE EXPERIENCIA (ASSISTIFY) ---
+// --- WIDGET DE CONFIANZA / EXPERIENCIA ---
 class _TrustCard extends StatelessWidget {
   final ValueNotifier<Offset> mousePos;
+  final int selectedIndex; // 0 = Web, 1 = App
 
-  const _TrustCard({required this.mousePos});
-
-  // Función para mostrar el modal con animación
-  void _showAssistifyModal(BuildContext context) {
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: true,
-      barrierLabel: 'Cerrar',
-      barrierColor: Colors.black.withOpacity(0.5),
-      transitionDuration: const Duration(milliseconds: 250),
-      // AQUÍ: Reemplaza 'const AssistifyModal()' por tu propio widget de modal
-      pageBuilder: (context, _, __) => const AssistifyModal(), 
-      transitionBuilder: (context, anim, __, child) {
-        // Animación de escala y opacidad (Pop-up suave)
-        return Transform.scale(
-          scale: Curves.easeOutBack.transform(anim.value),
-          child: Opacity(
-            opacity: anim.value,
-            child: child,
-          ),
-        );
-      },
-    );
-  }
+  const _TrustCard({
+    required this.mousePos,
+    required this.selectedIndex,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const brandColor = Color(0xFF00A8E8); 
+    
+    final isApp = selectedIndex == 1;
+    final brandColor = theme.colorScheme.primary; 
+    
+    final iconMain = isApp ? FontAwesomeIcons.rocket : FontAwesomeIcons.laptopCode;
+    final title = isApp ? "¿Por qué confiar en mí?" : "Ingeniería aplicada a la Web";
+    final subtitle = isApp ? "Experiencia comprobada" : "Potencia y Optimización Real";
+    
+    final bodyText = isApp 
+        ? "Desarrollar una aplicación real va más allá de escribir código. Con Assistify, gestioné el ciclo completo del software, garantizando el éxito de tu proyecto desde la arquitectura hasta el despliegue en tiendas."
+        : "Mi experiencia construyendo aplicaciones móviles complejas eleva el estándar de mis webs. No uso plantillas genéricas ni constructores lentos. Desarrollo soluciones 100% a medida, ultrarrápidas y optimizadas con la misma tecnología robusta que usan las grandes aplicaciones.";
+
+    final chips = isApp 
+        ? [
+            _buildChip(theme, FontAwesomeIcons.shieldHalved, "Autenticación Segura & DB"),
+            _buildChip(theme, FontAwesomeIcons.puzzlePiece, "Integración de APIs"),
+            _buildChip(theme, FontAwesomeIcons.appStoreIos, "Despliegue App Store & Play Store"),
+            _buildChip(theme, FontAwesomeIcons.palette, "Diseño UI/UX Completo"),
+            _buildChip(theme, FontAwesomeIcons.bell, "Notificaciones Push"),
+            _buildChip(theme, FontAwesomeIcons.wifi, "Modo Offline & Sync"),
+            _buildChip(theme, FontAwesomeIcons.bolt, "Datos en Tiempo Real"),
+            _buildChip(theme, FontAwesomeIcons.creditCard, "Pasarelas de Pago"),
+            _buildChip(theme, FontAwesomeIcons.chartLine, "Analíticas de Usuario"),
+          ]
+        : [
+            _buildChip(theme, FontAwesomeIcons.ban, "Sin Plantillas (100% Custom)"),
+            _buildChip(theme, FontAwesomeIcons.gaugeHigh, "Velocidad Extrema"),
+            _buildChip(theme, FontAwesomeIcons.layerGroup, "Código Limpio y Escalable"),
+            _buildChip(theme, FontAwesomeIcons.microchip, "Tecnología de Punta"),
+            _buildChip(theme, FontAwesomeIcons.magnifyingGlass, "SEO Técnico Avanzado"),
+            _buildChip(theme, FontAwesomeIcons.mobileScreen, "Diseño 100% Responsivo"),
+            _buildChip(theme, FontAwesomeIcons.lock, "Seguridad SSL/TLS"),
+            _buildChip(theme, FontAwesomeIcons.wandMagicSparkles, "Animaciones Fluidas"),
+            _buildChip(theme, FontAwesomeIcons.server, "Configuración de Hosting"),
+          ];
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 800),
+      constraints: const BoxConstraints(maxWidth: 900),
       child: ValueListenableBuilder<Offset>(
         valueListenable: mousePos,
         builder: (context, mouseOffset, child) {
@@ -219,67 +283,51 @@ class _TrustCard extends StatelessWidget {
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(22),
               ),
-              child: Material( // Necesario para el InkWell
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () => _showAssistifyModal(context), // Llama a la función de animación
-                  borderRadius: BorderRadius.circular(22),
-                  child: Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Column(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    Row(
                       children: [
-                        // Header
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: brandColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(FontAwesomeIcons.rocket, color: brandColor),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "¿Por qué confiar en mí?",
-                                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                                  ),
-                                  Text(
-                                    "Experiencia comprobada", 
-                                    style: theme.textTheme.bodyMedium?.copyWith(color: brandColor),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: brandColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(iconMain, color: brandColor),
                         ),
-                        const SizedBox(height: 24),
-                        
-                        // Cuerpo del texto
-                        Text(
-                          "Desarrollar una aplicación real va más allá de escribir código. Con Assistify, gestioné el ciclo completo del software, lo que me permite garantizar el éxito de tu proyecto:",
-                          style: theme.textTheme.bodyLarge,
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Chips
-                        Wrap(
-                          spacing: 16,
-                          runSpacing: 16,
-                          children: [
-                            _buildChip(theme, FontAwesomeIcons.shieldHalved, "Autenticación Segura & DB"),
-                            _buildChip(theme, FontAwesomeIcons.puzzlePiece, "Integración de cualquier API"),
-                            _buildChip(theme, FontAwesomeIcons.appStoreIos, "Despliegue en AppStore & PlayStore"),
-                            _buildChip(theme, FontAwesomeIcons.palette, "Diseño UI/UX Completo"),
-                          ],
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                subtitle, 
+                                style: theme.textTheme.bodyMedium?.copyWith(color: brandColor),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 24),
+                    Text(
+                      bodyText,
+                      style: theme.textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 32),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      alignment: WrapAlignment.center,
+                      children: chips,
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -309,32 +357,6 @@ class _TrustCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// --- MODAL DE EJEMPLO (Reemplázalo por el tuyo) ---
-class AssistifyModal extends StatelessWidget {
-  const AssistifyModal({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("Caso de Éxito: Assistify", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            const Text("Aquí iría el detalle completo de tu caso de éxito, con imágenes, estadísticas y testimonios."),
-            const SizedBox(height: 24),
-            FilledButton(onPressed: () => Navigator.pop(context), child: const Text("Cerrar"))
-          ],
-        ),
       ),
     );
   }
