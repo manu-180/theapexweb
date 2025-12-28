@@ -67,7 +67,7 @@ class _DynamicHeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mapeo dinámico de videos según el tema usando switch expression
+    // Mapeo dinámico de videos según el tema activo
     final String videoPath = switch (themeConfig.theme) {
       AppTheme.flutter   => 'assets/videos/yoflutter.webm',
       AppTheme.supabase  => 'assets/videos/yosupabase.webm',
@@ -254,6 +254,7 @@ class _TransparentVideoPlayer extends StatefulWidget {
 
 class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
   late VideoPlayerController _controller;
+  bool _isInitialized = false;
 
   @override
   void initState() {
@@ -262,7 +263,9 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
       ..initialize().then((_) {
         _controller.setLooping(true);
         _controller.play();
-        if (mounted) setState(() {}); 
+        if (mounted) {
+          setState(() => _isInitialized = true);
+        }
       });
   }
 
@@ -274,13 +277,17 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_controller.value.isInitialized) {
-      return const SizedBox();
+    // No mostramos nada mientras carga para evitar el parpadeo del CircularProgress
+    if (!_isInitialized) {
+      return const SizedBox.shrink(); 
     }
 
-    return AspectRatio(
-      aspectRatio: _controller.value.aspectRatio,
-      child: VideoPlayer(_controller),
+    return FadeIn(
+      duration: const Duration(milliseconds: 500),
+      child: AspectRatio(
+        aspectRatio: _controller.value.aspectRatio,
+        child: VideoPlayer(_controller),
+      ),
     );
   }
 }

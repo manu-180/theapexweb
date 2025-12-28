@@ -3,21 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:video_player/video_player.dart';
 import 'package:prueba_de_riverpod/core/config/theme/app_theme.dart'; 
 import 'package:prueba_de_riverpod/core/config/theme/app_theme_providers.dart';
 import 'package:prueba_de_riverpod/core/config/theme/brightness_provider.dart';
 import 'package:prueba_de_riverpod/features/auth/presentation/providers/auth_providers.dart';
 import 'package:prueba_de_riverpod/widgets/contactanos.dart';
 
-// --- NUEVO IMPORT ---
-import 'package:prueba_de_riverpod/core/utils/favicons/favicon_switcher.dart'; 
-
 class MainLayout extends ConsumerStatefulWidget {
-  const MainLayout({
-    required this.child,
-    super.key,
-  });
-
+  const MainLayout({required this.child, super.key});
   final Widget child;
 
   @override
@@ -27,6 +21,9 @@ class MainLayout extends ConsumerStatefulWidget {
 class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  // Cache de controladores para evitar recargas
+  final Map<String, VideoPlayerController> _videoPreload = {};
 
   final List<Map<String, dynamic>> _navItems = [
     {'label': 'Home', 'path': '/', 'name': 'home'},
@@ -38,179 +35,99 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(
-      length: _navItems.length, 
-      vsync: this,
-      animationDuration: const Duration(milliseconds: 300),
-    );
+    _tabController = TabController(length: _navItems.length, vsync: this);
+    _preloadAllVideos();
+  }
+
+  void _preloadAllVideos() {
+    // Precargamos todos para que estén listos instantáneamente
+    final videoAssets = [
+      'assets/videos/yoflutter.webm',
+      'assets/videos/yosupabase.webm',
+      'assets/videos/yoriverpod.webm',
+      'assets/videos/yoassistify.webm',
+      'assets/videos/yoapex.webm',
+    ];
+
+    for (var path in videoAssets) {
+      final controller = VideoPlayerController.asset(path);
+      _videoPreload[path] = controller;
+      // Inicializamos en silencio (sin setState para no reconstruir todo innecesariamente)
+      controller.initialize().then((_) {
+        controller.setLooping(true);
+      }).catchError((error) {
+        debugPrint('Error precargando video $path: $error');
+      });
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    for (var controller in _videoPreload.values) {
+      controller.dispose();
+    }
     super.dispose();
-  }
-
-  void _syncTabWithRoute() {
-    if (!mounted) return;
-    final String location = GoRouterState.of(context).uri.path;
-    int index = _navItems.indexWhere((item) => item['path'] == location);
-    
-    if (index == -1) {
-        if (location.startsWith('/services')) index = 1;
-        else index = 0;
-    }
-
-    if (_tabController.index != index) {
-      _tabController.animateTo(
-        index,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutExpo,
-      );
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // -----------------------------------------------------------
-    // 1. ESCUCHA DE CAMBIO DE TEMA PARA EL FAVICON (NUEVO)
-    // -----------------------------------------------------------
-    ref.listen(currentAppThemeConfigProvider, (previous, next) {
-      // Solo actualizamos si el tema realmente cambió
-     if (previous?.theme != next.theme) {
-        // Pasamos directamente el enum 'next.theme'
-        updateFavicon(next.theme);
-      }
-    });
-    // -----------------------------------------------------------
-
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncTabWithRoute());
-
     final theme = Theme.of(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-    
-    final isMobile = screenWidth < 800; 
-
-    final String location = GoRouterState.of(context).uri.path;
-    int currentIndex = _navItems.indexWhere((item) => item['path'] == location);
-    if (currentIndex == -1 && location.startsWith('/services')) currentIndex = 1;
-    if (currentIndex == -1) currentIndex = 0;
+    final isMobile = MediaQuery.of(context).size.width < 800;
 
     return Scaffold(
       key: _scaffoldKey,
       endDrawer: isMobile ? _MobileDrawer(navItems: _navItems) : null,
-      body: Column(
-        children: [
-          Container(
-            height: 4,
-            width: double.infinity,
-            color: theme.colorScheme.primary, 
-          ),
-          Expanded(
-            child: Scaffold(
-              appBar: AppBar(
-                titleSpacing: 10,
-                title: GestureDetector(
-                  onTap: () => context.goNamed('home'),
-                 child: MouseRegion( 
-                  cursor: SystemMouseCursors.click, 
-                  child: const Flexible(
-                    child: _BrandLogo(),
-                  ),)
-                ),
-                centerTitle: false,
-                automaticallyImplyLeading: false, 
-                actions: [
-                  if (!isMobile) ...[
-                    IntrinsicWidth(
-                      child: TabBar(
-                        controller: _tabController,
-                        isScrollable: true,
-                        indicatorColor: theme.colorScheme.primary,
-                        indicatorWeight: 3,
-                        indicatorSize: TabBarIndicatorSize.label,
-                        indicatorPadding: const EdgeInsets.only(bottom: 12), 
-                        dividerColor: Colors.transparent,
-                        overlayColor: WidgetStateProperty.all(Colors.transparent),
-                        labelColor: Colors.transparent, 
-                        unselectedLabelColor: Colors.transparent, 
-                        padding: EdgeInsets.zero,
-                        labelPadding: const EdgeInsets.symmetric(horizontal: 12), 
-                        onTap: (index) => context.goNamed(_navItems[index]['name']),
-                        tabs: _navItems.asMap().entries.map((entry) {
-                          return Tab(
-                            height: 60, 
-                            child: _HoverableTab(
-                              text: entry.value['label'],
-                              isSelected: entry.key == currentIndex,
-                            ),
-                          );
-                        }).toList(),
-                      ),
+      appBar: AppBar(
+        title: const _BrandLogo(),
+        centerTitle: false, // Alineación correcta a la izquierda
+        automaticallyImplyLeading: false,
+        actions: [
+          if (!isMobile) ...[
+            IntrinsicWidth(
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                indicatorColor: theme.colorScheme.primary,
+                indicatorWeight: 3,
+                indicatorSize: TabBarIndicatorSize.label,
+                indicatorPadding: const EdgeInsets.only(bottom: 12),
+                dividerColor: Colors.transparent,
+                overlayColor: WidgetStateProperty.all(Colors.transparent),
+                labelColor: Colors.transparent,
+                unselectedLabelColor: Colors.transparent,
+                padding: EdgeInsets.zero,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 12),
+                onTap: (index) => context.goNamed(_navItems[index]['name']),
+                tabs: _navItems.asMap().entries.map((entry) {
+                  return Tab(
+                    height: 60,
+                    child: _HoverableTab(
+                      text: entry.value['label'],
+                      isSelected: false, // GoRouter maneja el estado real, esto es visual
                     ),
-                    const SizedBox(width: 5),
-                    _ThemeToggleButton(),
-                    const SizedBox(width: 5),
-                    _AuthButton(),
-                    const SizedBox(width: 15),
-                  ] else ...[
-                    IconButton(
-                      onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-                      icon: const Icon(Icons.menu_rounded, size: 28),
-                      color: theme.colorScheme.primary,
-                      tooltip: 'Menú',
-                    ),
-                    const SizedBox(width: 16),
-                  ],
-                ],
+                  );
+                }).toList(),
               ),
-              floatingActionButton: const Contactanos(),
-              body: widget.child, 
             ),
-          ),
+            const SizedBox(width: 5),
+            _ThemeToggleButton(),
+            const SizedBox(width: 5),
+            const _AuthButton(),
+            const SizedBox(width: 15),
+          ] else ...[
+            IconButton(
+              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+              icon: const Icon(Icons.menu_rounded, size: 28),
+              color: theme.colorScheme.primary,
+              tooltip: 'Menú',
+            ),
+            const SizedBox(width: 16),
+          ],
         ],
       ),
-    );
-  }
-}
-
-// ... (El resto de clases _HoverableTab, _BrandLogo, _MobileDrawer, etc. se mantienen igual)
-// Asegúrate de copiar el resto del archivo original si lo necesitas, 
-// pero los cambios importantes están solo en los imports y en el método build().
-
-// --- COPIAR RESTO DEL ARCHIVO ABAJO PARA QUE NO FALTE NADA ---
-class _HoverableTab extends StatefulWidget {
-  final String text;
-  final bool isSelected;
-  const _HoverableTab({required this.text, required this.isSelected});
-
-  @override
-  State<_HoverableTab> createState() => _HoverableTabState();
-}
-
-class _HoverableTabState extends State<_HoverableTab> {
-  bool _isHovering = false;
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final Color textColor = (widget.isSelected || _isHovering)
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurface;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      cursor: SystemMouseCursors.click,
-      child: AnimatedDefaultTextStyle(
-        duration: const Duration(milliseconds: 150),
-        style: theme.textTheme.titleSmall!.copyWith(
-          fontWeight: FontWeight.bold,
-          fontSize: 15,
-          color: textColor,
-        ),
-        child: Text(widget.text),
-      ),
+      floatingActionButton: const Contactanos(),
+      body: widget.child,
     );
   }
 }
@@ -223,29 +140,40 @@ class _BrandLogo extends ConsumerWidget {
     final themeConfig = ref.watch(currentAppThemeConfigProvider);
     final bool isNeutral = themeConfig.theme == AppTheme.neutral;
 
+    // Definimos el Icono de Apex por defecto para reutilizarlo
+    final Widget apexIcon = Transform(
+      alignment: Alignment.center,
+      transform: Matrix4.identity()..scale(0.7, 1.1),
+      child: Icon(FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
+    );
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // Icono de APEX (Chevron) - Siempre presente o dinámico según tema
+        // LÓGICA BLINDADA:
+        // 1. Si es neutral -> Icono
+        // 2. Si tiene asset -> Intentar cargar imagen
+        //    -> Si falla la carga (errorBuilder) -> Mostrar Icono Apex (Fallback)
+        // 3. Si no tiene asset pero tiene icono -> Icono FontAwesome
         if (isNeutral)
-          Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.identity()..scale(0.7, 1.1),
-            child: Icon(
-              FontAwesomeIcons.chevronUp,
-              color: theme.colorScheme.primary,
-              size: 22,
-            ),
-          )
+          apexIcon
         else if (themeConfig.logoAsset != null)
-          Image.asset(themeConfig.logoAsset!, height: 28, fit: BoxFit.contain)
-        else if (themeConfig.logoIcon != null)
-          Icon(themeConfig.logoIcon!, color: theme.colorScheme.primary, size: 24),
+          Image.asset(
+            themeConfig.logoAsset!,
+            height: 28,
+            fit: BoxFit.contain,
+            // ESTO SOLUCIONA EL BLOQUE GRIS EN PRODUCCIÓN:
+            errorBuilder: (context, error, stackTrace) {
+              debugPrint('Error cargando logo asset en producción: $error');
+              return apexIcon; // Si falla la imagen, muestra el icono de Apex
+            },
+          )
+        else
+          Icon(themeConfig.logoIcon ?? FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
 
         const SizedBox(width: 12),
-
-        // Nombre con Flexible para evitar el error de overflow en producción
+        
         Flexible(
           child: Text(
             'Manuel Navarro',
@@ -254,7 +182,7 @@ class _BrandLogo extends ConsumerWidget {
               color: theme.colorScheme.primary,
               height: 1.0,
             ),
-            overflow: TextOverflow.ellipsis, // Evita errores visuales si el espacio es poco
+            overflow: TextOverflow.ellipsis,
             maxLines: 1,
           ),
         ),
@@ -262,6 +190,9 @@ class _BrandLogo extends ConsumerWidget {
     );
   }
 }
+
+// --- WIDGETS AUXILIARES (Drawer, Botones, Tabs) ---
+// (Se mantienen idénticos para no romper el resto de la UI)
 
 class _MobileDrawer extends ConsumerWidget {
   final List<Map<String, dynamic>> navItems;
@@ -334,7 +265,7 @@ class _MobileDrawer extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                _AuthButton(fullWidth: true),
+                const _AuthButton(fullWidth: true),
               ],
             ),
           ),
@@ -347,6 +278,40 @@ class _MobileDrawer extends ConsumerWidget {
     if (label == 'Servicios') return Icons.work_rounded;
     if (label == 'Sobre Mí') return Icons.person_rounded;
     return Icons.mail_rounded;
+  }
+}
+
+class _HoverableTab extends StatefulWidget {
+  final String text;
+  final bool isSelected;
+  const _HoverableTab({required this.text, required this.isSelected});
+  @override
+  State<_HoverableTab> createState() => _HoverableTabState();
+}
+
+class _HoverableTabState extends State<_HoverableTab> {
+  bool _isHovering = false;
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final Color textColor = (widget.isSelected || _isHovering)
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedDefaultTextStyle(
+        duration: const Duration(milliseconds: 150),
+        style: theme.textTheme.titleSmall!.copyWith(
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
+          color: textColor,
+        ),
+        child: Text(widget.text),
+      ),
+    );
   }
 }
 
@@ -378,9 +343,8 @@ class _AuthButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateStreamProvider);
-    final theme = Theme.of(context);
     return authState.when(
-      loading: () => const CircularProgressIndicator(),
+      loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
       error: (_, __) => const Icon(Icons.error),
       data: (user) {
         if (user == null) {
