@@ -46,7 +46,6 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
                   child: Column(
                     children: [
                       FadeInDown(child: _DynamicHeroImage(themeConfig: themeConfig)),
-                      // Reducimos el espacio para que el video "pise" la card
                       const SizedBox(height: 10),
                       FadeInUp(child: _AboutMeCard(mousePos: _mousePos)),
                     ],
@@ -68,44 +67,29 @@ class _DynamicHeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    // Mapeo dinámico de videos según el tema
-    String? videoPath;
-    if (themeConfig.theme == AppTheme.flutter) {
-      videoPath = 'assets/videos/yoflutter.webm';
-    } else if (themeConfig.theme == AppTheme.supabase) {
-      videoPath = 'assets/videos/yosupabase.webm';
-    }else if (themeConfig.theme == AppTheme.riverpod) {
-      videoPath = 'assets/videos/yoriverpod.webm';
-    }
-    else if (themeConfig.theme == AppTheme.assistify) {
-      videoPath = 'assets/videos/yoassistify.webm';
-    }
+    // Mapeo dinámico de videos según el tema usando switch expression
+    final String videoPath = switch (themeConfig.theme) {
+      AppTheme.flutter   => 'assets/videos/yoflutter.webm',
+      AppTheme.supabase  => 'assets/videos/yosupabase.webm',
+      AppTheme.riverpod  => 'assets/videos/yoriverpod.webm',
+      AppTheme.assistify => 'assets/videos/yoassistify.webm',
+      AppTheme.neutral   => 'assets/videos/yoapex.webm',
+    };
 
     return SizedBox(
       height: 250, 
       width: double.infinity,
       child: Center(
-        child: videoPath != null
-            ? Transform.translate(
-                offset: const Offset(0, 45),
-                child: Transform.scale(
-                  scale: 1.8, // Ajuste de escala intermedio para nitidez
-                  child: _TransparentVideoPlayer(
-                    // La Key ahora funcionará porque la agregamos al constructor abajo
-                    key: ValueKey(videoPath), 
-                    assetPath: videoPath,
-                  ),
-                ),
-              )
-            : (themeConfig.logoAsset != null
-                ? Image.asset(themeConfig.logoAsset!, height: 150)
-                : Icon(
-                    themeConfig.logoIcon,
-                    size: 120,
-                    color: theme.colorScheme.primary,
-                  )),
+        child: Transform.translate(
+          offset: const Offset(0, 45),
+          child: Transform.scale(
+            scale: 1.8, 
+            child: _TransparentVideoPlayer(
+              key: ValueKey(videoPath), 
+              assetPath: videoPath,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -259,7 +243,6 @@ class _AboutMeCard extends StatelessWidget {
 class _TransparentVideoPlayer extends StatefulWidget {
   final String assetPath;
 
-  // CORRECCIÓN: Agregamos el parámetro 'key' al constructor
   const _TransparentVideoPlayer({
     super.key, 
     required this.assetPath
@@ -292,7 +275,7 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     if (!_controller.value.isInitialized) {
-      return const SizedBox(); // Placeholder vacío mientras carga
+      return const SizedBox();
     }
 
     return AspectRatio(

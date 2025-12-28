@@ -221,17 +221,22 @@ class _BrandLogo extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final themeConfig = ref.watch(currentAppThemeConfigProvider);
-    final bool isNeutral = themeConfig.themeName == 'Neutral'; // Ajuste por consistencia
-    
+    final bool isNeutral = themeConfig.theme == AppTheme.neutral;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (isNeutral) 
+        // Icono de APEX (Chevron) - Siempre presente o dinámico según tema
+        if (isNeutral)
           Transform(
             alignment: Alignment.center,
-            transform: Matrix4.identity()..scale(0.7, 1.1), 
-            child: Icon(FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
+            transform: Matrix4.identity()..scale(0.7, 1.1),
+            child: Icon(
+              FontAwesomeIcons.chevronUp,
+              color: theme.colorScheme.primary,
+              size: 22,
+            ),
           )
         else if (themeConfig.logoAsset != null)
           Image.asset(themeConfig.logoAsset!, height: 28, fit: BoxFit.contain)
@@ -239,17 +244,18 @@ class _BrandLogo extends ConsumerWidget {
           Icon(themeConfig.logoIcon!, color: theme.colorScheme.primary, size: 24),
 
         const SizedBox(width: 12),
-        
+
+        // Nombre con Flexible para evitar el error de overflow en producción
         Flexible(
           child: Text(
-           'Manuel Navarro',
+            'Manuel Navarro',
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
-              height: 1.0, 
+              height: 1.0,
             ),
-            overflow: TextOverflow.clip,
-            softWrap: false,
+            overflow: TextOverflow.ellipsis, // Evita errores visuales si el espacio es poco
+            maxLines: 1,
           ),
         ),
       ],

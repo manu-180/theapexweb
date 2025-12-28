@@ -1,7 +1,6 @@
 // Archivo: lib/features/contact/presentation/views/contact_view.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:prueba_de_riverpod/core/config/theme/extensions/app_bar_extension.dart';
 import 'package:prueba_de_riverpod/core/widgets/responsive_builder.dart';
 import 'package:prueba_de_riverpod/features/auth/presentation/providers/auth_providers.dart';
 import 'package:prueba_de_riverpod/features/comments/presentation/providers/comments_provider.dart';
@@ -14,7 +13,6 @@ class ContactView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const CustomAppBarExtension(title: 'Contacto y Comunidad'),
       body: SingleChildScrollView(
         child: Column(
           children: [
