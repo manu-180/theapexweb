@@ -95,7 +95,7 @@ class CaseStudiesModal extends StatelessWidget {
                         end: Alignment.centerRight,
                       ),
                       border: Border.all(
-                        color: project.brandColor.withOpacity(0.3),
+                        color: project.brandColor.withOpacity(0.8),
                         width: 1,
                       ),
                     ),

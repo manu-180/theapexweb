@@ -9,6 +9,9 @@ import 'package:prueba_de_riverpod/core/config/theme/brightness_provider.dart';
 import 'package:prueba_de_riverpod/features/auth/presentation/providers/auth_providers.dart';
 import 'package:prueba_de_riverpod/widgets/contactanos.dart';
 
+// --- NUEVO IMPORT ---
+import 'package:prueba_de_riverpod/core/utils/favicons/favicon_switcher.dart'; 
+
 class MainLayout extends ConsumerStatefulWidget {
   const MainLayout({
     required this.child,
@@ -38,7 +41,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
     _tabController = TabController(
       length: _navItems.length, 
       vsync: this,
-      // Reducimos la duración base para que los clics manuales sean instantáneos
       animationDuration: const Duration(milliseconds: 300),
     );
   }
@@ -60,7 +62,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
     }
 
     if (_tabController.index != index) {
-      // VELOCIDAD OPTIMIZADA: 200ms con curva easeOutExpo para máxima fluidez
       _tabController.animateTo(
         index,
         duration: const Duration(milliseconds: 200),
@@ -71,12 +72,24 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    // -----------------------------------------------------------
+    // 1. ESCUCHA DE CAMBIO DE TEMA PARA EL FAVICON (NUEVO)
+    // -----------------------------------------------------------
+    ref.listen(currentAppThemeConfigProvider, (previous, next) {
+      // Solo actualizamos si el tema realmente cambió
+     if (previous?.theme != next.theme) {
+        // Pasamos directamente el enum 'next.theme'
+        updateFavicon(next.theme);
+      }
+    });
+    // -----------------------------------------------------------
+
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncTabWithRoute());
 
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     
-    // Breakpoint a 1050px para evitar colisiones entre el logo y el menú
     final isMobile = screenWidth < 800; 
 
     final String location = GoRouterState.of(context).uri.path;
@@ -100,7 +113,11 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
                 titleSpacing: 10,
                 title: GestureDetector(
                   onTap: () => context.goNamed('home'),
-                  child: const _BrandLogo(),
+                 child: MouseRegion( 
+                  cursor: SystemMouseCursors.click, 
+                  child: const Flexible(
+                    child: _BrandLogo(),
+                  ),)
                 ),
                 centerTitle: false,
                 automaticallyImplyLeading: false, 
@@ -158,6 +175,11 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
   }
 }
 
+// ... (El resto de clases _HoverableTab, _BrandLogo, _MobileDrawer, etc. se mantienen igual)
+// Asegúrate de copiar el resto del archivo original si lo necesitas, 
+// pero los cambios importantes están solo en los imports y en el método build().
+
+// --- COPIAR RESTO DEL ARCHIVO ABAJO PARA QUE NO FALTE NADA ---
 class _HoverableTab extends StatefulWidget {
   final String text;
   final bool isSelected;
@@ -199,9 +221,8 @@ class _BrandLogo extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final themeConfig = ref.watch(currentAppThemeConfigProvider);
-    final bool isNeutral = themeConfig.theme == AppTheme.neutral;
-    final screenWidth = MediaQuery.of(context).size.width;
-
+    final bool isNeutral = themeConfig.themeName == 'Neutral'; // Ajuste por consistencia
+    
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
