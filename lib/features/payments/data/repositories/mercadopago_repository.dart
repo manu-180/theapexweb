@@ -1,9 +1,9 @@
 // Archivo: lib/features/payments/data/repositories/mercadopago_repository.dart
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:prueba_de_riverpod/core/providers/supabase_providers.dart';
-import 'package:prueba_de_riverpod/features/services/domain/models/plan_model.dart';
-import 'package:prueba_de_riverpod/main.dart'; 
+import 'package:apex/core/providers/supabase_providers.dart';
+import 'package:apex/features/services/domain/models/plan_model.dart';
+import 'package:apex/main.dart'; 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';

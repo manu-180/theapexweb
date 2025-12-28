@@ -1,8 +1,8 @@
 // Archivo: lib/features/auth/presentation/providers/auth_providers.dart
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:prueba_de_riverpod/core/providers/supabase_providers.dart';
-import 'package:prueba_de_riverpod/features/auth/data/repositories/auth_repository.dart';
+import 'package:apex/core/providers/supabase_providers.dart';
+import 'package:apex/features/auth/data/repositories/auth_repository.dart';
 
 part 'auth_providers.g.dart';
 

@@ -1,9 +1,9 @@
 // Archivo: lib/app.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:prueba_de_riverpod/core/config/router/app_router.dart';
-import 'package:prueba_de_riverpod/core/config/theme/app_theme_providers.dart';
-import 'package:prueba_de_riverpod/core/config/theme/brightness_provider.dart';
+import 'package:apex/core/config/router/app_router.dart';
+import 'package:apex/core/config/theme/app_theme_providers.dart';
+import 'package:apex/core/config/theme/brightness_provider.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});

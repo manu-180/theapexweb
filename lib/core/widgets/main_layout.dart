@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:prueba_de_riverpod/features/presence/presentation/widgets/presence_badge.dart';
+import 'package:apex/features/presence/presentation/widgets/presence_badge.dart';
 import 'package:video_player/video_player.dart';
-import 'package:prueba_de_riverpod/core/config/theme/app_theme.dart'; 
-import 'package:prueba_de_riverpod/core/config/theme/app_theme_providers.dart';
-import 'package:prueba_de_riverpod/core/config/theme/brightness_provider.dart';
-import 'package:prueba_de_riverpod/features/auth/presentation/providers/auth_providers.dart';
-import 'package:prueba_de_riverpod/widgets/contactanos.dart';
+import 'package:apex/core/config/theme/app_theme.dart'; 
+import 'package:apex/core/config/theme/app_theme_providers.dart';
+import 'package:apex/core/config/theme/brightness_provider.dart';
+import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
+import 'package:apex/widgets/contactanos.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
   const MainLayout({required this.child, super.key});

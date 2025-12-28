@@ -2,11 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:prueba_de_riverpod/core/widgets/main_layout.dart';
-import 'package:prueba_de_riverpod/features/about_me/presentation/views/about_me_view.dart';
-import 'package:prueba_de_riverpod/features/contact/presentation/views/contact_view.dart';
-import 'package:prueba_de_riverpod/features/landing/presentation/views/landing_view.dart';
-import 'package:prueba_de_riverpod/features/services/presentation/views/services_view.dart';
+import 'package:apex/core/widgets/main_layout.dart';
+import 'package:apex/features/about_me/presentation/views/about_me_view.dart';
+import 'package:apex/features/contact/presentation/views/contact_view.dart';
+import 'package:apex/features/landing/presentation/views/landing_view.dart';
+import 'package:apex/features/services/presentation/views/services_view.dart';
 
 part 'app_router.g.dart';
 

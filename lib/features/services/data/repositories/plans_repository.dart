@@ -1,7 +1,7 @@
 // Archivo: lib/features/services/data/repositories/plans_repository.dart
 import 'package:flutter/material.dart';
-import 'package:prueba_de_riverpod/features/services/domain/models/case_study_model.dart';
-import 'package:prueba_de_riverpod/features/services/domain/models/plan_model.dart';
+import 'package:apex/features/services/domain/models/case_study_model.dart';
+import 'package:apex/features/services/domain/models/plan_model.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'plans_repository.g.dart';

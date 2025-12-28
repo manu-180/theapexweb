@@ -3,11 +3,11 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:prueba_de_riverpod/core/config/theme/app_theme.dart';
-import 'package:prueba_de_riverpod/core/config/theme/app_theme_providers.dart';
-import 'package:prueba_de_riverpod/features/landing/presentation/widgets/assistify_case_study_modal.dart';
-import 'package:prueba_de_riverpod/features/landing/presentation/widgets/tech_card.dart';
-import 'package:prueba_de_riverpod/features/shared/widgets/footer.dart'; 
+import 'package:apex/core/config/theme/app_theme.dart';
+import 'package:apex/core/config/theme/app_theme_providers.dart';
+import 'package:apex/features/landing/presentation/widgets/assistify_case_study_modal.dart';
+import 'package:apex/features/landing/presentation/widgets/tech_card.dart';
+import 'package:apex/features/shared/widgets/footer.dart'; 
 
 class LandingView extends ConsumerStatefulWidget {
   const LandingView({super.key});

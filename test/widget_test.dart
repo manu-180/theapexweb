@@ -7,7 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:prueba_de_riverpod/app.dart';
+import 'package:apex/app.dart';
 
 
 void main() {

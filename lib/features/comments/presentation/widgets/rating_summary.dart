@@ -1,6 +1,6 @@
 // Archivo: lib/features/comments/presentation/widgets/rating_summary.dart
 import 'package:flutter/material.dart';
-import 'package:prueba_de_riverpod/features/comments/presentation/providers/comments_provider.dart';
+import 'package:apex/features/comments/presentation/providers/comments_provider.dart';
 
 class RatingSummary extends StatelessWidget {
   final List<Comment> comments;

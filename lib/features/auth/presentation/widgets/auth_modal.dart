@@ -2,9 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
-import 'package:prueba_de_riverpod/core/config/theme/app_theme.dart'; // Importa tu Enum
-import 'package:prueba_de_riverpod/core/config/theme/app_theme_providers.dart'; // Importa el provider
-import 'package:prueba_de_riverpod/features/auth/presentation/providers/auth_providers.dart';
+import 'package:apex/core/config/theme/app_theme.dart'; // Importa tu Enum
+import 'package:apex/core/config/theme/app_theme_providers.dart'; // Importa el provider
+import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 
 class AuthRequiredModal extends ConsumerStatefulWidget {
   const AuthRequiredModal({super.key});

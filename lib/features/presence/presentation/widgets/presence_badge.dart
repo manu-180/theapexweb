@@ -2,8 +2,8 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:prueba_de_riverpod/core/config/theme/app_theme_providers.dart';
-import 'package:prueba_de_riverpod/features/presence/providers/presence_provider.dart';
+import 'package:apex/core/config/theme/app_theme_providers.dart';
+import 'package:apex/features/presence/providers/presence_provider.dart';
 
 class PresenceBadge extends ConsumerWidget {
   const PresenceBadge({super.key});

@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:prueba_de_riverpod/features/auth/presentation/providers/auth_providers.dart';
-import 'package:prueba_de_riverpod/features/auth/presentation/widgets/auth_modal.dart';
-import 'package:prueba_de_riverpod/features/payments/data/repositories/mercadopago_repository.dart';
-import 'package:prueba_de_riverpod/features/services/domain/models/plan_model.dart';
+import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
+import 'package:apex/features/auth/presentation/widgets/auth_modal.dart';
+import 'package:apex/features/payments/data/repositories/mercadopago_repository.dart';
+import 'package:apex/features/services/domain/models/plan_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ContactModal extends ConsumerStatefulWidget {

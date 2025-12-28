@@ -3,9 +3,9 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:prueba_de_riverpod/features/services/data/repositories/plans_repository.dart';
-import 'package:prueba_de_riverpod/features/services/presentation/widgets/plan_card.dart';
-import 'package:prueba_de_riverpod/features/shared/widgets/footer.dart'; // Importante
+import 'package:apex/features/services/data/repositories/plans_repository.dart';
+import 'package:apex/features/services/presentation/widgets/plan_card.dart';
+import 'package:apex/features/shared/widgets/footer.dart'; // Importante
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ServicesView extends ConsumerStatefulWidget {

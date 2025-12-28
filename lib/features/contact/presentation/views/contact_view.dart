@@ -2,12 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
-import 'package:prueba_de_riverpod/core/widgets/responsive_builder.dart';
-import 'package:prueba_de_riverpod/features/comments/presentation/providers/comments_provider.dart';
-import 'package:prueba_de_riverpod/features/comments/presentation/widgets/comment_card.dart';
-import 'package:prueba_de_riverpod/features/comments/presentation/widgets/comment_input_area.dart'; // <--- NUEVO
-import 'package:prueba_de_riverpod/features/comments/presentation/widgets/rating_summary.dart';   // <--- NUEVO
-import 'package:prueba_de_riverpod/features/shared/widgets/footer.dart';
+import 'package:apex/core/widgets/responsive_builder.dart';
+import 'package:apex/features/comments/presentation/providers/comments_provider.dart';
+import 'package:apex/features/comments/presentation/widgets/comment_card.dart';
+import 'package:apex/features/comments/presentation/widgets/comment_input_area.dart'; // <--- NUEVO
+import 'package:apex/features/comments/presentation/widgets/rating_summary.dart';   // <--- NUEVO
+import 'package:apex/features/shared/widgets/footer.dart';
 
 class ContactView extends StatelessWidget {
   const ContactView({super.key});

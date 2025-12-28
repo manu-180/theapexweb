@@ -1,7 +1,7 @@
 // Archivo: lib/core/config/theme/app_theme_config.dart
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:prueba_de_riverpod/core/config/theme/app_theme.dart';
+import 'package:apex/core/config/theme/app_theme.dart';
 
 // --- 1. Modelo de Configuración Híbrido ---
 class AppThemeConfig {

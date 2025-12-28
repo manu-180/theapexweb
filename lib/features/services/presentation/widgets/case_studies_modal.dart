@@ -1,7 +1,7 @@
 // Archivo: lib/features/services/presentation/widgets/case_studies_modal.dart
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:prueba_de_riverpod/features/services/domain/models/case_study_model.dart';
+import 'package:apex/features/services/domain/models/case_study_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CaseStudiesModal extends StatelessWidget {

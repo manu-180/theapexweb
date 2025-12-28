@@ -1,6 +1,6 @@
 // Archivo: lib/features/services/domain/models/plan_model.dart
 import 'package:flutter/foundation.dart';
-import 'package:prueba_de_riverpod/features/services/domain/models/case_study_model.dart';
+import 'package:apex/features/services/domain/models/case_study_model.dart';
 
 enum PlanType { web, app }
 

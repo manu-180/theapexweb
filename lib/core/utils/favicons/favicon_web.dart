@@ -2,7 +2,7 @@
 import 'dart:convert';
 import 'dart:js_interop'; // Necesario para .toJS y JSAny
 import 'package:web/web.dart' as web;
-import 'package:prueba_de_riverpod/core/config/theme/app_theme.dart';
+import 'package:apex/core/config/theme/app_theme.dart';
 
 /// Implementación "Tierra Quemada" basada en el informe técnico.
 void updateFavicon(AppTheme theme) {

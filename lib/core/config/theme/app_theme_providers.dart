@@ -1,6 +1,6 @@
 // Archivo: lib/core/config/theme/app_theme_providers.dart
 import 'package:flutter/material.dart';
-import 'package:prueba_de_riverpod/core/config/theme/app_theme.dart';
+import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

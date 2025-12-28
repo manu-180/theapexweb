@@ -3,9 +3,9 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:prueba_de_riverpod/features/services/domain/models/plan_model.dart';
-import 'package:prueba_de_riverpod/features/services/presentation/widgets/case_studies_modal.dart';
-import 'package:prueba_de_riverpod/features/services/presentation/widgets/contact_modal.dart';
+import 'package:apex/features/services/domain/models/plan_model.dart';
+import 'package:apex/features/services/presentation/widgets/case_studies_modal.dart';
+import 'package:apex/features/services/presentation/widgets/contact_modal.dart';
 
 class PlanCard extends ConsumerStatefulWidget {
   const PlanCard({

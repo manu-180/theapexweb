@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:prueba_de_riverpod/core/config/theme/app_theme.dart';
-import 'package:prueba_de_riverpod/core/config/theme/app_theme_providers.dart';
-import 'package:prueba_de_riverpod/core/widgets/responsive_builder.dart';
+import 'package:apex/core/config/theme/app_theme.dart';
+import 'package:apex/core/config/theme/app_theme_providers.dart';
+import 'package:apex/core/widgets/responsive_builder.dart';
 
 class Footer extends ConsumerWidget {
   const Footer({super.key});

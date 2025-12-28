@@ -2,9 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:prueba_de_riverpod/features/auth/presentation/providers/auth_providers.dart';
-import 'package:prueba_de_riverpod/features/auth/presentation/widgets/auth_modal.dart';
-import 'package:prueba_de_riverpod/features/comments/presentation/providers/comments_provider.dart';
+import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
+import 'package:apex/features/auth/presentation/widgets/auth_modal.dart';
+import 'package:apex/features/comments/presentation/providers/comments_provider.dart';
 
 // RECUERDA: Reemplaza esto con tu User UID real de Supabase
 const String OWNER_UUID = '37dad3e9-531c-4657-8db6-ddebbdcfa878'; 
