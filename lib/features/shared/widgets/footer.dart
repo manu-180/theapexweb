@@ -91,20 +91,15 @@ class Footer extends ConsumerWidget {
         // LOGO APEX
         Row(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center, // Alineación vertical centrada
+          crossAxisAlignment: CrossAxisAlignment.center, 
           children: [
-            // EL PICO (A sin palo) - TRANSFORMADO
-            // Usamos Transform para "apretarlo" horizontalmente y hacerlo más empinado.
             Transform(
               alignment: Alignment.center,
-              // Escala X al 0.7 (70% de ancho) -> Lo hace más angosto y puntiagudo
-              // Escala Y al 1.1 (110% de alto) -> Lo estira un poco hacia arriba
               transform: Matrix4.identity()..scale(0.7, 1.1), 
               child: Icon(
                 FontAwesomeIcons.chevronUp, 
-                size: 26, // Ajusté ligeramente el tamaño para compensar la transformación
+                size: 26, 
                 color: theme.colorScheme.primary,
-                // Le damos un poco de "peso" visual extra si es necesario
                 shadows: [
                   Shadow(
                     color: theme.colorScheme.primary.withOpacity(0.4),
@@ -114,14 +109,13 @@ class Footer extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 8),
-            // Texto APEX
             Text(
               "APEX",
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w900,
                 letterSpacing: 3.0,
                 color: theme.colorScheme.primary,
-                height: 1.0, // Altura de línea compacta para alinear con el icono
+                height: 1.0, 
               ),
             ),
           ],
@@ -183,8 +177,8 @@ class Footer extends ConsumerWidget {
         ),
         const SizedBox(height: 24),
         Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: 16, // Aumentado espacio horizontal
+          runSpacing: 16, // Aumentado espacio vertical
           alignment: isMobile ? WrapAlignment.center : WrapAlignment.start,
           children: const [
             _TechBadge(
@@ -283,7 +277,7 @@ class _FooterLinkState extends State<_FooterLink> {
   }
 }
 
-// --- WIDGET BADGE DE TECNOLOGÍA ---
+// --- WIDGET BADGE DE TECNOLOGÍA (REDISEÑADO CON INKWELL) ---
 class _TechBadge extends ConsumerStatefulWidget {
   final String name;
   final IconData icon;
@@ -307,54 +301,73 @@ class _TechBadgeState extends ConsumerState<_TechBadge> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Ahora usamos una opacidad base aunque no esté en hover para darle cuerpo
     final isActive = _isHovering;
+    
+    // Color de fondo: Sutil por defecto (0.05), Fuerte en hover (0.15)
+    final backgroundColor = isActive 
+        ? widget.color.withOpacity(0.15) 
+        : widget.color.withOpacity(0.05);
+
+    final borderColor = isActive 
+        ? widget.color 
+        : widget.color.withOpacity(0.3);
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovering = true),
       onExit: (_) => setState(() => _isHovering = false),
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () {
-          ref.read(dynamicThemeProvider.notifier).setTheme(widget.targetTheme);
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          decoration: BoxDecoration(
-            color: isActive ? widget.color.withOpacity(0.08) : theme.colorScheme.surface,
-            border: Border.all(
-              color: isActive ? widget.color : theme.colorScheme.outline.withOpacity(0.3),
-              width: 1.5,
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: isActive 
-                ? [
-                    BoxShadow(
-                      color: widget.color.withOpacity(0.15),
-                      blurRadius: 4, 
-                      offset: const Offset(0, 3),
-                    )
-                  ] 
-                : [],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                widget.icon,
-                size: 16,
-                color: isActive ? widget.color : theme.colorScheme.onSurfaceVariant,
+      // Usamos Material transparente para permitir el InkWell (Splash)
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            ref.read(dynamicThemeProvider.notifier).setTheme(widget.targetTheme);
+          },
+          hoverColor: Colors.transparent, // El hover lo manejamos nosotros visualmente
+          splashColor: widget.color.withOpacity(0.2), // Color de la onda al hacer click
+          highlightColor: widget.color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(20),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              border: Border.all(
+                color: borderColor,
+                width: 1.5,
               ),
-              const SizedBox(width: 10),
-              Text(
-                widget.name,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: isActive 
+                  ? [
+                      BoxShadow(
+                        color: widget.color.withOpacity(0.2),
+                        blurRadius: 12, 
+                        offset: const Offset(0, 4),
+                      )
+                    ] 
+                  : [],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  widget.icon,
+                  size: 16,
                   color: isActive ? widget.color : theme.colorScheme.onSurfaceVariant,
                 ),
-              ),
-            ],
+                const SizedBox(width: 10),
+                Text(
+                  widget.name,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    // Si está activo toma el color de la marca, si no un gris variante pero no tan apagado
+                    color: isActive ? widget.color : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

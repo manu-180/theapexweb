@@ -67,7 +67,6 @@ class _DynamicHeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mapeo dinámico de videos según el tema activo
     final String videoPath = switch (themeConfig.theme) {
       AppTheme.flutter   => 'assets/videos/yoflutter.webm',
       AppTheme.supabase  => 'assets/videos/yosupabase.webm',
@@ -103,7 +102,6 @@ class _AboutMeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final brandColor = theme.colorScheme.primary;
-    // Detectamos móvil internamente para ajustar estilos
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     return ValueListenableBuilder<Offset>(
@@ -139,10 +137,8 @@ class _AboutMeCard extends StatelessWidget {
               color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(22),
             ),
-            // CORRECCIÓN 1: Padding reducido en móvil para que entre el nombre (24 en vez de 45)
             padding: EdgeInsets.all(isMobile ? 24 : 45),
             child: Column(
-              // CORRECCIÓN 2: Alineación a la izquierda en móvil
               crossAxisAlignment: isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
               children: [
                 Text(
@@ -150,7 +146,6 @@ class _AboutMeCard extends StatelessWidget {
                   style: theme.textTheme.displaySmall?.copyWith(
                     fontWeight: FontWeight.bold, 
                     color: brandColor,
-                    // Pequeño ajuste de fuente en móvil si fuera necesario, aunque el padding debería bastar
                     fontSize: isMobile ? 32 : null, 
                   ),
                   textAlign: isMobile ? TextAlign.left : TextAlign.center,
@@ -177,7 +172,6 @@ class _AboutMeCard extends StatelessWidget {
 
                 Text(
                   "Programar es mucho más que tirar líneas de código, para mí es una disciplina de constancia diaria. Llevo tres años dedicándole cada día a entender cómo construir soluciones que realmente funcionen. Estoy convencido de que hoy no existen límites técnicos: cualquier idea se puede materializar si se tiene el compromiso de entender el problema y la destreza para construir la solución que el usuario realmente necesita.",
-                  // CORRECCIÓN 3: Texto alineado a la izquierda en móvil
                   textAlign: isMobile ? TextAlign.left : TextAlign.center,
                   style: theme.textTheme.bodyLarge?.copyWith(height: 1.7, fontSize: 18),
                 ),
@@ -193,7 +187,6 @@ class _AboutMeCard extends StatelessWidget {
                   ),
                   child: Text(
                     "Considero que la verdadera brecha entre un programador junior y un arquitecto de software de alto nivel radica en la capacidad de resolución de problemas bajo cualquier circunstancia. Mi filosofía es clara: no existe desafío técnico que no tenga solución. He perfeccionado mi capacidad para desglosar problemas complejos mediante el uso estratégico de herramientas de vanguardia, transformando obstáculos críticos en procesos lógicos y ejecutables.",
-                    // CORRECCIÓN 4: Texto alineado a la izquierda en móvil
                     textAlign: isMobile ? TextAlign.left : TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(height: 1.7, fontSize: 16),
                   ),
@@ -204,7 +197,6 @@ class _AboutMeCard extends StatelessWidget {
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
-                  // CORRECCIÓN 5: Chips alineados a la izquierda en móvil
                   alignment: isMobile ? WrapAlignment.start : WrapAlignment.center,
                   children: [
                     _buildSkillTag(theme, FontAwesomeIcons.puzzlePiece, 'Resolución de Problemas'),
@@ -251,6 +243,7 @@ class _AboutMeCard extends StatelessWidget {
   }
 }
 
+// --- REPRODUCTOR DE VIDEO SIGILOSO ---
 class _TransparentVideoPlayer extends StatefulWidget {
   final String assetPath;
 
@@ -273,6 +266,8 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
     _controller = VideoPlayerController.asset(widget.assetPath)
       ..initialize().then((_) {
         _controller.setLooping(true);
+        // CAMBIO 1: Iniciamos siempre muteado
+        _controller.setVolume(0.0); 
         _controller.play();
         if (mounted) {
           setState(() => _isInitialized = true);
@@ -286,6 +281,15 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
     super.dispose();
   }
 
+  // CAMBIO 2: Función toggle sin feedback visual
+  void _toggleAudio() {
+    if (_controller.value.volume > 0) {
+      _controller.setVolume(0.0);
+    } else {
+      _controller.setVolume(1.0);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized) {
@@ -296,7 +300,12 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
       duration: const Duration(milliseconds: 500),
       child: AspectRatio(
         aspectRatio: _controller.value.aspectRatio,
-        child: VideoPlayer(_controller),
+        // CAMBIO 3: GestureDetector invisible para controlar el audio
+        child: GestureDetector(
+          onTap: _toggleAudio,
+          behavior: HitTestBehavior.opaque, // Asegura que capture el toque en toda el área
+          child: VideoPlayer(_controller),
+        ),
       ),
     );
   }

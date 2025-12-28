@@ -69,6 +69,9 @@ class _PlanCardState extends ConsumerState<PlanCard> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final primaryColor = colorScheme.primary;
+    
+    // DETECCIÓN DE MÓVIL
+    final isMobile = MediaQuery.of(context).size.width < 800;
 
     final currencyFormatter = NumberFormat.currency(
       locale: 'es_AR',
@@ -141,7 +144,6 @@ class _PlanCardState extends ConsumerState<PlanCard> {
                   onTap: hasCases ? _showCaseStudies : null,
                   borderRadius: BorderRadius.circular(13.5),
                   child: Padding(
-                    // Reduje el padding general de 24 a 20 para hacerla más compacta
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -152,21 +154,24 @@ class _PlanCardState extends ConsumerState<PlanCard> {
                           child: SingleChildScrollView(
                             physics: const BouncingScrollPhysics(),
                             child: Column(
+                              // CAMBIO: Alineación crossAxisAlignment no es suficiente para Textos,
+                              // pero ayuda a los hijos directos.
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 // Nombre
                                 FadeIn(
                                   child: Text(
                                     widget.plan.name,
-                                    textAlign: TextAlign.center,
+                                    // CAMBIO: Alineación dinámica
+                                    textAlign: isMobile ? TextAlign.left : TextAlign.center,
                                     style: theme.textTheme.headlineMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: primaryColor,
-                                      fontSize: 22, // Reduje un poco la fuente
+                                      fontSize: 22, 
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 6), // Reduje espacio
+                                const SizedBox(height: 6), 
 
                                 // Descripción
                                 if (widget.plan.description.isNotEmpty)
@@ -175,21 +180,21 @@ class _PlanCardState extends ConsumerState<PlanCard> {
                                       padding: const EdgeInsets.symmetric(horizontal: 4.0),
                                       child: Text(
                                         widget.plan.description,
-                                        textAlign: TextAlign.center,
+                                        // CAMBIO: Alineación dinámica
+                                        textAlign: isMobile ? TextAlign.left : TextAlign.center,
                                         style: theme.textTheme.bodyMedium?.copyWith(
                                           color: theme.colorScheme.onSurfaceVariant,
-                                          fontSize: 13, // Fuente un poco más chica para ahorrar espacio
+                                          fontSize: 13, 
                                         ),
                                       ),
                                     ),
                                   ),
-                                const SizedBox(height: 12), // Reduje espacio
+                                const SizedBox(height: 12), 
 
                                 // --- PRECIO ---
                                 FadeIn(
                                   delay: const Duration(milliseconds: 100),
                                   child: Container(
-                                    // Reduje la altura mínima de 110 a 90 para hacerla menos alta
                                     constraints: const BoxConstraints(minHeight: 90),
                                     padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                                     decoration: BoxDecoration(
@@ -200,12 +205,15 @@ class _PlanCardState extends ConsumerState<PlanCard> {
                                         width: 1,
                                       ),
                                     ),
-                                    child: Center(
+                                    // CAMBIO: Align en lugar de Center para controlar la posición interna
+                                    child: Align(
+                                      alignment: isMobile ? Alignment.centerLeft : Alignment.center,
                                       child: widget.plan.isCustom
                                         ? // CASO A MEDIDA
                                           Text(
                                             "A medida", 
-                                            textAlign: TextAlign.center,
+                                            // CAMBIO: Alineación dinámica
+                                            textAlign: isMobile ? TextAlign.left : TextAlign.center,
                                             style: theme.textTheme.headlineMedium?.copyWith(
                                               fontWeight: FontWeight.bold,
                                               color: theme.colorScheme.onSurface,
@@ -215,12 +223,16 @@ class _PlanCardState extends ConsumerState<PlanCard> {
                                         : // CASO PRECIO NUMÉRICO
                                           Column(
                                             mainAxisSize: MainAxisSize.min,
+                                            // CAMBIO: Alineación de la columna del precio
+                                            crossAxisAlignment: isMobile ? CrossAxisAlignment.start : CrossAxisAlignment.center,
                                             children: [
                                               if (hasDiscount)
                                                 Padding(
                                                   padding: const EdgeInsets.only(bottom: 2.0),
                                                   child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    // CAMBIO: Justificación de la fila de descuento
+                                                    mainAxisAlignment: isMobile ? MainAxisAlignment.start : MainAxisAlignment.center,
                                                     children: [
                                                       Text(
                                                         currencyFormatter.format(widget.plan.originalPrice),
@@ -254,11 +266,12 @@ class _PlanCardState extends ConsumerState<PlanCard> {
                                                 ),
                                               Text(
                                                 currencyFormatter.format(widget.plan.price),
-                                                textAlign: TextAlign.center,
+                                                // CAMBIO: Alineación del texto del precio
+                                                textAlign: isMobile ? TextAlign.left : TextAlign.center,
                                                 style: theme.textTheme.displaySmall?.copyWith(
                                                   fontWeight: FontWeight.bold,
                                                   color: theme.colorScheme.onSurface,
-                                                  fontSize: 26, // Reduje fuente del precio
+                                                  fontSize: 26, 
                                                 ),
                                               ),
                                             ],
@@ -267,10 +280,12 @@ class _PlanCardState extends ConsumerState<PlanCard> {
                                   ),
                                 ),
                                 
-                                // Casos de Éxito
+                                // Casos de Éxito ("Ver Ejemplos Reales")
                                 if (hasCases) ...[
                                   const SizedBox(height: 10),
-                                  Center(
+                                  // CAMBIO: Align para mover la "píldora" a la izquierda en móvil
+                                  Align(
+                                    alignment: isMobile ? Alignment.centerLeft : Alignment.center,
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
@@ -296,24 +311,24 @@ class _PlanCardState extends ConsumerState<PlanCard> {
                                   ),
                                 ],
 
-                                const SizedBox(height: 16), // Reduje espacio
+                                const SizedBox(height: 16),
 
-                                // Features
+                                // Features (Ya son filas, se alinean bien a la izquierda naturalmente)
                                 ...widget.plan.features.map((text) => FadeInUp(
                                   delay: const Duration(milliseconds: 100),
                                   child: Padding(
-                                    padding: const EdgeInsets.only(bottom: 8.0), // Reduje padding entre items
+                                    padding: const EdgeInsets.only(bottom: 8.0),
                                     child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Icon(Icons.check, size: 16, color: primaryColor), // Icono más chico
+                                        Icon(Icons.check, size: 16, color: primaryColor),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
                                             text, 
                                             style: theme.textTheme.bodyMedium?.copyWith(
                                               height: 1.2,
-                                              fontSize: 13, // Texto un poco más compacto
+                                              fontSize: 13,
                                             )
                                           ),
                                         ),
@@ -334,7 +349,7 @@ class _PlanCardState extends ConsumerState<PlanCard> {
                           child: FilledButton(
                             onPressed: () => _onBuyPressed(context),
                             style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16), // Botón un poco menos alto
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               textStyle: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
