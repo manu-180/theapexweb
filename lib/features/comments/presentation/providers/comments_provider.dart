@@ -8,7 +8,6 @@ import 'package:prueba_de_riverpod/features/auth/presentation/providers/auth_pro
 
 part 'comments_provider.g.dart';
 
-/// Modelo optimizado para trabajar con la vista SQL 'comments_with_metadata'.
 class Comment {
   final int id;
   final String content;
@@ -18,7 +17,8 @@ class Comment {
   final int likesCount;
   final bool isLikedByMe;
   final int? parentId;
-  final String userId; 
+  final String userId;
+  final int? rating; // <--- NUEVO CAMPO
   final List<Comment> replies;
 
   Comment({
@@ -31,6 +31,7 @@ class Comment {
     required this.isLikedByMe,
     this.parentId,
     required this.userId,
+    this.rating, // <--- NUEVO
     this.replies = const [],
   });
 
@@ -45,20 +46,27 @@ class Comment {
       isLikedByMe: json['is_liked_by_me'] ?? false,
       parentId: json['parent_id'],
       userId: json['user_id'],
+      rating: json['rating'], // <--- LECTURA
     );
   }
   
-  Comment copyWith({List<Comment>? replies}) {
+  Comment copyWith({
+    int? likesCount,
+    bool? isLikedByMe,
+    List<Comment>? replies,
+    int? rating,
+  }) {
     return Comment(
       id: id,
       content: content,
       userName: userName,
       avatarUrl: avatarUrl,
       createdAt: createdAt,
-      likesCount: likesCount,
-      isLikedByMe: isLikedByMe,
+      likesCount: likesCount ?? this.likesCount,
+      isLikedByMe: isLikedByMe ?? this.isLikedByMe,
       parentId: parentId,
       userId: userId,
+      rating: rating ?? this.rating,
       replies: replies ?? this.replies,
     );
   }
@@ -66,16 +74,13 @@ class Comment {
 
 @riverpod
 class CommentsNotifier extends _$CommentsNotifier {
-  // CORRECCIÓN AQUÍ: Quitamos 'final' para permitir re-asignación en el hot-reload/invalidate
   late SupabaseClient _supabase;
-  
   final List<RealtimeChannel> _subscriptions = [];
 
   @override
   Future<List<Comment>> build() async {
     _supabase = ref.watch(supabaseClientProvider);
     
-    // Cancelamos suscripciones anteriores para evitar duplicados al refrescar
     for (var sub in _subscriptions) { await sub.unsubscribe(); }
     _subscriptions.clear();
 
@@ -89,18 +94,14 @@ class CommentsNotifier extends _$CommentsNotifier {
       event: PostgresChangeEvent.all,
       schema: 'public',
       table: 'comments',
-      callback: (payload) {
-        ref.invalidateSelf(); 
-      },
+      callback: (payload) { ref.invalidateSelf(); },
     ).subscribe();
 
     final subLikes = _supabase.channel('public:comment_likes').onPostgresChanges(
       event: PostgresChangeEvent.all,
       schema: 'public',
       table: 'comment_likes',
-      callback: (payload) {
-        ref.invalidateSelf();
-      },
+      callback: (payload) { ref.invalidateSelf(); },
     ).subscribe();
 
     _subscriptions.addAll([subComments, subLikes]);
@@ -111,6 +112,7 @@ class CommentsNotifier extends _$CommentsNotifier {
       final response = await _supabase
           .from('comments_with_metadata') 
           .select()
+          .order('likes_count', ascending: false) // Orden por popularidad
           .order('created_at', ascending: false);
 
       final flatList = (response as List).map((json) => Comment.fromJson(json)).toList();
@@ -138,24 +140,89 @@ class CommentsNotifier extends _$CommentsNotifier {
     }
   }
 
-  Future<void> postComment(String content, {int? parentId}) async {
+  Future<void> postComment(String content, {int? parentId, int? rating}) async {
     final user = ref.read(currentUserProvider);
-    if (user == null) throw Exception('Debes iniciar sesión para comentar.');
+    if (user == null) throw Exception('Debes iniciar sesión.');
 
+    // 1. Estado Optimista
+    final previousState = state;
+    final currentList = state.valueOrNull ?? [];
+
+    final tempId = -DateTime.now().millisecondsSinceEpoch;
+    final newComment = Comment(
+      id: tempId,
+      content: content,
+      userName: user.userMetadata?['full_name'] ?? 'Yo',
+      userId: user.id,
+      avatarUrl: user.userMetadata?['avatar_url'],
+      createdAt: DateTime.now(),
+      likesCount: 0,
+      isLikedByMe: false,
+      parentId: parentId,
+      rating: rating, // <--- Rating Optimista
+      replies: [],
+    );
+
+    if (parentId == null) {
+      state = AsyncData([newComment, ...currentList]);
+    } else {
+      final updatedList = currentList.map((c) {
+        if (c.id == parentId) {
+          return c.copyWith(replies: [...c.replies, newComment]);
+        }
+        return c;
+      }).toList();
+      state = AsyncData(updatedList);
+    }
+
+    // 2. Enviar a Supabase
     try {
       await _supabase.from('comments').insert({
         'user_id': user.id,
         'content': content,
         'parent_id': parentId, 
+        'rating': rating, // <--- Rating Real
       });
     } catch (e) {
-      throw Exception('Error al publicar comentario: ${e.toString()}');
+      state = previousState; 
+      throw Exception('Error al publicar: ${e.toString()}');
     }
   }
 
   Future<void> toggleLike(int commentId) async {
     final user = ref.read(currentUserProvider);
     if (user == null) throw Exception('Debes iniciar sesión para dar like.');
+
+    final previousState = state;
+    final currentList = state.valueOrNull ?? [];
+
+    List<Comment> updateList(List<Comment> list) {
+      return list.map((c) {
+        if (c.id == commentId) {
+          final newStatus = !c.isLikedByMe;
+          return c.copyWith(
+            isLikedByMe: newStatus,
+            likesCount: newStatus ? c.likesCount + 1 : c.likesCount - 1,
+          );
+        }
+        if (c.replies.any((r) => r.id == commentId)) {
+          final newReplies = c.replies.map((r) {
+             if (r.id == commentId) {
+               final newStatus = !r.isLikedByMe;
+               return r.copyWith(
+                 isLikedByMe: newStatus,
+                 likesCount: newStatus ? r.likesCount + 1 : r.likesCount - 1,
+               );
+             }
+             return r;
+          }).toList();
+          return c.copyWith(replies: newReplies);
+        }
+        return c;
+      }).toList();
+    }
+
+    state = AsyncData(updateList(currentList));
 
     try {
        final maybeLike = await _supabase
@@ -166,22 +233,13 @@ class CommentsNotifier extends _$CommentsNotifier {
            .maybeSingle();
 
        if (maybeLike != null) {
-         await _supabase
-             .from('comment_likes')
-             .delete()
-             .eq('user_id', user.id)
-             .eq('comment_id', commentId);
+         await _supabase.from('comment_likes').delete().eq('user_id', user.id).eq('comment_id', commentId);
        } else {
-         await _supabase
-             .from('comment_likes')
-             .insert({
-               'user_id': user.id,
-               'comment_id': commentId,
-             });
+         await _supabase.from('comment_likes').insert({'user_id': user.id, 'comment_id': commentId});
        }
     } catch (e) {
-      debugPrint('Error toggling like: $e');
-      throw Exception('Error al procesar el like.');
+      state = previousState;
+      throw Exception('Error al dar like.');
     }
   }
 }

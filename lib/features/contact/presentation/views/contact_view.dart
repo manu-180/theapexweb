@@ -1,9 +1,10 @@
 // Archivo: lib/features/contact/presentation/views/contact_view.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shimmer/shimmer.dart'; // Asegúrate de tener esta dependencia
+import 'package:shimmer/shimmer.dart';
 import 'package:prueba_de_riverpod/core/widgets/responsive_builder.dart';
 import 'package:prueba_de_riverpod/features/auth/presentation/providers/auth_providers.dart';
+import 'package:prueba_de_riverpod/features/auth/presentation/widgets/auth_modal.dart';
 import 'package:prueba_de_riverpod/features/comments/presentation/providers/comments_provider.dart';
 import 'package:prueba_de_riverpod/features/comments/presentation/widgets/comment_card.dart';
 import 'package:prueba_de_riverpod/features/shared/widgets/footer.dart';
@@ -48,10 +49,8 @@ class ContactView extends StatelessWidget {
   }
 }
 
-// --- Formulario de Contacto (Placeholder) ---
 class _ContactForm extends StatelessWidget {
   const _ContactForm();
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -72,25 +71,15 @@ class _ContactForm extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 30),
-          
-          const TextField(
-            decoration: InputDecoration(labelText: 'Tu Nombre', border: OutlineInputBorder()),
-          ),
+          const TextField(decoration: InputDecoration(labelText: 'Tu Nombre', border: OutlineInputBorder())),
           const SizedBox(height: 15),
-          const TextField(
-            decoration: InputDecoration(labelText: 'Tu Email', border: OutlineInputBorder()),
-          ),
+          const TextField(decoration: InputDecoration(labelText: 'Tu Email', border: OutlineInputBorder())),
           const SizedBox(height: 15),
-          const TextField(
-            maxLines: 5,
-            decoration: InputDecoration(labelText: 'Mensaje', border: OutlineInputBorder()),
-          ),
+          const TextField(maxLines: 5, decoration: InputDecoration(labelText: 'Mensaje', border: OutlineInputBorder())),
           const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Formulario de email no implementado aún.')),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Formulario de email no implementado aún.')));
             },
             icon: const Icon(Icons.send),
             label: const Text('Enviar Mensaje'),
@@ -102,179 +91,213 @@ class _ContactForm extends StatelessWidget {
   }
 }
 
-// --- Sección de Comentarios (Funcional y Mejorada) ---
 class _CommentsSection extends ConsumerStatefulWidget {
   const _CommentsSection();
-
   @override
   ConsumerState<_CommentsSection> createState() => __CommentsSectionState();
 }
 
 class __CommentsSectionState extends ConsumerState<_CommentsSection> {
   final _commentController = TextEditingController();
-  final FocusNode _focusNode = FocusNode(); // Para enfocar al responder
+  final FocusNode _focusNode = FocusNode();
   
   bool _isPosting = false;
-  Comment? _replyingTo; // ¿A quién estamos respondiendo? (null = comentario nuevo)
+  Comment? _replyingTo;
+  int _selectedRating = 5; 
 
-  // Acción al pulsar "Responder" en una tarjeta
   void _onReply(Comment comment) {
-    setState(() {
-      _replyingTo = comment;
+    _checkAuthOrExecute(() {
+      setState(() => _replyingTo = comment);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        FocusScope.of(context).requestFocus(_focusNode);
+      });
     });
-    // Llevamos el foco al campo de texto
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      FocusScope.of(context).requestFocus(_focusNode);
-    });
+  }
+
+  void _checkAuthOrExecute(VoidCallback action) {
+    final user = ref.read(currentUserProvider);
+    if (user != null) {
+      action();
+    } else {
+      showDialog(context: context, builder: (_) => const AuthRequiredModal());
+    }
   }
 
   void _cancelReply() {
-    setState(() {
-      _replyingTo = null;
-    });
+    setState(() => _replyingTo = null);
   }
 
   void _postComment() async {
-    final content = _commentController.text.trim();
-    if (content.isEmpty) return;
-    
     final user = ref.read(currentUserProvider);
-
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Debes iniciar sesión para comentar.')),
-      );
+      showDialog(context: context, builder: (_) => const AuthRequiredModal());
       return;
     }
 
+    final content = _commentController.text.trim();
+    if (content.isEmpty) return;
+    
     setState(() => _isPosting = true);
 
     try {
-      // Enviamos el parentId si estamos respondiendo
+      final ratingToSend = _replyingTo == null ? _selectedRating : null;
+
       await ref.read(commentsNotifierProvider.notifier).postComment(
         content,
         parentId: _replyingTo?.id,
+        rating: ratingToSend, 
       );
       
       _commentController.clear();
-      _cancelReply(); // Reseteamos el estado de respuesta
+      _cancelReply();
+      if (mounted) setState(() => _selectedRating = 5);
       
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
     } finally {
-      setState(() => _isPosting = false);
+      if (mounted) setState(() => _isPosting = false);
     }
-  }
-
-  @override
-  void dispose() {
-    _commentController.dispose();
-    _focusNode.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final commentsState = ref.watch(commentsNotifierProvider);
-    final user = ref.watch(currentUserProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Calculamos cantidad total (opcional, podrías hacer un getter en el notifier)
-    final totalComments = commentsState.maybeWhen(
-      data: (list) => list.length + list.fold(0, (sum, c) => sum + c.replies.length),
-      orElse: () => 0
-    );
+    // --- CÁLCULO DE PROMEDIO ---
+    double averageRating = 0;
+    int totalRatings = 0;
+    int totalCommentsCount = 0;
+
+    commentsState.whenData((comments) {
+      totalCommentsCount = comments.length + comments.fold(0, (sum, c) => sum + c.replies.length);
+      final ratedComments = comments.where((c) => c.rating != null).toList();
+      if (ratedComments.isNotEmpty) {
+        final sum = ratedComments.fold(0, (prev, c) => prev + c.rating!);
+        averageRating = sum / ratedComments.length;
+        totalRatings = ratedComments.length;
+      }
+    });
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Título
+          // Header con Promedio
           Row(
             children: [
               Text(
-                'Comunidad',
+                'Reseñas',
                 style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
+              const SizedBox(width: 12),
+              if (totalRatings > 0) ...[
+                Text(
+                  averageRating.toStringAsFixed(1),
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold, color: Colors.amber),
                 ),
-                child: Text(
-                  '$totalComments',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold, 
-                    color: colorScheme.onPrimaryContainer
-                  ),
+                const SizedBox(width: 4),
+                const Icon(Icons.star, color: Colors.amber, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  '($totalRatings)',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
                 ),
-              ),
+              ] else 
+                 Text(
+                  '($totalCommentsCount)',
+                  style: theme.textTheme.titleMedium?.copyWith(color: colorScheme.onSurfaceVariant),
+                ),
             ],
           ),
           const SizedBox(height: 20),
 
-          // --- INPUT AREA ---
-          if (user != null) ...[
-            // Indicador de "Respondiendo a..."
-            if (_replyingTo != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: colorScheme.secondaryContainer.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border(left: BorderSide(color: colorScheme.primary, width: 3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.reply, size: 16, color: colorScheme.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: RichText(
-                        text: TextSpan(
-                          style: theme.textTheme.bodyMedium,
-                          children: [
-                            const TextSpan(text: 'Respondiendo a '),
-                            TextSpan(
-                              text: _replyingTo!.userName,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ],
+          // Selector de Estrellas
+          if (_replyingTo == null) 
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: Row(
+                children: [
+                  Text("Tu valoración:", style: theme.textTheme.labelLarge),
+                  const SizedBox(width: 10),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: List.generate(5, (index) {
+                      final starIndex = index + 1;
+                      return GestureDetector(
+                        onTap: () => _checkAuthOrExecute(() => setState(() => _selectedRating = starIndex)),
+                        child: Icon(
+                          starIndex <= _selectedRating ? Icons.star_rounded : Icons.star_outline_rounded,
+                          color: Colors.amber,
+                          size: 32,
                         ),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+
+          if (_replyingTo != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: colorScheme.secondaryContainer.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border(left: BorderSide(color: colorScheme.primary, width: 3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.reply, size: 16, color: colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: RichText(
+                      text: TextSpan(
+                        style: theme.textTheme.bodyMedium,
+                        children: [
+                          const TextSpan(text: 'Respondiendo a '),
+                          TextSpan(
+                            text: _replyingTo!.userName,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 16),
-                      onPressed: _cancelReply,
-                      tooltip: 'Cancelar respuesta',
-                    )
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, size: 16),
+                    onPressed: _cancelReply,
+                    tooltip: 'Cancelar respuesta',
+                  )
+                ],
               ),
+            ),
 
-            // Campo de Texto
-            TextField(
+          // Input de Texto con Modal de Auth
+          GestureDetector(
+            onTap: () {
+               if (!_focusNode.hasFocus) {
+                 _checkAuthOrExecute(() => _focusNode.requestFocus());
+               }
+            },
+            child: TextField(
               controller: _commentController,
               focusNode: _focusNode,
               maxLines: 3,
               decoration: InputDecoration(
                 hintText: _replyingTo != null 
                     ? 'Escribe tu respuesta...' 
-                    : 'Deja tu opinión o pregunta...',
+                    : 'Cuéntanos tu experiencia...',
                 border: const OutlineInputBorder(),
                 filled: true,
                 fillColor: colorScheme.surface,
                 suffixIcon: _isPosting
-                    ? const Padding(
-                        padding: EdgeInsets.all(12.0),
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                    ? const Padding(padding: EdgeInsets.all(12.0), child: CircularProgressIndicator(strokeWidth: 2))
                     : IconButton(
                         icon: const Icon(Icons.send),
                         color: colorScheme.primary,
@@ -282,58 +305,20 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
                       ),
               ),
             ),
-            const SizedBox(height: 30),
-          ] else ...[
-            // Banner de Login
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.lock_outline, color: colorScheme.secondary),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Únete a la conversación',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'Inicia sesión para comentar, dar likes y responder.',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  FilledButton.tonal(
-                    onPressed: () => ref.read(authRepositoryProvider).signInWithGoogle(),
-                    child: const Text('Entrar con Google'),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 30),
-          ],
+          ),
+          const SizedBox(height: 30),
           
-          // --- LISTA DE COMENTARIOS ---
           commentsState.when(
-            loading: () => const _SkeletonList(), // Skeleton Loading Profesional
+            loading: () => const _SkeletonList(),
             error: (err, stack) => Center(child: Text('Error: $err')),
             data: (comments) {
               if (comments.isEmpty) {
                 return Center(
                   child: Column(
                     children: [
-                      Icon(Icons.chat_bubble_outline, size: 40, color: colorScheme.outline),
+                      Icon(Icons.rate_review_outlined, size: 40, color: colorScheme.outline),
                       const SizedBox(height: 10),
-                      const Text('Sé la primera persona en comentar.'),
+                      const Text('Sé el primero en dejar una reseña.'),
                     ],
                   ),
                 );
@@ -341,7 +326,7 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
               return Column(
                 children: comments.map((comment) => CommentCard(
                   comment: comment, 
-                  onReply: _onReply, // Pasamos el callback de respuesta
+                  onReply: _onReply, 
                 )).toList(),
               );
             },
@@ -352,40 +337,18 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
   }
 }
 
-// --- SKELETON LOADING (Shimmer) ---
 class _SkeletonList extends StatelessWidget {
   const _SkeletonList();
-
   @override
   Widget build(BuildContext context) {
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHighest;
-    final highlightColor = Theme.of(context).colorScheme.surface;
-
     return Shimmer.fromColors(
-      baseColor: baseColor,
-      highlightColor: highlightColor,
+      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+      highlightColor: Theme.of(context).colorScheme.surface,
       child: Column(
-        children: List.generate(3, (index) => Padding(
-          padding: const EdgeInsets.only(bottom: 20.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const CircleAvatar(radius: 18),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(width: 120, height: 14, color: Colors.white),
-                    const SizedBox(height: 8),
-                    Container(width: double.infinity, height: 12, color: Colors.white),
-                    const SizedBox(height: 6),
-                    Container(width: 200, height: 12, color: Colors.white),
-                  ],
-                ),
-              )
-            ],
-          ),
+        children: List.generate(3, (index) => Container(
+          margin: const EdgeInsets.only(bottom: 20),
+          height: 100,
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
         )),
       ),
     );
