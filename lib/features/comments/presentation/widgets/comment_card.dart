@@ -7,7 +7,7 @@ import 'package:prueba_de_riverpod/features/auth/presentation/widgets/auth_modal
 import 'package:prueba_de_riverpod/features/comments/presentation/providers/comments_provider.dart';
 
 // RECUERDA: Reemplaza esto con tu User UID real de Supabase
-const String OWNER_UUID = 'TU_UUID_DE_SUPABASE_AQUI'; 
+const String OWNER_UUID = '37dad3e9-531c-4657-8db6-ddebbdcfa878'; 
 
 class CommentCard extends ConsumerStatefulWidget {
   final Comment comment;
@@ -38,8 +38,11 @@ class _CommentCardState extends ConsumerState<CommentCard> {
     final colorScheme = theme.colorScheme;
     final comment = widget.comment;
     
+    // Detectamos si es raíz o respuesta para el espaciado profesional
+    final bool isRoot = comment.parentId == null;
     final bool isAdmin = comment.userId == OWNER_UUID; 
-    
+
+    // --- ESTILOS VISUALES ---
     final cardColor = isAdmin 
         ? colorScheme.primary.withOpacity(0.08) 
         : colorScheme.surfaceContainerLow;      
@@ -48,152 +51,173 @@ class _CommentCardState extends ConsumerState<CommentCard> {
         ? colorScheme.primary.withOpacity(0.4) 
         : colorScheme.outline.withOpacity(0.15); 
 
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: _toggleReplies, 
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: cardColor, 
-              border: Border.all(color: borderColor),
-              borderRadius: BorderRadius.circular(16), 
-              boxShadow: isAdmin ? [ 
-                BoxShadow(
-                  color: colorScheme.primary.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                )
-              ] : null,
-            ),
-            padding: const EdgeInsets.all(16), 
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildAvatar(comment.avatarUrl, isAdmin, colorScheme),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header
-                      Row(
-                        children: [
-                          Text(
-                            comment.userName,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: isAdmin ? colorScheme.primary : colorScheme.onSurface,
+    // Texto dinámico para el botón de ver respuestas
+    final replyCount = comment.replies.length;
+    final replyText = _showReplies 
+        ? "Ocultar respuestas" 
+        : "Ver $replyCount ${replyCount == 1 ? 'respuesta' : 'respuestas'}";
+
+    // --- ESPACIADO INTELIGENTE (LA CLAVE DEL DISEÑO) ---
+    // Si es ROOT: Mucho aire abajo (32px) para separar temas.
+    // Si es RESPUESTA: Poco aire abajo (8px) para mantener el hilo unido.
+    return Padding(
+      padding: EdgeInsets.only(bottom: isRoot ? 32.0 : 8.0), 
+      child: Column(
+        children: [
+          // TARJETA CLICKEABLE
+          GestureDetector(
+            onTap: _toggleReplies, 
+            child: Container(
+              // Margen interno pequeño, el espaciado grande lo maneja el Padding de arriba
+              margin: const EdgeInsets.symmetric(vertical: 2), 
+              decoration: BoxDecoration(
+                color: cardColor, 
+                border: Border.all(color: borderColor),
+                borderRadius: BorderRadius.circular(16), 
+                boxShadow: isAdmin ? [ 
+                  BoxShadow(
+                    color: colorScheme.primary.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ] : null,
+              ),
+              padding: const EdgeInsets.all(16), 
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildAvatar(comment.avatarUrl, isAdmin, colorScheme),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // --- HEADER ---
+                        Row(
+                          children: [
+                            Text(
+                              comment.userName,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: isAdmin ? colorScheme.primary : colorScheme.onSurface,
+                              ),
                             ),
-                          ),
-                          // Estrellas
-                          if (comment.rating != null) ...[
-                            const SizedBox(width: 8),
-                            Row(
-                              children: List.generate(comment.rating!, (index) => 
-                                const Icon(Icons.star_rounded, size: 14, color: Colors.amber)
+                            
+                            // ESTRELLAS (Solo mostrar en comentarios raíz)
+                            // "El comentario del comentario no cuenta como reseña" -> Correcto.
+                            if (isRoot && comment.rating != null) ...[
+                              const SizedBox(width: 8),
+                              Row(
+                                children: List.generate(comment.rating!, (index) => 
+                                  const Icon(Icons.star_rounded, size: 14, color: Colors.amber)
+                                ),
+                              )
+                            ],
+                            
+                            if (isAdmin) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: colorScheme.primary.withOpacity(0.5)),
+                                ),
+                                child: Text(
+                                  "Admin",
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colorScheme.primary),
+                                ),
+                              )
+                            ],
+                            const Spacer(),
+                            Text(
+                              _timeAgo(comment.createdAt),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontSize: 11,
                               ),
-                            )
-                          ],
-                          
-                          if (isAdmin) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: colorScheme.primary.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: colorScheme.primary.withOpacity(0.5)),
-                              ),
-                              child: Text(
-                                "Admin",
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colorScheme.primary),
-                              ),
-                            )
-                          ],
-                          const Spacer(),
-                          Text(
-                            _timeAgo(comment.createdAt),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              fontSize: 11,
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      // Contenido
-                      Text(
-                        comment.content,
-                        style: theme.textTheme.bodyMedium?.copyWith(height: 1.5, fontSize: 15),
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      // Acciones
-                      Row(
-                        children: [
-                          _LikeButton(comment: comment),
-                          
-                          if (comment.parentId == null) ...[
-                            const SizedBox(width: 20),
-                            InkWell(
-                              onTap: () => widget.onReply(comment), 
-                              borderRadius: BorderRadius.circular(4),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.reply_rounded, size: 14, color: colorScheme.onSurfaceVariant),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      "Responder",
-                                      style: theme.textTheme.labelSmall?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: colorScheme.onSurfaceVariant,
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        // --- CONTENIDO ---
+                        Text(
+                          comment.content,
+                          style: theme.textTheme.bodyMedium?.copyWith(height: 1.5, fontSize: 15),
+                        ),
+                        const SizedBox(height: 12),
+                        
+                        // --- ACCIONES ---
+                        Row(
+                          children: [
+                            _LikeButton(comment: comment),
+                            
+                            // Botón Responder (Solo en raíz)
+                            if (isRoot) ...[
+                              const SizedBox(width: 20),
+                              InkWell(
+                                onTap: () => widget.onReply(comment), 
+                                borderRadius: BorderRadius.circular(4),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.reply_rounded, size: 14, color: colorScheme.onSurfaceVariant),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "Responder",
+                                        style: theme.textTheme.labelSmall?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
+                            
+                            // Badge animado de respuestas
+                            if (comment.replies.isNotEmpty) ...[
+                               const Spacer(),
+                               AnimatedCrossFade(
+                                 firstChild: _RepliesBadge(text: replyText, icon: Icons.keyboard_arrow_down_rounded),
+                                 secondChild: _RepliesBadge(text: replyText, icon: Icons.keyboard_arrow_up_rounded),
+                                 crossFadeState: _showReplies ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                                 duration: const Duration(milliseconds: 200),
+                               ),
+                            ]
                           ],
-                          
-                          if (comment.replies.isNotEmpty && !_showReplies) ...[
-                             const Spacer(),
-                             Container(
-                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                               decoration: BoxDecoration(
-                                 color: colorScheme.surfaceContainerHighest,
-                                 borderRadius: BorderRadius.circular(10),
-                               ),
-                               child: Text(
-                                 "${comment.replies.length} respuestas",
-                                 style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold),
-                               ),
-                             ),
-                          ]
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
 
-        // Acordeón de Respuestas
-        if (_showReplies && comment.replies.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(left: 40.0), 
-            child: Column(
-              children: comment.replies.map((reply) => CommentCard(
-                comment: reply,
-                onReply: widget.onReply, 
-              )).toList(),
-            ),
+          // --- ACORDEÓN DE RESPUESTAS (ANIMADO) ---
+          AnimatedSize(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeOutQuart,
+            alignment: Alignment.topCenter,
+            child: _showReplies && comment.replies.isNotEmpty
+                ? Padding(
+                    // Indentación visual para jerarquía
+                    padding: const EdgeInsets.only(left: 32.0, top: 4.0), 
+                    child: Column(
+                      children: comment.replies.map((reply) => CommentCard(
+                        comment: reply,
+                        onReply: widget.onReply, 
+                      )).toList(),
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -223,6 +247,36 @@ class _CommentCardState extends ConsumerState<CommentCard> {
     if (diff.inHours > 0) return "${diff.inHours}h";
     if (diff.inMinutes > 0) return "${diff.inMinutes}m";
     return "ahora";
+  }
+}
+
+class _RepliesBadge extends StatelessWidget {
+  final String text;
+  final IconData icon;
+
+  const _RepliesBadge({required this.text, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+       decoration: BoxDecoration(
+         color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+         borderRadius: BorderRadius.circular(12),
+       ),
+       child: Row(
+         mainAxisSize: MainAxisSize.min,
+         children: [
+           Text(
+             text,
+             style: TextStyle(fontSize: 11, color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold),
+           ),
+           const SizedBox(width: 4),
+           Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+         ],
+       ),
+    );
   }
 }
 
