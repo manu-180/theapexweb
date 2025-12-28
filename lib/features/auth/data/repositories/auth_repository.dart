@@ -20,10 +20,7 @@ class AuthRepository {
     try {
       await _supabase.auth.signInWithOAuth(
         OAuthProvider.google, 
-        // LÓGICA DE REDIRECCIÓN INTELIGENTE:
-        // 1. Si es Web en Producción -> Vamos directo a la sección de contacto.
-        // 2. Si es Web en Desarrollo (localhost) -> Dejamos null para que use la Site URL por defecto.
-        // 3. Si es Móvil -> Usamos el esquema de deep link.
+    
         redirectTo: kIsWeb 
             ? (kDebugMode ? null : 'https://theapexweb.com/#/contact') 
             : 'io.supabase.flutter://callback',

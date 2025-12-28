@@ -8,7 +8,7 @@ import 'package:prueba_de_riverpod/features/comments/presentation/providers/comm
 // --- CONFIGURACIÓN ---
 // Reemplaza esto con tu User UID de Supabase (Authentication -> Users)
 // para que tu tarjeta tenga el estilo de "Admin/Autor".
-const String OWNER_UUID = 'TU_UUID_DE_SUPABASE_AQUI'; 
+const String OWNER_UUID = '37dad3e9-531c-4657-8db6-ddebbdcfa878'; 
 
 class CommentCard extends ConsumerWidget {
   final Comment comment;
