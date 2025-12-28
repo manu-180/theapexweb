@@ -92281,19 +92281,20 @@ return A.w($async$AY,r)},
 Ae(a,b,c,d,e){return this.agc(a,b,c,d,e)},
 agc(a,b,c,d,e){var s=0,r=A.x(t.PN),q,p=this,o,n,m,l,k
 var $async$Ae=A.y(function(f,g){if(f===1)return A.u(g,r)
-for(;;)switch(s){case 0:m=t.N
-l=A.a4(["provider",A.b46(a)],m,m)
-k=p.ay
-s=k===B.h5?3:4
+for(;;)switch(s){case 0:l=t.N
+k=A.a4(["provider",A.b46(a)],l,l)
+k.n(0,"redirect_to",c)
+o=p.ay
+s=o===B.h5?3:4
 break
-case 3:o=A.b9A()
+case 3:n=A.b9A()
 s=5
-return A.r(p.ax.ut("supabase.auth.token-code-verifier",o),$async$Ae)
-case 5:n=B.EO.cE(B.ns.cE(o))
-l.K(0,A.a4(["flow_type",k.b,"code_challenge",B.nw.gte().cE(n.a).split("=")[0],"code_challenge_method","s256"],m,m))
-case 4:m=A.dm(null,null,null,null,l,null).f
-if(m==null)m=""
-q=new A.Ro(e+"?"+m)
+return A.r(p.ax.ut("supabase.auth.token-code-verifier",n),$async$Ae)
+case 5:m=B.EO.cE(B.ns.cE(n))
+k.K(0,A.a4(["flow_type",o.b,"code_challenge",B.nw.gte().cE(m.a).split("=")[0],"code_challenge_method","s256"],l,l))
+case 4:l=A.dm(null,null,null,null,k,null).f
+if(l==null)l=""
+q=new A.Ro(e+"?"+l)
 s=1
 break
 case 1:return A.v(q,r)}})
@@ -94852,7 +94853,7 @@ uA(){var s=0,r=A.x(t.H),q=1,p=[],o=this,n,m,l
 var $async$uA=A.y(function(a,b){if(a===1){p.push(b)
 s=q}for(;;)switch(s){case 0:q=3
 s=6
-return A.r(A.PO(o.a.giZ(),B.P9,null),$async$uA)
+return A.r(A.PO(o.a.giZ(),B.P9,"https://theapexweb.com/#/contact"),$async$uA)
 case 6:q=1
 s=5
 break

@@ -1,5 +1,5 @@
 // Archivo: lib/features/auth/data/repositories/auth_repository.dart
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint; // <<-- IMPORTADO debugPrint
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, kDebugMode; 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthRepository {
@@ -19,9 +19,14 @@ class AuthRepository {
   Future<void> signInWithGoogle() async {
     try {
       await _supabase.auth.signInWithOAuth(
-        OAuthProvider.google, // <<-- CORREGIDO: Usar OAuthProvider.google
-        // La URL a la que Google debe redirigir después del login.
-        redirectTo: kIsWeb ? null : 'io.supabase.flutter://callback',
+        OAuthProvider.google, 
+        // LÓGICA DE REDIRECCIÓN INTELIGENTE:
+        // 1. Si es Web en Producción -> Vamos directo a la sección de contacto.
+        // 2. Si es Web en Desarrollo (localhost) -> Dejamos null para que use la Site URL por defecto.
+        // 3. Si es Móvil -> Usamos el esquema de deep link.
+        redirectTo: kIsWeb 
+            ? (kDebugMode ? null : 'https://theapexweb.com/#/contact') 
+            : 'io.supabase.flutter://callback',
       );
     } catch (e) {
       // Manejar el error (ej. mostrar SnackBar)
