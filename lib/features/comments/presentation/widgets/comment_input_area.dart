@@ -22,14 +22,17 @@ class CommentInputArea extends ConsumerStatefulWidget {
 class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
-  int _rating = 0; // 0 significa sin calificar aún
+  
+  int _rating = 0; 
   bool _isPosting = false;
-  bool _showRatingSelector = false; // Controla la animación
+  bool _showRatingSelector = false;
+  
+  // NUEVO: Estado para controlar el mensaje de error inline
+  bool _showRatingError = false; 
 
   @override
   void initState() {
     super.initState();
-    // Detectar foco para mostrar selector
     _focusNode.addListener(() {
       if (_focusNode.hasFocus && widget.replyingTo == null) {
         setState(() => _showRatingSelector = true);
@@ -40,16 +43,16 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
   @override
   void didUpdateWidget(covariant CommentInputArea oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Si cambia a modo respuesta, ocultamos rating
     if (widget.replyingTo != null && _showRatingSelector) {
-      setState(() => _showRatingSelector = false);
+      setState(() {
+        _showRatingSelector = false;
+        _showRatingError = false; // Limpiamos error si cambia a respuesta
+      });
     }
-    // Si volvemos a modo normal y tenemos foco, mostramos rating
     if (widget.replyingTo == null && oldWidget.replyingTo != null && _focusNode.hasFocus) {
       setState(() => _showRatingSelector = true);
     }
     
-    // Auto-foco si estamos respondiendo
     if (widget.replyingTo != null && !_focusNode.hasFocus) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _focusNode.requestFocus();
@@ -68,11 +71,10 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
     final content = _controller.text.trim();
     if (content.isEmpty) return;
 
-    // Validación: Si es reseña nueva, exigir estrellas (opcional, pero recomendado)
+    // VALIDACIÓN VISUAL (Sin SnackBar)
     if (widget.replyingTo == null && _rating == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor, selecciona una puntuación tocando las estrellas.')),
-      );
+      // Activamos el estado de error para mostrar la alerta visual
+      setState(() => _showRatingError = true);
       return;
     }
 
@@ -88,10 +90,10 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
       _controller.clear();
       if (widget.replyingTo != null) widget.onCancelReply();
       
-      // Reset rating
       setState(() {
         _rating = 0;
         _showRatingSelector = false;
+        _showRatingError = false; // Reset error
       });
       _focusNode.unfocus();
 
@@ -158,20 +160,66 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "¿Cómo calificarías tu experiencia?",
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: colorScheme.primary, 
-                          fontWeight: FontWeight.bold
-                        ),
+                      // Título + Mensaje de Error (Row)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            "¿Cómo calificarías tu experiencia?",
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: colorScheme.primary, 
+                              fontWeight: FontWeight.bold
+                            ),
+                          ),
+                          
+                          // --- MENSAJE DE ERROR ELEGANTE ---
+                          // Usamos AnimatedOpacity para que aparezca suavemente
+                          AnimatedOpacity(
+                            opacity: _showRatingError ? 1.0 : 0.0,
+                            duration: const Duration(milliseconds: 300),
+                            child: _showRatingError 
+                              ? Container(
+                                  margin: const EdgeInsets.only(left: 12),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.errorContainer,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.priority_high_rounded, size: 12, color: colorScheme.error),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "Requerido",
+                                        style: TextStyle(
+                                          fontSize: 10, 
+                                          fontWeight: FontWeight.bold,
+                                          color: colorScheme.error
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                          ),
+                        ],
                       ),
+                      
                       const SizedBox(height: 8),
+                      
+                      // Las Estrellas
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: List.generate(5, (index) {
                           final starIndex = index + 1;
                           return GestureDetector(
-                            onTap: () => setState(() => _rating = starIndex),
+                            onTap: () {
+                              setState(() {
+                                _rating = starIndex;
+                                _showRatingError = false; // Ocultar error al tocar
+                              });
+                            },
                             child: Padding(
                               padding: const EdgeInsets.only(right: 8.0),
                               child: AnimatedScale(
@@ -179,7 +227,9 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                                 duration: const Duration(milliseconds: 200),
                                 child: Icon(
                                   starIndex <= _rating ? Icons.star_rounded : Icons.star_outline_rounded,
-                                  color: Colors.amber,
+                                  color: _showRatingError 
+                                      ? colorScheme.error.withOpacity(0.5) // Feedback visual en las estrellas también
+                                      : Colors.amber,
                                   size: 36,
                                 ),
                               ),
@@ -212,9 +262,18 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                 : 'Deja tu opinión...',
             filled: true,
             fillColor: colorScheme.surfaceContainerLow,
-            border: OutlineInputBorder(
+            // Si hay error, pintamos el borde suavemente de rojo
+            enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
+              borderSide: _showRatingError 
+                  ? BorderSide(color: colorScheme.error.withOpacity(0.5)) 
+                  : BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: _showRatingError 
+                  ? BorderSide(color: colorScheme.error) 
+                  : BorderSide(color: colorScheme.primary.withOpacity(0.5)),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             suffixIcon: _isPosting
@@ -223,7 +282,13 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : IconButton(
-                    icon: Icon(Icons.send_rounded, color: _rating > 0 || widget.replyingTo != null ? colorScheme.primary : colorScheme.outline),
+                    icon: Icon(
+                      Icons.send_rounded, 
+                      // El color del ícono cambia si hay error o si está listo
+                      color: _rating > 0 || widget.replyingTo != null 
+                          ? colorScheme.primary 
+                          : (_showRatingError ? colorScheme.error : colorScheme.outline)
+                    ),
                     onPressed: _submit,
                   ),
           ),
