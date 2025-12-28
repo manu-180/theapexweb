@@ -25,10 +25,9 @@ dependencies:
   supabase_flutter: ^2.10.3
   url_launcher: ^6.3.2
   video_player: ^2.10.1
+  web: ^1.1.1
 
 dev_dependencies:
-
-  # --- GENERADORES DE CÓDIGO (Alineados a Riverpod 2.x) ---
   build_runner: ^2.4.11
   custom_lint: ^0.6.4
   flutter_launcher_icons: ^0.14.4

@@ -3,8 +3,8 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "603a8665296d10f74d9b0a17eac048ec",
-"assets/AssetManifest.bin.json": "d722ee927b1e01588701485256b334f8",
+const RESOURCES = {"assets/AssetManifest.bin": "c9f26b9470aa4071fdf19f8aacb3dbe8",
+"assets/AssetManifest.bin.json": "6cf4f80cd3f84dff67f523640869e76e",
 "assets/assets/animations/actualizar.json": "c2265657a5995b5716fa72f878baa964",
 "assets/assets/animations/calendario.json": "15201828994b9d825a5a77cc4dcd3f3e",
 "assets/assets/animations/cancelarclase.json": "9ea21fb7daddde62dea81a782af40ca0",
@@ -34,6 +34,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "603a8665296d10f74d9b0a17eac048ec
 "assets/assets/icons/perez_logo.PNG": "34b7d31e2518f76303d736f11d5b313a",
 "assets/assets/icons/pulpiprint_logo.png": "6e4ce521a18cc7dd2cc719c6b145bf27",
 "assets/assets/icons/simon_logo.png": "6aa461a40509b3deeba3efce2a44434a",
+"assets/assets/images/favicon.png": "3750a43ed8de6561a97ad67011a4a27c",
 "assets/assets/videos/yoapex.webm": "151304d8e0103a9bb316a5d43c7431df",
 "assets/assets/videos/yoassistify.webm": "1bc146f7468420b04d4a48d99a4fa026",
 "assets/assets/videos/yoflutter.webm": "abd6379d227a66dacc953497dea665dc",
@@ -66,7 +67,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "603a8665296d10f74d9b0a17eac048ec
 "favicons/favicon_riverpod.png": "6725cb0a7c912366c40ecdc22bd2fc62",
 "favicons/favicon_supabase.png": "86621263c2beee234fe1d5135b8909a0",
 "flutter.js": "24bc71911b75b5f8135c949e27a2984e",
-"flutter_bootstrap.js": "c126b08e5c50cd734d43a047f6c38ed4",
+"flutter_bootstrap.js": "ff793ab08a30460ccea3eb6406c3228d",
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "icons/Icon-maskable-192.png": "c457ef57daa1d16f64b27b786ec2ea3c",
