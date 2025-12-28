@@ -75,12 +75,30 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 800;
 
+    // --- CORRECCIÓN CLAVE: SINCRONIZACIÓN DE RUTAS ---
+    // 1. Obtenemos la ruta actual desde GoRouter
+    final String currentLocation = GoRouterState.of(context).uri.path;
+    
+    // 2. Buscamos a qué índice de tab corresponde esa ruta
+    final int targetIndex = _navItems.indexWhere((item) => item['path'] == currentLocation);
+
+    // 3. Si encontramos coincidencia y es diferente al actual, actualizamos el TabController
+    if (targetIndex != -1 && _tabController.index != targetIndex) {
+      // Usamos addPostFrameCallback para evitar errores de construcción durante la animación
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_tabController.index != targetIndex) {
+          _tabController.animateTo(targetIndex);
+        }
+      });
+    }
+    // --------------------------------------------------
+
     return Scaffold(
       key: _scaffoldKey,
       endDrawer: isMobile ? _MobileDrawer(navItems: _navItems) : null,
       appBar: AppBar(
         title: const _BrandLogo(),
-        centerTitle: false, // Alineación correcta a la izquierda
+        centerTitle: false, 
         automaticallyImplyLeading: false,
         actions: [
           if (!isMobile) ...[
@@ -100,11 +118,13 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
                 labelPadding: const EdgeInsets.symmetric(horizontal: 12),
                 onTap: (index) => context.goNamed(_navItems[index]['name']),
                 tabs: _navItems.asMap().entries.map((entry) {
+                  final index = entry.key;
                   return Tab(
                     height: 60,
                     child: _HoverableTab(
                       text: entry.value['label'],
-                      isSelected: false, // GoRouter maneja el estado real, esto es visual
+                      // Pasamos el estado real basado en la ruta, no el visual del tab anterior
+                      isSelected: index == targetIndex, 
                     ),
                   );
                 }).toList(),
@@ -140,7 +160,6 @@ class _BrandLogo extends ConsumerWidget {
     final themeConfig = ref.watch(currentAppThemeConfigProvider);
     final bool isNeutral = themeConfig.theme == AppTheme.neutral;
 
-    // Definimos el Icono de Apex por defecto para reutilizarlo
     final Widget apexIcon = Transform(
       alignment: Alignment.center,
       transform: Matrix4.identity()..scale(0.7, 1.1),
@@ -151,11 +170,6 @@ class _BrandLogo extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        // LÓGICA BLINDADA:
-        // 1. Si es neutral -> Icono
-        // 2. Si tiene asset -> Intentar cargar imagen
-        //    -> Si falla la carga (errorBuilder) -> Mostrar Icono Apex (Fallback)
-        // 3. Si no tiene asset pero tiene icono -> Icono FontAwesome
         if (isNeutral)
           apexIcon
         else if (themeConfig.logoAsset != null)
@@ -163,10 +177,8 @@ class _BrandLogo extends ConsumerWidget {
             themeConfig.logoAsset!,
             height: 28,
             fit: BoxFit.contain,
-            // ESTO SOLUCIONA EL BLOQUE GRIS EN PRODUCCIÓN:
             errorBuilder: (context, error, stackTrace) {
-              debugPrint('Error cargando logo asset en producción: $error');
-              return apexIcon; // Si falla la imagen, muestra el icono de Apex
+              return apexIcon; 
             },
           )
         else
@@ -191,16 +203,44 @@ class _BrandLogo extends ConsumerWidget {
   }
 }
 
-// --- WIDGETS AUXILIARES (Drawer, Botones, Tabs) ---
-// (Se mantienen idénticos para no romper el resto de la UI)
-
+// --- DRAWER REDISEÑADO Y COMPACTO ---
 class _MobileDrawer extends ConsumerWidget {
   final List<Map<String, dynamic>> navItems;
   const _MobileDrawer({required this.navItems});
+  
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    
+    // Configuración del Logo para el Drawer
+    final themeConfig = ref.watch(currentAppThemeConfigProvider);
+    final isNeutral = themeConfig.theme == AppTheme.neutral;
+
+    final Widget apexIcon = Transform(
+      alignment: Alignment.center,
+      transform: Matrix4.identity()..scale(0.7, 1.1),
+      child: Icon(FontAwesomeIcons.chevronUp, color: colorScheme.primary, size: 26),
+    );
+
+    final Widget logoWidget;
+    if (isNeutral) {
+      logoWidget = apexIcon;
+    } else if (themeConfig.logoAsset != null) {
+      logoWidget = Image.asset(
+        themeConfig.logoAsset!,
+        height: 32, 
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => apexIcon,
+      );
+    } else {
+      logoWidget = Icon(
+        themeConfig.logoIcon ?? FontAwesomeIcons.chevronUp, 
+        color: colorScheme.primary, 
+        size: 26
+      );
+    }
+
     return Drawer(
       width: MediaQuery.of(context).size.width * 0.85, 
       backgroundColor: colorScheme.surface,
@@ -209,6 +249,7 @@ class _MobileDrawer extends ConsumerWidget {
       ),
       child: Column(
         children: [
+          // --- HEADER: APEX ---
           Container(
             padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
             decoration: BoxDecoration(
@@ -218,11 +259,32 @@ class _MobileDrawer extends ConsumerWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                 const _BrandLogo(),
-                 IconButton(icon: const Icon(Icons.close), color: colorScheme.primary, onPressed: () => Navigator.pop(context)),
+                 Row(
+                   mainAxisSize: MainAxisSize.min,
+                   children: [
+                     logoWidget,
+                     const SizedBox(width: 12),
+                     Text(
+                       'APEX',
+                       style: theme.textTheme.headlineSmall?.copyWith(
+                         fontWeight: FontWeight.w900,
+                         letterSpacing: 3.0,
+                         color: colorScheme.primary,
+                         height: 1.0,
+                       ),
+                     ),
+                   ],
+                 ),
+                 IconButton(
+                   icon: const Icon(Icons.close), 
+                   color: colorScheme.primary, 
+                   onPressed: () => Navigator.pop(context)
+                 ),
               ],
             ),
           ),
+
+          // --- NAVEGACIÓN ---
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -243,29 +305,67 @@ class _MobileDrawer extends ConsumerWidget {
               }).toList(),
             ),
           ),
+
+          // --- FOOTER / PANEL DE CONTROL COMPACTO ---
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(border: Border(top: BorderSide(color: colorScheme.outline.withOpacity(0.1)))),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              border: Border(top: BorderSide(color: colorScheme.outline.withOpacity(0.1))),
+            ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0, left: 4),
+                  child: Text(
+                    "PREFERENCIAS",
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
                 Row(
                   children: [
+                    // Botón de Modo
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => ref.read(brightnessModeProvider.notifier).toggleMode(),
-                        icon: Icon(theme.brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode),
-                        label: Text(theme.brightness == Brightness.dark ? "Modo Claro" : "Modo Oscuro"),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: Icon(
+                          theme.brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
+                          size: 18,
+                        ),
+                        label: Text(
+                          theme.brightness == Brightness.dark ? "Claro" : "Oscuro",
+                          style: const TextStyle(fontSize: 14),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
+                    // Botón Reset
                     IconButton.filledTonal(
                       onPressed: () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
-                      icon: const Icon(Icons.refresh),
+                      tooltip: "Restaurar Tema",
+                      style: IconButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.all(12),
+                      ),
+                      icon: const Icon(Icons.refresh_rounded, size: 20),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                const _AuthButton(fullWidth: true),
+                SizedBox(
+                  width: double.infinity,
+                  child: const _AuthButton(fullWidth: true),
+                ),
               ],
             ),
           ),
@@ -273,9 +373,10 @@ class _MobileDrawer extends ConsumerWidget {
       ),
     );
   }
+
   IconData _getIconForLabel(String label) {
     if (label == 'Home') return Icons.home_rounded;
-    if (label == 'Servicios') return Icons.work_rounded;
+    if (label == 'Servicios') return FontAwesomeIcons.layerGroup; // Icono Tecnológico
     if (label == 'Sobre Mí') return Icons.person_rounded;
     return Icons.mail_rounded;
   }
