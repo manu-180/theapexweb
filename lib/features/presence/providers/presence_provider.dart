@@ -10,13 +10,18 @@ part 'presence_provider.g.dart';
 class ConnectedUser {
   final String id;
   final String? name;
+  final String? photoUrl;
   final bool isMe;
 
   ConnectedUser({
     required this.id,
     this.name,
+    this.photoUrl,
     required this.isMe,
   });
+  
+  @override
+  String toString() => 'User(name: $name, photo: $photoUrl)';
 }
 
 @riverpod
@@ -29,57 +34,70 @@ class PresenceNotifier extends _$PresenceNotifier {
     final currentUser = ref.watch(currentUserProvider);
 
     final myId = currentUser?.id ?? 'anon-${DateTime.now().millisecondsSinceEpoch}';
-    final myName = currentUser?.userMetadata?['full_name'];
+    
+    // --- DIAGNÓSTICO DE LA FOTO ---
+    final metadata = currentUser?.userMetadata;
+    
+    if (currentUser != null) {
+      debugPrint('\n🤠 --- DIAGNÓSTICO DE METADATA ---');
+      debugPrint('📦 Metadata Completa: $metadata');
+      // Intentamos adivinar dónde está la foto
+      debugPrint('🔍 avatar_url: ${metadata?['avatar_url']}');
+      debugPrint('🔍 picture: ${metadata?['picture']}');
+      debugPrint('🔍 full_name: ${metadata?['full_name']}');
+      debugPrint('🤠 --------------------------------\n');
+    }
+    // -----------------------------
+
+    // Intentamos recuperar la foto de varios lugares comunes
+    final myName = metadata?['full_name'];
+    final myPhotoUrl = metadata?['avatar_url'] ?? metadata?['picture'] ?? metadata?['image'];
 
     if (_channel != null) {
       _supabaseUnsubscribe();
     }
 
-    _subscribeToPresence(supabase, myId, myName);
+    _subscribeToPresence(supabase, myId, myName, myPhotoUrl);
 
     return [];
   }
 
-  void _subscribeToPresence(SupabaseClient supabase, String myId, String? myName) {
-    debugPrint('🔌 Intentando conectar a Realtime...'); // LOG 1
-
+  void _subscribeToPresence(SupabaseClient supabase, String myId, String? myName, String? myPhotoUrl) {
     _channel = supabase.channel('online_users');
 
     _channel!
         .onPresenceSync((payload) {
-          debugPrint('🔄 Sincronizando presencia...'); // LOG 2
-          final presenceList = _channel!.presenceState();
-          
+          final presenceStateList = _channel!.presenceState();
           final List<ConnectedUser> users = [];
           
-          for (var presence in presenceList) {
-             final data = (presence as dynamic).payload as Map<String, dynamic>;
-             final userId = data['user_id'] as String;
-             final name = data['name'] as String?;
+          for (var state in presenceStateList) {
+             final presences = (state as dynamic).presences as List<dynamic>;
              
-             users.add(ConnectedUser(
-               id: userId,
-               name: name,
-               isMe: userId == myId,
-             ));
+             for (var userPresence in presences) {
+               final data = (userPresence as dynamic).payload as Map<String, dynamic>;
+               
+               final userId = data['user_id'] as String;
+               final name = data['name'] as String?;
+               final photoUrl = data['photo_url'] as String?;
+               
+               users.add(ConnectedUser(
+                 id: userId,
+                 name: name,
+                 photoUrl: photoUrl,
+                 isMe: userId == myId,
+               ));
+             }
           }
-          
-          debugPrint('✅ Usuarios conectados: ${users.length}'); // LOG 3
           state = users;
         })
         .subscribe((status, error) async {
           if (status == RealtimeSubscribeStatus.subscribed) {
-            debugPrint('🟢 ¡Conectado al canal! Enviando mis datos...'); // LOG 4
-            
             await _channel!.track({
               'user_id': myId,
-              'name': myName, 
+              'name': myName,
+              'photo_url': myPhotoUrl, 
               'online_at': DateTime.now().toIso8601String(),
             });
-          } else if (status == RealtimeSubscribeStatus.closed) {
-             debugPrint('🔴 Conexión cerrada.');
-          } else if (error != null) {
-             debugPrint('❌ Error de suscripción: $error'); // LOG DE ERROR
           }
         });
   }

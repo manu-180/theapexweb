@@ -2,7 +2,6 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/features/presence/providers/presence_provider.dart';
 
 class PresenceBadge extends ConsumerWidget {
@@ -13,81 +12,91 @@ class PresenceBadge extends ConsumerWidget {
     final theme = Theme.of(context);
     final users = ref.watch(presenceNotifierProvider);
 
-    // Si no hay nadie (o solo yo y falló la conexión), mostramos algo discreto
-    if (users.isEmpty) return const SizedBox.shrink();
+    // 1. ESTADO "CONECTANDO"
+    if (users.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8, height: 8,
+              decoration: const BoxDecoration(color: Colors.orangeAccent, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              "Conectando...",
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     final totalCount = users.length;
     
-    // Filtramos para saber quién soy yo
-    final me = users.firstWhere((u) => u.isMe, orElse: () => ConnectedUser(id: '', isMe: true));
+    // Identificamos quién soy yo
+    final me = users.firstWhere(
+      (u) => u.isMe, 
+      orElse: () => ConnectedUser(id: 'unknown', isMe: true, name: 'Yo')
+    );
+
+    // --- LÓGICA DE AGRUPAMIENTO ---
+    final others = users.where((u) => !u.isMe).toList();
+    final namedUsers = others.where((u) => u.name != null).toList();
+    final anonymousCount = others.where((u) => u.name == null).length;
+    // ------------------------------
     
-    // Texto del Badge
-    String labelText;
-    if (totalCount == 1) {
-      labelText = "1 online (Tú)";
-    } else {
-      labelText = "$totalCount online";
-    }
+    String labelText = totalCount == 1 ? "1 online (Tú)" : "$totalCount online";
 
     return PopupMenuButton(
       tooltip: 'Ver quién está conectado',
-      offset: const Offset(0, 50),
+      offset: const Offset(0, 45),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      itemBuilder: (context) {
-        return [
-          // 1. HEADER: TÚ
+      itemBuilder: (context) => <PopupMenuEntry<dynamic>>[
+          
+          // A. MI USUARIO (Siempre visible arriba)
           PopupMenuItem(
             enabled: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            height: 44,
+            child: Row(
               children: [
-                Text(
-                  "🟢 En línea ahora",
-                  style: TextStyle(
-                    color: Colors.green, 
-                    fontWeight: FontWeight.bold, 
-                    fontSize: 12
+                _UserAvatar(user: me),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    me.name != null ? "${me.name} (Tú)" : "Tú (Visitante Anónimo)",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface, 
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.person, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        me.name != null 
-                            ? "${me.name} (Tú)" 
-                            : "Tú (Visitante Anónimo)",
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
-                      ),
-                    ),
-                  ],
-                ),
-                const Divider(),
               ],
             ),
           ),
+
+          // Separador si hay otros
+          if (others.isNotEmpty) const PopupMenuDivider(height: 1),
           
-          // 2. LISTA DE OTROS
-          ...users.where((u) => !u.isMe).map((u) {
+          // B. OTROS USUARIOS CON NOMBRE (Uno por uno)
+          ...namedUsers.map((u) {
             return PopupMenuItem(
               enabled: false,
-              height: 40,
+              height: 44,
               child: Row(
                 children: [
-                  // Icono diferente si es anónimo o logueado
-                  Icon(
-                    u.name != null ? Icons.face : Icons.person_outline, 
-                    size: 16, 
-                    color: Colors.grey
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    u.name ?? "Visitante Anónimo",
-                    style: TextStyle(
-                      color: Colors.grey[800],
-                      fontStyle: u.name == null ? FontStyle.italic : FontStyle.normal
+                  _UserAvatar(user: u),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      u.name!,
+                      style: TextStyle(color: theme.colorScheme.onSurface),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -95,33 +104,86 @@ class PresenceBadge extends ConsumerWidget {
             );
           }),
 
-          // 3. MENSAJE FINAL (Solo si hay más gente)
-          if (totalCount > 1)
-             const PopupMenuItem(
+          // C. LOGICA DE ANÓNIMOS (MEJORADA)
+          // CASO 1: Hay un solo anónimo -> Se muestra normal, sin "x 1"
+          if (anonymousCount == 1)
+             PopupMenuItem(
               enabled: false,
-              child: Padding(
-                padding: EdgeInsets.only(top: 8.0),
-                child: Text(
-                  "¡Gracias por visitar!",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 10, color: Colors.grey),
+              height: 44,
+              child: Row(
+                children: [
+                   CircleAvatar(
+                    radius: 14,
+                    backgroundColor: theme.colorScheme.onSurface.withOpacity(0.08),
+                    child: Icon(Icons.person_outline, size: 18, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    "Visitante Anónimo", // Texto limpio
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // CASO 2: Hay MUCHOS anónimos -> Se agrupan con "x N"
+          if (anonymousCount > 1)
+            PopupMenuItem(
+              enabled: false,
+              height: 40,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: theme.colorScheme.onSurface.withOpacity(0.05),
+                    child: Icon(Icons.group_outlined, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    "Visitantes Anónimos x $anonymousCount", // Aquí sí usamos el contador
+                    style: TextStyle(
+                      fontStyle: FontStyle.italic,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // D. MENSAJE FINAL
+          if (totalCount > 1)
+             PopupMenuItem(
+              enabled: false,
+              height: 36,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    "¡Gracias por visitar!",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                      color: theme.colorScheme.onSurface.withOpacity(0.5),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                 ),
               ),
             ),
-        ];
-      },
+      ],
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // PUNTO VERDE PULSANTE (Efecto "Live")
             Pulse(
               infinite: true,
               duration: const Duration(seconds: 2),
               child: Container(
-                width: 8,
-                height: 8,
+                width: 8, height: 8,
                 decoration: const BoxDecoration(
                   color: Colors.greenAccent,
                   shape: BoxShape.circle,
@@ -136,12 +198,42 @@ class PresenceBadge extends ConsumerWidget {
               labelText,
               style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.bold,
-                // Color dinámico según tema para que se vea bien siempre
                 color: theme.colorScheme.onSurface,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// --- HELPER: Avatar ---
+class _UserAvatar extends StatelessWidget {
+  final ConnectedUser user;
+
+  const _UserAvatar({required this.user});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    if (user.photoUrl != null && user.photoUrl!.isNotEmpty) {
+      return CircleAvatar(
+        radius: 14, 
+        backgroundColor: theme.colorScheme.surfaceVariant,
+        backgroundImage: NetworkImage(user.photoUrl!),
+        onBackgroundImageError: (_, __) {}, 
+      );
+    }
+
+    return CircleAvatar(
+      radius: 14,
+      backgroundColor: theme.colorScheme.onSurface.withOpacity(0.08),
+      child: Icon(
+        user.name != null ? Icons.person : Icons.person_outline,
+        size: 18,
+        color: theme.colorScheme.onSurface.withOpacity(0.7),
       ),
     );
   }
