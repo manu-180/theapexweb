@@ -1,26 +1,26 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'comments_provider.dart';
+part of 'presence_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$commentsNotifierHash() => r'a4eea494c462785942f3dba1ab39ebf8f19823b3';
+String _$presenceNotifierHash() => r'83e7cceaa86ec305444f79b562c69730b2302b94';
 
-/// See also [CommentsNotifier].
-@ProviderFor(CommentsNotifier)
-final commentsNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<CommentsNotifier, List<Comment>>.internal(
-  CommentsNotifier.new,
-  name: r'commentsNotifierProvider',
+/// See also [PresenceNotifier].
+@ProviderFor(PresenceNotifier)
+final presenceNotifierProvider =
+    AutoDisposeNotifierProvider<PresenceNotifier, List<ConnectedUser>>.internal(
+  PresenceNotifier.new,
+  name: r'presenceNotifierProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$commentsNotifierHash,
+      : _$presenceNotifierHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$CommentsNotifier = AutoDisposeAsyncNotifier<List<Comment>>;
+typedef _$PresenceNotifier = AutoDisposeNotifier<List<ConnectedUser>>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

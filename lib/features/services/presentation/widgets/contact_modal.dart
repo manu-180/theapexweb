@@ -1,20 +1,23 @@
 // Archivo: lib/features/services/presentation/widgets/contact_modal.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:prueba_de_riverpod/features/auth/presentation/providers/auth_providers.dart';
+import 'package:prueba_de_riverpod/features/auth/presentation/widgets/auth_modal.dart';
+import 'package:prueba_de_riverpod/features/payments/data/repositories/mercadopago_repository.dart';
 import 'package:prueba_de_riverpod/features/services/domain/models/plan_model.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class ContactModal extends StatefulWidget {
+class ContactModal extends ConsumerStatefulWidget {
   final ServicePlan plan;
 
   const ContactModal({super.key, required this.plan});
 
   @override
-  State<ContactModal> createState() => _ContactModalState();
+  ConsumerState<ContactModal> createState() => _ContactModalState();
 }
 
-class _ContactModalState extends State<ContactModal> {
+class _ContactModalState extends ConsumerState<ContactModal> {
   bool _isLoadingPayment = false;
 
   void _launchWhatsApp() async {
@@ -29,36 +32,37 @@ class _ContactModalState extends State<ContactModal> {
     }
   }
 
-  void _launchMercadoPago() async {
-    setState(() => _isLoadingPayment = true);
-    try {
-      final response = await Supabase.instance.client.functions.invoke(
-        'create_preference_manuel',
-        body: {
-          'title': widget.plan.name,
-          'unit_price': widget.plan.price,
-          'quantity': 1,
-        },
+  Future<void> _launchMercadoPago() async {
+    // 1. Verificamos si el usuario está logueado
+    final user = ref.read(currentUserProvider);
+    
+    // Si no hay usuario o no tiene email, pedimos login
+    if (user == null || user.email == null) {
+      showDialog(
+        context: context,
+        builder: (_) => const AuthRequiredModal(),
       );
+      return;
+    }
 
-      final data = response.data;
-      
-      if (data != null && data['init_point'] != null) {
-        final url = data['init_point'] as String;
-        final uri = Uri.parse(url);
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-         if (data != null && data['error'] != null) {
-          throw "Error de MP: ${data['error']}";
-        }
-        throw "La respuesta del servidor no contiene el link de pago.";
-      }
+    setState(() => _isLoadingPayment = true);
+    
+    try {
+      // 2. Usamos el Repositorio centralizado (Arquitectura Limpia)
+      await ref.read(mercadoPagoRepositoryProvider).createPreferenceAndLaunchCheckout(
+        plan: widget.plan,
+        userEmail: user.email!,
+        userId: user.id,
+      );
     } catch (e) {
       if (mounted) {
+        // Mostramos el error de forma amigable (quitando la excepción técnica si es posible)
+        final errorMessage = e.toString().replaceAll('Exception:', '').trim();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error al generar pago: $e'), 
+            content: Text('Error: $errorMessage'), 
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -200,7 +204,7 @@ class _ContactModalState extends State<ContactModal> {
                         ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                         : Icon(Icons.credit_card, size: 20, color: colorScheme.primary),
                       label: Text(
-                        _isLoadingPayment ? "Generando link..." : "Pagar ahora (${widget.plan.price ~/ 1000}k)",
+                        _isLoadingPayment ? "Procesando..." : "Pagar ahora (${widget.plan.price ~/ 1000}k)",
                         style: TextStyle(color: colorScheme.primary),
                       ),
                     ),

@@ -2,70 +2,159 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lottie/lottie.dart';
+import 'package:prueba_de_riverpod/core/config/theme/app_theme.dart'; // Importa tu Enum
+import 'package:prueba_de_riverpod/core/config/theme/app_theme_providers.dart'; // Importa el provider
 import 'package:prueba_de_riverpod/features/auth/presentation/providers/auth_providers.dart';
 
-class AuthRequiredModal extends ConsumerWidget {
+class AuthRequiredModal extends ConsumerStatefulWidget {
   const AuthRequiredModal({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AuthRequiredModal> createState() => _AuthRequiredModalState();
+}
+
+class _AuthRequiredModalState extends ConsumerState<AuthRequiredModal> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  // MENTORÍA: Ahora seleccionamos por el ENUM del tema. 
+  // Esto es 100% robusto porque no depende de cómo Flutter altere los colores.
+  String _getAnimationAsset(AppTheme currentTheme) {
+    switch (currentTheme) {
+      case AppTheme.flutter:
+        return 'assets/animations/password_flutter.json';
+      case AppTheme.supabase:
+        return 'assets/animations/password_supabase.json';
+      case AppTheme.riverpod:
+        return 'assets/animations/password_riverpod.json';
+      case AppTheme.assistify:
+        return 'assets/animations/password_assistify.json';
+      case AppTheme.neutral:
+      default:
+        return 'assets/animations/password_neutral.json';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    // 1. Escuchamos la configuración actual del tema desde Riverpod
+    final appConfig = ref.watch(currentAppThemeConfigProvider);
+    
+    // 2. Obtenemos el path basado en el Enum (appConfig.theme)
+    final animationPath = _getAnimationAsset(appConfig.theme);
     
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      backgroundColor: theme.colorScheme.surface,
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Animación de Seguridad (Usamos la de Supabase que ya tienes)
-            SizedBox(
-              height: 120,
-              child: Lottie.asset('assets/animations/supabase_lottie.json', repeat: false),
-            ),
-            const SizedBox(height: 24),
-            
-            Text(
-              "Veracidad Garantizada",
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "Para mantener la calidad y autenticidad de las reseñas en este portfolio, solicitamos un inicio de sesión rápido con Google.",
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
-            
-            // Botón de Login
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: () {
-                  Navigator.pop(context); // Cerramos el modal
-                  ref.read(authRepositoryProvider).signInWithGoogle(); // Ejecutamos login
-                },
-                icon: const Icon(Icons.g_mobiledata, size: 28),
-                label: const Text("Autenticar con Google"),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      backgroundColor: colorScheme.surface,
+      elevation: 0,
+      insetPadding: const EdgeInsets.all(20),
+      
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // --- ANIMACIÓN LOTTIE SELECCIONADA ---
+              SizedBox(
+                height: 220, 
+                width: double.infinity,
+                child: Lottie.asset(
+                  animationPath, 
+                  controller: _controller,
+                  onLoaded: (composition) {
+                    _controller
+                      ..duration = composition.duration * 0.7 
+                      ..repeat(); 
+                  },
+                  fit: BoxFit.contain,
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancelar"),
-            ),
-          ],
+              
+              // --- CONTENIDO ---
+              Padding(
+                padding: const EdgeInsets.fromLTRB(32, 0, 32, 32), 
+                child: Column(
+                  children: [
+                    Text(
+                      "Veracidad Garantizada",
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: colorScheme.onSurface,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      "Para mantener la calidad de las reseñas, solicitamos un inicio de sesión rápido. Así confirmamos que eres una persona real.",
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.6,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 32), 
+                    
+                    // --- BOTONES ---
+                    Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                            foregroundColor: colorScheme.onSurfaceVariant,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                          child: const Text(
+                            "Cancelar",
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: () {
+                              Navigator.pop(context); 
+                              ref.read(authRepositoryProvider).signInWithGoogle(); 
+                            },
+                            icon: const Icon(Icons.g_mobiledata_rounded, size: 26),
+                            label: const Text(
+                              "Autenticar",
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              elevation: 0,
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

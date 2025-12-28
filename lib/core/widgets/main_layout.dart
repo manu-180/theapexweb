@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:prueba_de_riverpod/features/presence/presentation/widgets/presence_badge.dart';
 import 'package:video_player/video_player.dart';
 import 'package:prueba_de_riverpod/core/config/theme/app_theme.dart'; 
 import 'package:prueba_de_riverpod/core/config/theme/app_theme_providers.dart';
@@ -130,12 +131,15 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
                 }).toList(),
               ),
             ),
+            const PresenceBadge(),
+    const SizedBox(width: 12),
             const SizedBox(width: 5),
             _ThemeToggleButton(),
             const SizedBox(width: 5),
             const _AuthButton(),
             const SizedBox(width: 15),
           ] else ...[
+            const PresenceBadge(),
             IconButton(
               onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
               icon: const Icon(Icons.menu_rounded, size: 28),

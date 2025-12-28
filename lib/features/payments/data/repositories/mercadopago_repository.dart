@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:prueba_de_riverpod/core/providers/supabase_providers.dart';
 import 'package:prueba_de_riverpod/features/services/domain/models/plan_model.dart';
+import 'package:prueba_de_riverpod/main.dart'; 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:prueba_de_riverpod/main.dart'; 
 
 part 'mercadopago_repository.g.dart';
 
@@ -24,11 +24,7 @@ class MercadoPagoRepository {
   }) async {
     
     final session = _supabase.auth.currentSession;
-    
-    // CORRECCIÓN 1: En Supabase v2 es 'accessToken' (camelCase)
     final jwt = session?.accessToken;
-
-    // Obtenemos la Anon Key desde los headers del cliente
     final anonKey = _supabase.headers['apikey'];
 
     try {
@@ -37,10 +33,9 @@ class MercadoPagoRepository {
       }
       
       final response = await _supabase.functions.invoke(
-        'create-preference-manuel',
+        'create_preference_manuel', // Nombre correcto (guion bajo)
         headers: {
           'Content-Type': 'application/json',
-          // Usamos la anonKey recuperada correctamente si no hay JWT
           'Authorization': jwt != null ? 'Bearer $jwt' : 'Bearer $anonKey', 
         },
         body: jsonEncode({
@@ -56,27 +51,37 @@ class MercadoPagoRepository {
       );
 
       final responseData = response.data;
+      
+      // Verificación robusta de errores lógicos
+      if (responseData is Map && responseData.containsKey('error')) {
+         throw Exception(responseData['error']);
+      }
+
       final String? checkoutUrl = responseData['checkoutUrl'];
       
       if (checkoutUrl == null || checkoutUrl.isEmpty) {
-        throw Exception('La Edge Function no devolvió una URL de checkout válida.');
+        throw Exception('El servidor no devolvió el enlace de pago.');
       }
 
       final uri = Uri.parse(checkoutUrl);
       if (await canLaunchUrl(uri)) {
         await launchUrl(
           uri,
-          mode: LaunchMode.inAppWebView,
+          mode: LaunchMode.externalApplication, 
         );
       } else {
-        throw Exception('No se pudo abrir la URL de pago: $checkoutUrl');
+        throw Exception('No se pudo abrir la pasarela de pagos.');
       }
 
-    // CORRECCIÓN 2: La excepción se llama 'FunctionException' (singular)
     } on FunctionException catch (e) {
-      throw Exception('Error en el servicio de pago: NO SE QUE ERROR PONER $e');
+      // CORRECCIÓN AQUÍ: Usamos details o reasonPhrase, ya que .message no existe
+      final msg = e.details?.toString() ?? e.reasonPhrase ?? 'Error desconocido en Edge Function';
+      debugPrint('Error de Edge Function: $msg');
+      throw Exception('Error al conectar con el servidor de pagos. Intenta nuevamente.');
+      
     } catch (e) {
-      throw Exception('Error desconocido al iniciar el pago: $e');
+      debugPrint('Error en checkout: $e');
+      throw Exception('No se pudo iniciar el pago. Verifica tu conexión.');
     }
   }
 }
