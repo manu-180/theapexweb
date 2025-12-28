@@ -7,10 +7,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'presence_provider.g.dart';
 
-// Modelo simple para saber quién está conectado
 class ConnectedUser {
   final String id;
-  final String? name; // Si es null, es anónimo
+  final String? name;
   final bool isMe;
 
   ConnectedUser({
@@ -26,42 +25,35 @@ class PresenceNotifier extends _$PresenceNotifier {
 
   @override
   List<ConnectedUser> build() {
-    // 1. Obtenemos dependencias
     final supabase = ref.watch(supabaseClientProvider);
     final currentUser = ref.watch(currentUserProvider);
 
-    // 2. Definimos mi identidad actual
     final myId = currentUser?.id ?? 'anon-${DateTime.now().millisecondsSinceEpoch}';
-    final myName = currentUser?.userMetadata?['full_name']; // Nombre de Google
+    final myName = currentUser?.userMetadata?['full_name'];
 
-    // 3. Limpieza previa si cambia el usuario (login/logout)
     if (_channel != null) {
       _supabaseUnsubscribe();
     }
 
-    // 4. Suscripción al canal de Presencia
     _subscribeToPresence(supabase, myId, myName);
 
-    // Estado inicial vacío hasta que sincronice
     return [];
   }
 
   void _subscribeToPresence(SupabaseClient supabase, String myId, String? myName) {
-    // Creamos un canal único para "usuarios online"
+    debugPrint('🔌 Intentando conectar a Realtime...'); // LOG 1
+
     _channel = supabase.channel('online_users');
 
     _channel!
         .onPresenceSync((payload) {
-          // CORRECCIÓN: Aquí manejamos la LISTA directamente
+          debugPrint('🔄 Sincronizando presencia...'); // LOG 2
           final presenceList = _channel!.presenceState();
           
           final List<ConnectedUser> users = [];
           
-          // Iteramos la lista (sin usar .values)
           for (var presence in presenceList) {
-             // Usamos 'dynamic' para evitar problemas de tipos internos de la librería
              final data = (presence as dynamic).payload as Map<String, dynamic>;
-             
              final userId = data['user_id'] as String;
              final name = data['name'] as String?;
              
@@ -72,16 +64,22 @@ class PresenceNotifier extends _$PresenceNotifier {
              ));
           }
           
+          debugPrint('✅ Usuarios conectados: ${users.length}'); // LOG 3
           state = users;
         })
         .subscribe((status, error) async {
           if (status == RealtimeSubscribeStatus.subscribed) {
-            // Una vez conectados, enviamos NUESTRA data al canal
+            debugPrint('🟢 ¡Conectado al canal! Enviando mis datos...'); // LOG 4
+            
             await _channel!.track({
               'user_id': myId,
               'name': myName, 
               'online_at': DateTime.now().toIso8601String(),
             });
+          } else if (status == RealtimeSubscribeStatus.closed) {
+             debugPrint('🔴 Conexión cerrada.');
+          } else if (error != null) {
+             debugPrint('❌ Error de suscripción: $error'); // LOG DE ERROR
           }
         });
   }
