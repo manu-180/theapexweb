@@ -39,7 +39,7 @@ dev_dependencies:
   riverpod_lint: ^2.3.10
 
 # Configuración de assets (Icons, etc.)
-flutter_icons:
+flutter_launcher_icons:
   android: false
   ios: false
   remove_alpha_ios: true
