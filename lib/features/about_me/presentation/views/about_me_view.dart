@@ -1,5 +1,6 @@
 // Archivo: lib/features/about_me/presentation/views/about_me_view.dart
 import 'package:animate_do/animate_do.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -7,6 +8,7 @@ import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/features/shared/widgets/footer.dart';
 import 'package:video_player/video_player.dart';
+import 'dart:html' as html; 
 
 class AboutMeView extends ConsumerStatefulWidget {
   const AboutMeView({super.key});
@@ -24,11 +26,19 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
     super.dispose();
   }
 
+  // Detección estricta de iPhone/iPad/iOS
+  bool get _isIOS {
+    if (!kIsWeb) return defaultTargetPlatform == TargetPlatform.iOS;
+    final userAgent = html.window.navigator.userAgent.toLowerCase();
+    return userAgent.contains('iphone') || userAgent.contains('ipad') || userAgent.contains('ipod');
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeConfig = ref.watch(currentAppThemeConfigProvider);
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 800;
+    final bool hideVisuals = _isIOS;
 
     return MouseRegion(
       onHover: (event) => _mousePos.value = event.position,
@@ -45,8 +55,14 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
                   constraints: const BoxConstraints(maxWidth: 900),
                   child: Column(
                     children: [
-                      FadeInDown(child: _DynamicHeroImage(themeConfig: themeConfig)),
-                      const SizedBox(height: 10),
+                      // Si es iOS, no renderizamos nada (SizedBox vacío)
+                      if (!hideVisuals)
+                        FadeInDown(
+                          child: _DynamicHeroImage(themeConfig: themeConfig)
+                        )
+                      else
+                        const SizedBox(height: 20), // Espacio mínimo de seguridad
+                        
                       FadeInUp(child: _AboutMeCard(mousePos: _mousePos)),
                     ],
                   ),
@@ -67,6 +83,7 @@ class _DynamicHeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Volvemos a los WebM originales para Android/Web Desktop
     final String videoPath = switch (themeConfig.theme) {
       AppTheme.flutter   => 'assets/videos/yoflutter.webm',
       AppTheme.supabase  => 'assets/videos/yosupabase.webm',
@@ -256,69 +273,57 @@ class _TransparentVideoPlayer extends StatefulWidget {
 }
 
 class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
-  late VideoPlayerController _controller;
+  VideoPlayerController? _controller;
   bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset(widget.assetPath)
-      ..initialize().then((_) {
-        _controller.setLooping(true);
-        _controller.setVolume(0.0); 
-        _controller.play();
-        if (mounted) {
-          setState(() => _isInitialized = true);
-        }
-      });
+    _initializePlayer();
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _toggleAudio() {
-    if (_controller.value.volume > 0) {
-      _controller.setVolume(0.0);
-    } else {
-      _controller.setVolume(1.0);
+  Future<void> _initializePlayer() async {
+    _controller = VideoPlayerController.asset(widget.assetPath);
+    try {
+      await _controller!.initialize();
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+          _controller!.setLooping(true);
+          _controller!.setVolume(0.0);
+          _controller!.play();
+        });
+      }
+    } catch (e) {
+      debugPrint("Error inicializando video: $e");
     }
   }
 
   @override
+  void dispose() {
+    _controller?.pause();
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (!_isInitialized) {
+    if (!_isInitialized || _controller == null) {
       return const SizedBox.shrink(); 
     }
 
     return FadeIn(
       duration: const Duration(milliseconds: 500),
       child: AspectRatio(
-        aspectRatio: _controller.value.aspectRatio,
+        aspectRatio: _controller!.value.aspectRatio,
         child: Stack(
           children: [
-            // El VideoPlayer envuelto en IgnorePointer para Flutter
             IgnorePointer(
-              child: VideoPlayer(_controller),
+              child: VideoPlayer(_controller!),
             ),
-            
-            // CAPA ANT-EDGE: Un contenedor con un color casi transparente 
-            // (0.01) suele engañar al motor de Edge para que no detecte 
-            // el tag de video debajo.
             Positioned.fill(
               child: Container(
                 color: Colors.black.withOpacity(0.01),
-              ),
-            ),
-
-            // Capa interactiva para el audio
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _toggleAudio,
-                behavior: HitTestBehavior.opaque,
-                child: const SizedBox.expand(),
               ),
             ),
           ],

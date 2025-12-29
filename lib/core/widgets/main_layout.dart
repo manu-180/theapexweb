@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:apex/features/presence/presentation/widgets/presence_badge.dart';
-import 'package:video_player/video_player.dart';
 import 'package:apex/core/config/theme/app_theme.dart'; 
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/config/theme/brightness_provider.dart';
@@ -22,9 +21,6 @@ class MainLayout extends ConsumerStatefulWidget {
 class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  
-  // Cache de controladores para evitar recargas
-  final Map<String, VideoPlayerController> _videoPreload = {};
 
   final List<Map<String, dynamic>> _navItems = [
     {'label': 'Home', 'path': '/', 'name': 'home'},
@@ -37,37 +33,11 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
   void initState() {
     super.initState();
     _tabController = TabController(length: _navItems.length, vsync: this);
-    _preloadAllVideos();
-  }
-
-  void _preloadAllVideos() {
-    // Precargamos todos para que estén listos instantáneamente
-    final videoAssets = [
-      'assets/videos/yoflutter.webm',
-      'assets/videos/yosupabase.webm',
-      'assets/videos/yoriverpod.webm',
-      'assets/videos/yoassistify.webm',
-      'assets/videos/yoapex.webm',
-    ];
-
-    for (var path in videoAssets) {
-      final controller = VideoPlayerController.asset(path);
-      _videoPreload[path] = controller;
-      // Inicializamos en silencio (sin setState para no reconstruir todo innecesariamente)
-      controller.initialize().then((_) {
-        controller.setLooping(true);
-      }).catchError((error) {
-        debugPrint('Error precargando video $path: $error');
-      });
-    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    for (var controller in _videoPreload.values) {
-      controller.dispose();
-    }
     super.dispose();
   }
 
@@ -76,23 +46,16 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
     final theme = Theme.of(context);
     final isMobile = MediaQuery.of(context).size.width < 800;
 
-    // --- CORRECCIÓN CLAVE: SINCRONIZACIÓN DE RUTAS ---
-    // 1. Obtenemos la ruta actual desde GoRouter
     final String currentLocation = GoRouterState.of(context).uri.path;
-    
-    // 2. Buscamos a qué índice de tab corresponde esa ruta
     final int targetIndex = _navItems.indexWhere((item) => item['path'] == currentLocation);
 
-    // 3. Si encontramos coincidencia y es diferente al actual, actualizamos el TabController
     if (targetIndex != -1 && _tabController.index != targetIndex) {
-      // Usamos addPostFrameCallback para evitar errores de construcción durante la animación
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_tabController.index != targetIndex) {
           _tabController.animateTo(targetIndex);
         }
       });
     }
-    // --------------------------------------------------
 
     return Scaffold(
       key: _scaffoldKey,
@@ -124,7 +87,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
                     height: 60,
                     child: _HoverableTab(
                       text: entry.value['label'],
-                      // Pasamos el estado real basado en la ruta, no el visual del tab anterior
                       isSelected: index == targetIndex, 
                     ),
                   );
@@ -132,8 +94,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
               ),
             ),
             const PresenceBadge(),
-    const SizedBox(width: 12),
-            const SizedBox(width: 5),
+            const SizedBox(width: 12),
             _ThemeToggleButton(),
             const SizedBox(width: 5),
             const _AuthButton(),
@@ -170,7 +131,6 @@ class _BrandLogo extends ConsumerWidget {
       child: Icon(FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
     );
 
-    // Envolvemos todo en un MouseRegion y GestureDetector para la navegación
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -186,9 +146,7 @@ class _BrandLogo extends ConsumerWidget {
                 themeConfig.logoAsset!,
                 height: 28,
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return apexIcon; 
-                },
+                errorBuilder: (context, error, stackTrace) => apexIcon,
               )
             else
               Icon(themeConfig.logoIcon ?? FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
@@ -214,7 +172,6 @@ class _BrandLogo extends ConsumerWidget {
   }
 }
 
-// --- DRAWER REDISEÑADO Y COMPACTO ---
 class _MobileDrawer extends ConsumerWidget {
   final List<Map<String, dynamic>> navItems;
   const _MobileDrawer({required this.navItems});
@@ -223,8 +180,6 @@ class _MobileDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
-    // Configuración del Logo para el Drawer
     final themeConfig = ref.watch(currentAppThemeConfigProvider);
     final isNeutral = themeConfig.theme == AppTheme.neutral;
 
@@ -260,7 +215,6 @@ class _MobileDrawer extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // --- HEADER: APEX ---
           Container(
             padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
             decoration: BoxDecoration(
@@ -294,8 +248,6 @@ class _MobileDrawer extends ConsumerWidget {
               ],
             ),
           ),
-
-          // --- NAVEGACIÓN ---
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
@@ -316,8 +268,6 @@ class _MobileDrawer extends ConsumerWidget {
               }).toList(),
             ),
           ),
-
-          // --- FOOTER / PANEL DE CONTROL COMPACTO ---
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
@@ -340,7 +290,6 @@ class _MobileDrawer extends ConsumerWidget {
                 ),
                 Row(
                   children: [
-                    // Botón de Modo
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: () => ref.read(brightnessModeProvider.notifier).toggleMode(),
@@ -360,7 +309,6 @@ class _MobileDrawer extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // Botón Reset
                     IconButton.filledTonal(
                       onPressed: () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
                       tooltip: "Restaurar Tema",
@@ -387,7 +335,7 @@ class _MobileDrawer extends ConsumerWidget {
 
   IconData _getIconForLabel(String label) {
     if (label == 'Home') return Icons.home_rounded;
-    if (label == 'Servicios') return FontAwesomeIcons.layerGroup; // Icono Tecnológico
+    if (label == 'Servicios') return FontAwesomeIcons.layerGroup;
     if (label == 'Sobre Mí') return Icons.person_rounded;
     return Icons.mail_rounded;
   }
