@@ -170,39 +170,46 @@ class _BrandLogo extends ConsumerWidget {
       child: Icon(FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
     );
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        if (isNeutral)
-          apexIcon
-        else if (themeConfig.logoAsset != null)
-          Image.asset(
-            themeConfig.logoAsset!,
-            height: 28,
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              return apexIcon; 
-            },
-          )
-        else
-          Icon(themeConfig.logoIcon ?? FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
+    // Envolvemos todo en un MouseRegion y GestureDetector para la navegación
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => context.goNamed('home'),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (isNeutral)
+              apexIcon
+            else if (themeConfig.logoAsset != null)
+              Image.asset(
+                themeConfig.logoAsset!,
+                height: 28,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return apexIcon; 
+                },
+              )
+            else
+              Icon(themeConfig.logoIcon ?? FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
 
-        const SizedBox(width: 12),
-        
-        Flexible(
-          child: Text(
-            'Manuel Navarro',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-              height: 1.0,
+            const SizedBox(width: 12),
+            
+            Flexible(
+              child: Text(
+                'Manuel Navarro',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                  height: 1.0,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

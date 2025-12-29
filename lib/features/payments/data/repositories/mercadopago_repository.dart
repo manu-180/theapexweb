@@ -28,36 +28,28 @@ class MercadoPagoRepository {
     final anonKey = _supabase.headers['apikey'];
 
     try {
-      if (kDebugMode) {
-        print('Iniciando pago para $userEmail. Usuario ID: $userId');
-      }
-      
       final response = await _supabase.functions.invoke(
-        'create_preference_manuel', // Nombre correcto (guion bajo)
+        'create_preference_manuel',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': jwt != null ? 'Bearer $jwt' : 'Bearer $anonKey', 
         },
         body: jsonEncode({
-          'plan': {
-            'id': plan.id,
-            'name': plan.name,
-            'price': plan.price,
-            'description': plan.description,
-          },
-          'userEmail': userEmail,
-          'userId': userId, 
+          // CAMBIO: Mapear a lo que espera tu index.ts de la función
+          'title': plan.name,
+          'unit_price': plan.price,
+          'quantity': 1,
         }),
       );
 
       final responseData = response.data;
       
-      // Verificación robusta de errores lógicos
       if (responseData is Map && responseData.containsKey('error')) {
          throw Exception(responseData['error']);
       }
 
-      final String? checkoutUrl = responseData['checkoutUrl'];
+      // CAMBIO: Tu función devuelve 'init_point', no 'checkoutUrl'
+      final String? checkoutUrl = responseData['init_point'];
       
       if (checkoutUrl == null || checkoutUrl.isEmpty) {
         throw Exception('El servidor no devolvió el enlace de pago.');

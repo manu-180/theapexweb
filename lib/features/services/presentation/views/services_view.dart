@@ -200,6 +200,9 @@ class _TrustCard extends StatelessWidget {
     final isApp = selectedIndex == 1;
     final brandColor = theme.colorScheme.primary; 
     
+    // Detectamos si es móvil para cambiar el alineamiento del Wrap
+    final isMobile = MediaQuery.of(context).size.width < 800;
+    
     final iconMain = isApp ? FontAwesomeIcons.rocket : FontAwesomeIcons.laptopCode;
     final title = isApp ? "¿Por qué confiar en mí?" : "Ingeniería aplicada a la Web";
     final subtitle = isApp ? "Experiencia comprobada" : "Potencia y Optimización Real";
@@ -222,6 +225,7 @@ class _TrustCard extends StatelessWidget {
           ]
         : [
             _buildChip(theme, FontAwesomeIcons.ban, "Sin Plantillas (100% Custom)"),
+            _buildChip(theme, FontAwesomeIcons.gaugeHigh, "Velocidad Extrema"),
             _buildChip(theme, FontAwesomeIcons.gaugeHigh, "Velocidad Extrema"),
             _buildChip(theme, FontAwesomeIcons.layerGroup, "Código Limpio y Escalable"),
             _buildChip(theme, FontAwesomeIcons.microchip, "Tecnología de Punta"),
@@ -311,7 +315,8 @@ class _TrustCard extends StatelessWidget {
                     Wrap(
                       spacing: 12,
                       runSpacing: 12,
-                      alignment: WrapAlignment.center,
+                      // CAMBIO: Alineación dinámica basada en si es móvil
+                      alignment: isMobile ? WrapAlignment.start : WrapAlignment.center,
                       children: chips,
                     ),
                   ],

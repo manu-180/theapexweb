@@ -24,39 +24,24 @@ class ConnectedUser {
   String toString() => 'User(name: $name, photo: $photoUrl)';
 }
 
+// Archivo: lib/features/presence/providers/presence_provider.dart
+// ... (mismas importaciones)
+
 @riverpod
 class PresenceNotifier extends _$PresenceNotifier {
   RealtimeChannel? _channel;
 
   @override
   List<ConnectedUser> build() {
+    // ... (mismo código de diagnóstico e inicialización)
     final supabase = ref.watch(supabaseClientProvider);
     final currentUser = ref.watch(currentUserProvider);
-
     final myId = currentUser?.id ?? 'anon-${DateTime.now().millisecondsSinceEpoch}';
-    
-    // --- DIAGNÓSTICO DE LA FOTO ---
     final metadata = currentUser?.userMetadata;
-    
-    if (currentUser != null) {
-      debugPrint('\n🤠 --- DIAGNÓSTICO DE METADATA ---');
-      debugPrint('📦 Metadata Completa: $metadata');
-      // Intentamos adivinar dónde está la foto
-      debugPrint('🔍 avatar_url: ${metadata?['avatar_url']}');
-      debugPrint('🔍 picture: ${metadata?['picture']}');
-      debugPrint('🔍 full_name: ${metadata?['full_name']}');
-      debugPrint('🤠 --------------------------------\n');
-    }
-    // -----------------------------
-
-    // Intentamos recuperar la foto de varios lugares comunes
     final myName = metadata?['full_name'];
     final myPhotoUrl = metadata?['avatar_url'] ?? metadata?['picture'] ?? metadata?['image'];
 
-    if (_channel != null) {
-      _supabaseUnsubscribe();
-    }
-
+    if (_channel != null) _supabaseUnsubscribe();
     _subscribeToPresence(supabase, myId, myName, myPhotoUrl);
 
     return [];
@@ -68,7 +53,7 @@ class PresenceNotifier extends _$PresenceNotifier {
     _channel!
         .onPresenceSync((payload) {
           final presenceStateList = _channel!.presenceState();
-          final List<ConnectedUser> users = [];
+          final Map<String, ConnectedUser> uniqueUsers = {}; // Usamos un Map para evitar duplicados por ID
           
           for (var state in presenceStateList) {
              final presences = (state as dynamic).presences as List<dynamic>;
@@ -80,15 +65,20 @@ class PresenceNotifier extends _$PresenceNotifier {
                final name = data['name'] as String?;
                final photoUrl = data['photo_url'] as String?;
                
-               users.add(ConnectedUser(
-                 id: userId,
-                 name: name,
-                 photoUrl: photoUrl,
-                 isMe: userId == myId,
-               ));
+               // Si el usuario ya existe en el mapa, no lo sobreescribimos
+               // Esto evita que múltiples pestañas del mismo usuario llenen la lista
+               if (!uniqueUsers.containsKey(userId)) {
+                 uniqueUsers[userId] = ConnectedUser(
+                   id: userId,
+                   name: name,
+                   photoUrl: photoUrl,
+                   isMe: userId == myId,
+                 );
+               }
              }
           }
-          state = users;
+          // Convertimos los valores del mapa de nuevo a una lista
+          state = uniqueUsers.values.toList();
         })
         .subscribe((status, error) async {
           if (status == RealtimeSubscribeStatus.subscribed) {
@@ -102,7 +92,7 @@ class PresenceNotifier extends _$PresenceNotifier {
         });
   }
 
-  Future<void> _supabaseUnsubscribe() async {
+ Future<void> _supabaseUnsubscribe() async {
     await _channel?.unsubscribe();
     _channel = null;
   }

@@ -6,7 +6,6 @@ import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:apex/features/auth/presentation/widgets/auth_modal.dart';
 import 'package:apex/features/comments/presentation/providers/comments_provider.dart';
 
-// RECUERDA: Reemplaza esto con tu User UID real de Supabase
 const String OWNER_UUID = '37dad3e9-531c-4657-8db6-ddebbdcfa878'; 
 
 class CommentCard extends ConsumerStatefulWidget {
@@ -38,11 +37,9 @@ class _CommentCardState extends ConsumerState<CommentCard> {
     final colorScheme = theme.colorScheme;
     final comment = widget.comment;
     
-    // Detectamos si es raíz o respuesta para el espaciado profesional
     final bool isRoot = comment.parentId == null;
     final bool isAdmin = comment.userId == OWNER_UUID; 
 
-    // --- ESTILOS VISUALES ---
     final cardColor = isAdmin 
         ? colorScheme.primary.withOpacity(0.08) 
         : colorScheme.surfaceContainerLow;      
@@ -51,24 +48,18 @@ class _CommentCardState extends ConsumerState<CommentCard> {
         ? colorScheme.primary.withOpacity(0.4) 
         : colorScheme.outline.withOpacity(0.15); 
 
-    // Texto dinámico para el botón de ver respuestas
     final replyCount = comment.replies.length;
     final replyText = _showReplies 
         ? "Ocultar respuestas" 
         : "Ver $replyCount ${replyCount == 1 ? 'respuesta' : 'respuestas'}";
 
-    // --- ESPACIADO INTELIGENTE (LA CLAVE DEL DISEÑO) ---
-    // Si es ROOT: Mucho aire abajo (32px) para separar temas.
-    // Si es RESPUESTA: Poco aire abajo (8px) para mantener el hilo unido.
     return Padding(
       padding: EdgeInsets.only(bottom: isRoot ? 32.0 : 8.0), 
       child: Column(
         children: [
-          // TARJETA CLICKEABLE
           GestureDetector(
             onTap: _toggleReplies, 
             child: Container(
-              // Margen interno pequeño, el espaciado grande lo maneja el Padding de arriba
               margin: const EdgeInsets.symmetric(vertical: 2), 
               decoration: BoxDecoration(
                 color: cardColor, 
@@ -86,50 +77,58 @@ class _CommentCardState extends ConsumerState<CommentCard> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // LÓGICA DE AVATAR CORREGIDA
                   _buildAvatar(comment.avatarUrl, isAdmin, colorScheme),
+                  
                   const SizedBox(width: 16),
+                  
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // --- HEADER ---
                         Row(
                           children: [
-                            Text(
-                              comment.userName,
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: isAdmin ? colorScheme.primary : colorScheme.onSurface,
+                            Expanded( 
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      comment.userName,
+                                      style: theme.textTheme.labelLarge?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: isAdmin ? colorScheme.primary : colorScheme.onSurface,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ),
+                                  if (isRoot && comment.rating != null) ...[
+                                    const SizedBox(width: 8),
+                                    Row(
+                                      children: List.generate(comment.rating!, (index) => 
+                                        const Icon(Icons.star_rounded, size: 14, color: Colors.amber)
+                                      ),
+                                    )
+                                  ],
+                                  if (isAdmin) ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primary.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: colorScheme.primary.withOpacity(0.5)),
+                                      ),
+                                      child: Text(
+                                        "Admin",
+                                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colorScheme.primary),
+                                      ),
+                                    )
+                                  ],
+                                ],
                               ),
                             ),
-                            
-                            // ESTRELLAS (Solo mostrar en comentarios raíz)
-                            // "El comentario del comentario no cuenta como reseña" -> Correcto.
-                            if (isRoot && comment.rating != null) ...[
-                              const SizedBox(width: 8),
-                              Row(
-                                children: List.generate(comment.rating!, (index) => 
-                                  const Icon(Icons.star_rounded, size: 14, color: Colors.amber)
-                                ),
-                              )
-                            ],
-                            
-                            if (isAdmin) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: colorScheme.primary.withOpacity(0.5)),
-                                ),
-                                child: Text(
-                                  "Admin",
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colorScheme.primary),
-                                ),
-                              )
-                            ],
-                            const Spacer(),
+                            const SizedBox(width: 8),
                             Text(
                               _timeAgo(comment.createdAt),
                               style: theme.textTheme.bodySmall?.copyWith(
@@ -140,20 +139,14 @@ class _CommentCardState extends ConsumerState<CommentCard> {
                           ],
                         ),
                         const SizedBox(height: 8),
-                        
-                        // --- CONTENIDO ---
                         Text(
                           comment.content,
                           style: theme.textTheme.bodyMedium?.copyWith(height: 1.5, fontSize: 15),
                         ),
                         const SizedBox(height: 12),
-                        
-                        // --- ACCIONES ---
                         Row(
                           children: [
                             _LikeButton(comment: comment),
-                            
-                            // Botón Responder (Solo en raíz)
                             if (isRoot) ...[
                               const SizedBox(width: 20),
                               InkWell(
@@ -177,8 +170,6 @@ class _CommentCardState extends ConsumerState<CommentCard> {
                                 ),
                               ),
                             ],
-                            
-                            // Badge animado de respuestas
                             if (comment.replies.isNotEmpty) ...[
                                const Spacer(),
                                AnimatedCrossFade(
@@ -197,15 +188,12 @@ class _CommentCardState extends ConsumerState<CommentCard> {
               ),
             ),
           ),
-
-          // --- ACORDEÓN DE RESPUESTAS (ANIMADO) ---
           AnimatedSize(
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeOutQuart,
             alignment: Alignment.topCenter,
             child: _showReplies && comment.replies.isNotEmpty
                 ? Padding(
-                    // Indentación visual para jerarquía
                     padding: const EdgeInsets.only(left: 32.0, top: 4.0), 
                     child: Column(
                       children: comment.replies.map((reply) => CommentCard(
@@ -221,23 +209,41 @@ class _CommentCardState extends ConsumerState<CommentCard> {
     );
   }
 
-  Widget _buildAvatar(String? url, bool isAdmin, ColorScheme colors) {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: isAdmin ? Border.all(color: colors.primary, width: 2) : null,
-        boxShadow: isAdmin ? [BoxShadow(color: colors.primary.withOpacity(0.2), blurRadius: 8)] : null,
+  // --- ARREGLO DE FOTOS ---
+Widget _buildAvatar(String? url, bool isAdmin, ColorScheme colors) {
+  // Verificamos si la URL es válida (no nula, no vacía y que empiece por http)
+  final bool hasValidUrl = url != null && url.isNotEmpty && url.startsWith('http');
+
+  return Container(
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      border: isAdmin ? Border.all(color: colors.primary, width: 2) : null,
+      boxShadow: isAdmin ? [BoxShadow(color: colors.primary.withOpacity(0.2), blurRadius: 8)] : null,
+    ),
+    child: CircleAvatar(
+      radius: 20,
+      backgroundColor: colors.surfaceContainerHighest,
+      child: ClipOval(
+        child: hasValidUrl 
+          ? Image.network(
+              url,
+              fit: BoxFit.cover,
+              width: 40,
+              height: 40,
+              // SI LA IMAGEN FALLA (POR CORS O URL ROTA), MUESTRA EL ÍCONO
+              errorBuilder: (context, error, stackTrace) => 
+                Icon(Icons.person, size: 20, color: colors.onSurfaceVariant),
+              // MIENTRAS CARGA, MUESTRA UNA MANCHA GRIS
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(color: Colors.white10);
+              },
+            )
+          : Icon(Icons.person, size: 20, color: colors.onSurfaceVariant),
       ),
-      child: CircleAvatar(
-        radius: 20, 
-        backgroundImage: url != null ? NetworkImage(url) : null,
-        backgroundColor: colors.surfaceContainerHighest,
-        child: url == null 
-          ? Icon(Icons.person, size: 20, color: colors.onSurfaceVariant) 
-          : null,
-      ),
-    );
-  }
+    ),
+  );
+}
 
   String _timeAgo(DateTime date) {
     final diff = DateTime.now().difference(date);
@@ -297,7 +303,6 @@ class _LikeButton extends ConsumerWidget {
            showDialog(context: context, builder: (_) => const AuthRequiredModal());
            return;
         }
-
         try {
           await ref.read(commentsNotifierProvider.notifier).toggleLike(comment.id);
         } catch (e) {

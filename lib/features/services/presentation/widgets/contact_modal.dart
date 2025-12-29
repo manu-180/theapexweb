@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
-import 'package:apex/features/auth/presentation/widgets/auth_modal.dart';
+// import 'package:apex/features/auth/presentation/widgets/auth_modal.dart'; // Ya no es necesario aquí
 import 'package:apex/features/payments/data/repositories/mercadopago_repository.dart';
 import 'package:apex/features/services/domain/models/plan_model.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -33,30 +33,21 @@ class _ContactModalState extends ConsumerState<ContactModal> {
   }
 
   Future<void> _launchMercadoPago() async {
-    // 1. Verificamos si el usuario está logueado
     final user = ref.read(currentUserProvider);
     
-    // Si no hay usuario o no tiene email, pedimos login
-    if (user == null || user.email == null) {
-      showDialog(
-        context: context,
-        builder: (_) => const AuthRequiredModal(),
-      );
-      return;
-    }
-
+    // MENTORÍA: Eliminamos la validación obligatoria de usuario. 
+    // Si no hay usuario, enviamos null o un string genérico.
     setState(() => _isLoadingPayment = true);
     
     try {
-      // 2. Usamos el Repositorio centralizado (Arquitectura Limpia)
       await ref.read(mercadoPagoRepositoryProvider).createPreferenceAndLaunchCheckout(
         plan: widget.plan,
-        userEmail: user.email!,
-        userId: user.id,
+        // Si no está logueado, usamos un email genérico para la preferencia
+        userEmail: user?.email ?? 'cliente_anonimo@theapexweb.com',
+        userId: user?.id,
       );
     } catch (e) {
       if (mounted) {
-        // Mostramos el error de forma amigable (quitando la excepción técnica si es posible)
         final errorMessage = e.toString().replaceAll('Exception:', '').trim();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -175,7 +166,6 @@ class _ContactModalState extends ConsumerState<ContactModal> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. WhatsApp (Siempre disponible)
                   FilledButton.icon(
                     onPressed: _launchWhatsApp,
                     style: FilledButton.styleFrom(
@@ -191,7 +181,6 @@ class _ContactModalState extends ConsumerState<ContactModal> {
                   
                   const SizedBox(height: 12),
                   
-                  // 2. Pagar (Solo si NO es Custom)
                   if (!widget.plan.isCustom)
                     OutlinedButton.icon(
                       onPressed: _isLoadingPayment ? null : _launchMercadoPago,

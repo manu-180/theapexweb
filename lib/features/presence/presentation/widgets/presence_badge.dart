@@ -12,6 +12,11 @@ class PresenceBadge extends ConsumerWidget {
     final theme = Theme.of(context);
     final users = ref.watch(presenceNotifierProvider);
 
+    // --- CONFIGURACIÓN DE TAMAÑOS (Para que todo sea idéntico) ---
+    const double kAvatarRadius = 16.0; // Un poquito más grande (32px total)
+    const double kIconSize = 20.0;     // Tamaño del ícono interno
+    // -------------------------------------------------------------
+
     // 1. ESTADO "CONECTANDO"
     if (users.isEmpty) {
       return Padding(
@@ -61,10 +66,10 @@ class PresenceBadge extends ConsumerWidget {
           // A. MI USUARIO (Siempre visible arriba)
           PopupMenuItem(
             enabled: false,
-            height: 44,
+            height: 48, // Un poco más alto para respirar
             child: Row(
               children: [
-                _UserAvatar(user: me),
+                _UserAvatar(user: me, radius: kAvatarRadius, iconSize: kIconSize),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -87,10 +92,10 @@ class PresenceBadge extends ConsumerWidget {
           ...namedUsers.map((u) {
             return PopupMenuItem(
               enabled: false,
-              height: 44,
+              height: 48,
               child: Row(
                 children: [
-                  _UserAvatar(user: u),
+                  _UserAvatar(user: u, radius: kAvatarRadius, iconSize: kIconSize),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -104,22 +109,23 @@ class PresenceBadge extends ConsumerWidget {
             );
           }),
 
-          // C. LOGICA DE ANÓNIMOS (MEJORADA)
-          // CASO 1: Hay un solo anónimo -> Se muestra normal, sin "x 1"
+          // C. LOGICA DE ANÓNIMOS (Agrupados)
+          
+          // CASO 1: Un solo anónimo -> Usamos el mismo estilo visual
           if (anonymousCount == 1)
              PopupMenuItem(
               enabled: false,
-              height: 44,
+              height: 48,
               child: Row(
                 children: [
                    CircleAvatar(
-                    radius: 14,
+                    radius: kAvatarRadius,
                     backgroundColor: theme.colorScheme.onSurface.withOpacity(0.08),
-                    child: Icon(Icons.person_outline, size: 18, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                    child: Icon(Icons.person_outline, size: kIconSize, color: theme.colorScheme.onSurface.withOpacity(0.7)),
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    "Visitante Anónimo", // Texto limpio
+                    "Visitante Anónimo",
                     style: TextStyle(
                       fontStyle: FontStyle.italic,
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
@@ -129,21 +135,21 @@ class PresenceBadge extends ConsumerWidget {
               ),
             ),
 
-          // CASO 2: Hay MUCHOS anónimos -> Se agrupan con "x N"
+          // CASO 2: Grupo de anónimos -> Mismo tamaño, ícono de grupo
           if (anonymousCount > 1)
             PopupMenuItem(
               enabled: false,
-              height: 40,
+              height: 48,
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 14,
+                    radius: kAvatarRadius,
                     backgroundColor: theme.colorScheme.onSurface.withOpacity(0.05),
-                    child: Icon(Icons.group_outlined, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                    child: Icon(Icons.group_outlined, size: kIconSize, color: theme.colorScheme.onSurface.withOpacity(0.6)),
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    "Visitantes Anónimos x $anonymousCount", // Aquí sí usamos el contador
+                    "Visitantes Anónimos x $anonymousCount",
                     style: TextStyle(
                       fontStyle: FontStyle.italic,
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
@@ -208,31 +214,39 @@ class PresenceBadge extends ConsumerWidget {
   }
 }
 
-// --- HELPER: Avatar ---
+// --- HELPER: Avatar Unificado ---
 class _UserAvatar extends StatelessWidget {
   final ConnectedUser user;
+  final double radius;
+  final double iconSize;
 
-  const _UserAvatar({required this.user});
+  const _UserAvatar({
+    required this.user, 
+    required this.radius,
+    required this.iconSize,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
+    // Caso A: Tiene foto
     if (user.photoUrl != null && user.photoUrl!.isNotEmpty) {
       return CircleAvatar(
-        radius: 14, 
+        radius: radius, 
         backgroundColor: theme.colorScheme.surfaceVariant,
         backgroundImage: NetworkImage(user.photoUrl!),
         onBackgroundImageError: (_, __) {}, 
       );
     }
 
+    // Caso B: No tiene foto (Ícono)
     return CircleAvatar(
-      radius: 14,
+      radius: radius,
       backgroundColor: theme.colorScheme.onSurface.withOpacity(0.08),
       child: Icon(
         user.name != null ? Icons.person : Icons.person_outline,
-        size: 18,
+        size: iconSize, // Usamos el tamaño unificado
         color: theme.colorScheme.onSurface.withOpacity(0.7),
       ),
     );

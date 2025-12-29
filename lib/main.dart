@@ -29,6 +29,7 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        supabaseUrlProvider.overrideWithValue(supabaseUrl),
       ],
       child: const App(),
     ),
