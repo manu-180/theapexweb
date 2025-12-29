@@ -297,15 +297,23 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
       duration: const Duration(milliseconds: 500),
       child: AspectRatio(
         aspectRatio: _controller.value.aspectRatio,
-        // CORRECCIÓN: Usamos Stack + IgnorePointer para el video
-        // y un GestureDetector encima que captura el tap pero no activa
-        // los menús nativos del navegador.
         child: Stack(
           children: [
+            // El VideoPlayer envuelto en IgnorePointer para Flutter
             IgnorePointer(
               child: VideoPlayer(_controller),
             ),
-      
+            
+            // CAPA ANT-EDGE: Un contenedor con un color casi transparente 
+            // (0.01) suele engañar al motor de Edge para que no detecte 
+            // el tag de video debajo.
+            Positioned.fill(
+              child: Container(
+                color: Colors.black.withOpacity(0.01),
+              ),
+            ),
+
+            // Capa interactiva para el audio
             Positioned.fill(
               child: GestureDetector(
                 onTap: _toggleAudio,
