@@ -25,20 +25,23 @@ class MercadoPagoRepository {
     
     final session = _supabase.auth.currentSession;
     final jwt = session?.accessToken;
-    final anonKey = _supabase.headers['apikey'];
 
     try {
       final response = await _supabase.functions.invoke(
         'create_preference_manuel',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': jwt != null ? 'Bearer $jwt' : 'Bearer $anonKey', 
+          // Si hay JWT lo mandamos, si no, Supabase usará la anonKey por defecto del cliente
+          if (jwt != null) 'Authorization': 'Bearer $jwt',
         },
         body: jsonEncode({
-          // CAMBIO: Mapear a lo que espera tu index.ts de la función
           'title': plan.name,
           'unit_price': plan.price,
           'quantity': 1,
+          'metadata': {
+            'user_email': userEmail,
+            'user_id': userId,
+          }
         }),
       );
 
@@ -48,7 +51,6 @@ class MercadoPagoRepository {
          throw Exception(responseData['error']);
       }
 
-      // CAMBIO: Tu función devuelve 'init_point', no 'checkoutUrl'
       final String? checkoutUrl = responseData['init_point'];
       
       if (checkoutUrl == null || checkoutUrl.isEmpty) {
@@ -57,26 +59,20 @@ class MercadoPagoRepository {
 
       final uri = Uri.parse(checkoutUrl);
       if (await canLaunchUrl(uri)) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication, 
-        );
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         throw Exception('No se pudo abrir la pasarela de pagos.');
       }
 
     } on FunctionException catch (e) {
-      // CORRECCIÓN AQUÍ: Usamos details o reasonPhrase, ya que .message no existe
-      final msg = e.details?.toString() ?? e.reasonPhrase ?? 'Error desconocido en Edge Function';
+      final msg = e.details?.toString() ?? e.reasonPhrase ?? 'Error en la función';
       debugPrint('Error de Edge Function: $msg');
-      throw Exception('Error al conectar con el servidor de pagos. Intenta nuevamente.');
-      
+      throw Exception('Error al conectar con el servidor de pagos.');
     } catch (e) {
       debugPrint('Error en checkout: $e');
-      throw Exception('No se pudo iniciar el pago. Verifica tu conexión.');
+      throw Exception('No se pudo iniciar el pago.');
     }
-  }
-}
+  }}
 
 @riverpod
 MercadoPagoRepository mercadoPagoRepository(MercadoPagoRepositoryRef ref) {

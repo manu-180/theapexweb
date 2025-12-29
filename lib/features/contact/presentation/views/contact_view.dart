@@ -397,17 +397,61 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
 }
 
 class _SkeletonList extends StatelessWidget {
-  const _SkeletonList({super.key});
+  const _SkeletonList();
+  
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Shimmer.fromColors(
-      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-      highlightColor: Theme.of(context).colorScheme.surface,
+      baseColor: colorScheme.onSurface.withOpacity(0.05),
+      highlightColor: colorScheme.onSurface.withOpacity(0.1),
       child: Column(
         children: List.generate(3, (index) => Container(
-          margin: const EdgeInsets.only(bottom: 20),
-          height: 100,
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Avatar Circle
+              const CircleAvatar(radius: 20, backgroundColor: Colors.white),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Nombre
+                        Container(width: 120, height: 12, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                        // Tiempo (20h)
+                        Container(width: 30, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Estrellitas si fuera root
+                    Row(
+                      children: List.generate(5, (i) => const Padding(
+                        padding: EdgeInsets.only(right: 4.0),
+                        child: Icon(Icons.star, size: 12, color: Colors.white),
+                      )),
+                    ),
+                    const SizedBox(height: 12),
+                    // Cuerpo del mensaje (Líneas)
+                    Container(width: double.infinity, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                    const SizedBox(height: 6),
+                    Container(width: MediaQuery.of(context).size.width * 0.4, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                  ],
+                ),
+              ),
+            ],
+          ),
         )),
       ),
     );
@@ -420,42 +464,46 @@ class RatingSummarySkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final basePulseColor = Colors.white.withOpacity(0.05);
 
     return Shimmer.fromColors(
-      baseColor: Colors.white.withOpacity(0.05),
-      highlightColor: Colors.white.withOpacity(0.1),
+      baseColor: colorScheme.onSurface.withOpacity(0.05),
+      highlightColor: colorScheme.onSurface.withOpacity(0.1),
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: const Color(0xFF111827).withOpacity(0.5), 
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: colorScheme.outline.withOpacity(0.1)),
         ),
         child: Row(
           children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(width: 70, height: 45, decoration: BoxDecoration(color: basePulseColor, borderRadius: BorderRadius.circular(8))),
-                const SizedBox(height: 12),
-                Container(width: 90, height: 16, decoration: BoxDecoration(color: basePulseColor, borderRadius: BorderRadius.circular(4))),
-                const SizedBox(height: 8),
-                Container(width: 60, height: 12, decoration: BoxDecoration(color: basePulseColor, borderRadius: BorderRadius.circular(4))),
-              ],
-            ),
-            const SizedBox(width: 40),
+            // Columna Promedio
             Expanded(
+              flex: 2,
+              child: Column(
+                children: [
+                  Container(width: 60, height: 40, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8))),
+                  const SizedBox(height: 12),
+                  Container(width: 80, height: 12, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                  const SizedBox(height: 8),
+                  Container(width: 50, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                ],
+              ),
+            ),
+            const SizedBox(width: 24),
+            // Columna Barras
+            Expanded(
+              flex: 3,
               child: Column(
                 children: List.generate(5, (index) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6.0),
+                  padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
-                      Container(width: 15, height: 12, decoration: BoxDecoration(color: basePulseColor, borderRadius: BorderRadius.circular(2))),
+                      Container(width: 10, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(2))),
                       const SizedBox(width: 8),
-                      Expanded(child: Container(height: 8, decoration: BoxDecoration(color: basePulseColor, borderRadius: BorderRadius.circular(4)))),
+                      Expanded(child: Container(height: 6, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)))),
                       const SizedBox(width: 8),
-                      Container(width: 15, height: 12, decoration: BoxDecoration(color: basePulseColor, borderRadius: BorderRadius.circular(2))),
+                      Container(width: 15, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(2))),
                     ],
                   ),
                 )),
