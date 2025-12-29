@@ -226,7 +226,6 @@ class _TrustCard extends StatelessWidget {
         : [
             _buildChip(theme, FontAwesomeIcons.ban, "Sin Plantillas (100% Custom)"),
             _buildChip(theme, FontAwesomeIcons.gaugeHigh, "Velocidad Extrema"),
-            _buildChip(theme, FontAwesomeIcons.gaugeHigh, "Velocidad Extrema"),
             _buildChip(theme, FontAwesomeIcons.layerGroup, "Código Limpio y Escalable"),
             _buildChip(theme, FontAwesomeIcons.microchip, "Tecnología de Punta"),
             _buildChip(theme, FontAwesomeIcons.magnifyingGlass, "SEO Técnico Avanzado"),
