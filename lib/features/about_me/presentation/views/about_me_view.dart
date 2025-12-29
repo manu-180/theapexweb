@@ -305,7 +305,7 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
             IgnorePointer(
               child: VideoPlayer(_controller),
             ),
-            // Capa invisible para el toggle de audio que no dispara menús de video
+      
             Positioned.fill(
               child: GestureDetector(
                 onTap: _toggleAudio,
