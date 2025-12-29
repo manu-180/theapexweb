@@ -243,7 +243,6 @@ class _AboutMeCard extends StatelessWidget {
   }
 }
 
-// --- REPRODUCTOR DE VIDEO SIGILOSO ---
 class _TransparentVideoPlayer extends StatefulWidget {
   final String assetPath;
 
@@ -266,7 +265,6 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
     _controller = VideoPlayerController.asset(widget.assetPath)
       ..initialize().then((_) {
         _controller.setLooping(true);
-        // CAMBIO 1: Iniciamos siempre muteado
         _controller.setVolume(0.0); 
         _controller.play();
         if (mounted) {
@@ -281,7 +279,6 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
     super.dispose();
   }
 
-  // CAMBIO 2: Función toggle sin feedback visual
   void _toggleAudio() {
     if (_controller.value.volume > 0) {
       _controller.setVolume(0.0);
@@ -300,11 +297,23 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
       duration: const Duration(milliseconds: 500),
       child: AspectRatio(
         aspectRatio: _controller.value.aspectRatio,
-        // CAMBIO 3: GestureDetector invisible para controlar el audio
-        child: GestureDetector(
-          onTap: _toggleAudio,
-          behavior: HitTestBehavior.opaque, // Asegura que capture el toque en toda el área
-          child: VideoPlayer(_controller),
+        // CORRECCIÓN: Usamos Stack + IgnorePointer para el video
+        // y un GestureDetector encima que captura el tap pero no activa
+        // los menús nativos del navegador.
+        child: Stack(
+          children: [
+            IgnorePointer(
+              child: VideoPlayer(_controller),
+            ),
+            // Capa invisible para el toggle de audio que no dispara menús de video
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _toggleAudio,
+                behavior: HitTestBehavior.opaque,
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ],
         ),
       ),
     );
