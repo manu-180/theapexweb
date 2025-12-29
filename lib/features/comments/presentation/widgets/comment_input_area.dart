@@ -60,8 +60,11 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
     }
   }
 
-  void _submit() async {
-    final user = ref.read(currentUserProvider);
+ void _submit() async {
+    // 1. Verificamos el estado de autenticación a través del Stream para máxima precisión
+    final authState = ref.read(authStateStreamProvider);
+    final user = authState.valueOrNull;
+
     if (user == null) {
       _focusNode.unfocus();
       showDialog(context: context, builder: (_) => const AuthRequiredModal());
@@ -98,7 +101,12 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
       _focusNode.unfocus();
 
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      // 2. Si el servidor rechaza por falta de permisos (RLS / Sesión expirada), disparamos el login
+      if (e.toString().contains('row-level security') || e.toString().contains('42501')) {
+         showDialog(context: context, builder: (_) => const AuthRequiredModal());
+      } else {
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      }
     } finally {
       if (mounted) setState(() => _isPosting = false);
     }
@@ -108,6 +116,14 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    // 3. ESCUCHA ACTIVA: Si el usuario se desloguea mientras tiene el foco, lanzamos el modal
+    ref.listen(authStateStreamProvider, (previous, next) {
+      if (next.value == null && _focusNode.hasFocus) {
+        _focusNode.unfocus();
+        showDialog(context: context, builder: (_) => const AuthRequiredModal());
+      }
+    });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,4 +312,5 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
       ],
     );
   }
+ 
 }
