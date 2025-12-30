@@ -7,10 +7,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 part 'app_theme_providers.g.dart';
 
 // 1. Creamos un Provider simple para la instancia de SharedPreferences.
-// Lanzamos un error por defecto porque lo vamos a sobreescribir en el main.dart
+// Lanzamos un error por defecto porque SIEMPRE debe ser sobreescrito en main.dart
 @Riverpod(keepAlive: true)
 SharedPreferences sharedPreferences(SharedPreferencesRef ref) {
-  throw UnimplementedError('SharedPreferences no inicializado');
+  throw UnimplementedError('SharedPreferences no inicializado en main.dart');
 }
 
 // 2. Modelo de Configuración del Tema
@@ -22,9 +22,9 @@ class AppThemeConfig {
   // Helpers para acceder rápido a los assets desde la UI
   String? get logoAsset => theme.logoAsset;
   IconData? get logoIcon => theme.icon;
-  String get themeName => theme.name; // Para guardar en prefs
+  String get themeName => theme.name; 
 
-  AppThemeConfig({
+  const AppThemeConfig({
     required this.theme,
     required this.lightTheme,
     required this.darkTheme,
@@ -39,47 +39,43 @@ class DynamicTheme extends _$DynamicTheme {
 
   @override
   AppThemeConfig build() {
-    // A. Obtenemos la instancia de SharedPreferences (sincrónicamente gracias al override)
+    // LECTURA SÍNCRONA: Gracias al override en main.dart, esto es instantáneo.
+    // Evita pantallas blancas o parpadeos al iniciar.
     final prefs = ref.watch(sharedPreferencesProvider);
-    
-    // B. Leemos el String guardado (si no existe, devuelve null)
     final savedThemeName = prefs.getString(_themePrefsKey);
 
-    // C. Buscamos qué tema coincide con ese nombre
-    AppTheme initialTheme = AppTheme.neutral; // Default
+    AppTheme initialTheme = AppTheme.neutral; // Default seguro
     
     if (savedThemeName != null) {
+      // Lógica blindada: Si el nombre guardado no existe (ej. cambio de versión),
+      // fallback a Neutral sin crashear.
       try {
-        // Buscamos en el enum el que tenga el mismo nombre
         initialTheme = AppTheme.values.firstWhere(
           (e) => e.name == savedThemeName, 
           orElse: () => AppTheme.neutral
         );
       } catch (_) {
-        // Si hay error de lectura, volvemos al neutral
         initialTheme = AppTheme.neutral;
       }
     }
 
-    // D. Retornamos la configuración inicial lista
     return _createConfig(initialTheme);
   }
 
   void setTheme(AppTheme theme) {
-    // 1. Guardamos en el almacenamiento del dispositivo
+    // 1. Guardamos en disco (fire and forget)
     ref.read(sharedPreferencesProvider).setString(_themePrefsKey, theme.name);
-    
-    // 2. Actualizamos el estado de la app
+    // 2. Actualizamos UI inmediatamente
     state = _createConfig(theme);
   }
 
   void setHoverTheme(AppTheme theme) {
-    // Solo cambia visualmente, NO guarda en preferencias (es temporal por hover)
+    // Cambio temporal visual, NO toca persistencia
     state = _createConfig(theme);
   }
 
   void clearHoverTheme() {
-    // Vuelve al tema que estaba guardado en preferencias
+    // Restauramos lo que realmente está guardado en disco
     final prefs = ref.read(sharedPreferencesProvider);
     final savedName = prefs.getString(_themePrefsKey);
     
@@ -103,7 +99,7 @@ class DynamicTheme extends _$DynamicTheme {
   }
 }
 
-// 4. Provider de lectura fácil para la UI (solo devuelve la config actual)
+// 4. Providers de lectura fácil para la UI
 @riverpod
 AppThemeConfig currentAppThemeConfig(CurrentAppThemeConfigRef ref) {
   return ref.watch(dynamicThemeProvider);

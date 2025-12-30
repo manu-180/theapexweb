@@ -59,7 +59,7 @@ class ContactView extends StatelessWidget {
   }
 }
 
-// --- FORMULARIO CORREGIDO CON CONSUMERSTATE PARA ACCEDER A REF ---
+// --- FORMULARIO REDISEÑADO CON CARD MODERNA ---
 class _ContactForm extends ConsumerStatefulWidget {
   const _ContactForm();
   @override
@@ -96,11 +96,9 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
   }
 
   void _showSuccessAnimation() {
-    // 1. Obtenemos el tema actual para elegir el Lottie correcto
     final themeConfig = ref.read(currentAppThemeConfigProvider);
     final themeName = themeConfig.themeName.toLowerCase();
 
-    // 2. Mapeamos al archivo local correspondiente
     String lottieAsset = 'assets/animations/envia_apex.json'; 
     if (themeName.contains('supabase')) lottieAsset = 'assets/animations/envia_supabase.json';
     else if (themeName.contains('flutter')) lottieAsset = 'assets/animations/envia_flutter.json';
@@ -112,7 +110,6 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
       barrierDismissible: false,
       barrierColor: Colors.black.withOpacity(0.8),
       builder: (context) {
-        // El diálogo se cierra tras 3.5 segundos para dar tiempo a ver el frame final
         Future.delayed(const Duration(milliseconds: 3500), () {
           if (context.mounted) Navigator.of(context).pop();
         });
@@ -129,9 +126,8 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
                   child: Lottie.asset(
                     lottieAsset,
                     fit: BoxFit.contain,
-                    repeat: false, // Evita que reinicie la animación
+                    repeat: false,
                     animate: true,
-                    // Esta es la clave: al terminar, se queda en el último frame
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -190,99 +186,148 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final primaryColor = theme.colorScheme.primary; 
-    final onPrimary = theme.colorScheme.onPrimary;
+    final colorScheme = theme.colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '¡Hablemos de tu proyecto!', 
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold, 
-            color: primaryColor,
-            fontFamily: 'Oxanium',
-          )
+    // --- DISEÑO DE CARD MODERNA ---
+    return Container(
+      padding: const EdgeInsets.all(32), // Espacio interno generoso
+      decoration: BoxDecoration(
+        // Color de fondo sutilmente diferente al scaffold para dar profundidad
+        color: colorScheme.surfaceContainerLow, 
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outline.withOpacity(0.1),
+          width: 1,
         ),
-        const SizedBox(height: 40),
-        Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, 
-            children: [
-              _buildTextField(controller: _nameController, label: 'Tu Nombre', icon: Icons.person_outline, theme: theme, validator: (v) => v?.isEmpty == true ? 'Requerido' : null, isLastField: false),
-              const SizedBox(height: 20),
-              _buildTextField(controller: _emailController, label: 'Tu Email', icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress, theme: theme, validator: (v) => !v!.contains('@') ? 'Email inválido' : null, isLastField: false),
-              const SizedBox(height: 20),
-              _buildTextField(
-                controller: _messageController, 
-                label: 'Mensaje', 
-                icon: Icons.chat_bubble_outline, 
-                theme: theme, 
-                validator: (v) => v == null || v.isEmpty ? 'Escribe un mensaje' : null, 
-                isLastField: true, 
-                focusNode: _messageFocusNode,
-                minLines: (_isMessageFocused || _messageController.text.isNotEmpty) ? 5 : 1, 
-                maxLines: 5, 
-              ),
-              const SizedBox(height: 40),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05), // Sombra muy sutil
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min, // Se ajusta al contenido
+        children: [
+          // HEADER DEL FORM
+          Text(
+            '¡Hablemos de tu proyecto!', 
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold, 
+              color: colorScheme.primary,
+              fontFamily: 'Oxanium',
+              letterSpacing: -0.5,
+            )
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Completa el formulario y te responderé a la brevedad.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 32),
+          
+          // CAMPOS
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start, 
+              children: [
+                _buildTextField(
+                  controller: _nameController, 
+                  label: 'Tu Nombre', 
+                  icon: Icons.person_outline, 
+                  theme: theme, 
+                  validator: (v) => v?.isEmpty == true ? 'Requerido' : null, 
+                  isLastField: false
+                ),
+                const SizedBox(height: 20),
+                _buildTextField(
+                  controller: _emailController, 
+                  label: 'Tu Email', 
+                  icon: Icons.email_outlined, 
+                  keyboardType: TextInputType.emailAddress, 
+                  theme: theme, 
+                  validator: (v) => !v!.contains('@') ? 'Email inválido' : null, 
+                  isLastField: false
+                ),
+                const SizedBox(height: 20),
+                _buildTextField(
+                  controller: _messageController, 
+                  label: 'Mensaje', 
+                  icon: Icons.chat_bubble_outline, 
+                  theme: theme, 
+                  validator: (v) => v == null || v.isEmpty ? 'Escribe un mensaje' : null, 
+                  isLastField: true, 
+                  focusNode: _messageFocusNode,
+                  minLines: (_isMessageFocused || _messageController.text.isNotEmpty) ? 5 : 1, 
+                  maxLines: 5, 
+                ),
+                const SizedBox(height: 40),
 
-              // --- BOTÓN PROFESIONAL CON MANITO Y ELEVACIÓN FIJA ---
-              MouseRegion(
-                cursor: SystemMouseCursors.click, // Activa la manito
-                onEnter: (_) => setState(() => _isHovered = true),
-                onExit: (_) => setState(() => _isHovered = false),
-                child: GestureDetector(
-                  onTap: _isLoading ? null : _sendMessage,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
-                    width: _isLoading ? 260 : 220,
-                    height: 54,
-                    // Elevación sin que el texto se mueva relativo al botón
-                    transform: Matrix4.identity()
-                      ..translate(0.0, _isHovered && !_isLoading ? -5.0 : 0.0),
-                    decoration: BoxDecoration(
-                      color: _isLoading ? primaryColor.withOpacity(0.8) : primaryColor,
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: primaryColor.withOpacity(_isHovered && !_isLoading ? 0.4 : 0.1),
-                          blurRadius: _isHovered && !_isLoading ? 25 : 10,
-                          offset: const Offset(0, 8),
-                        )
-                      ],
-                    ),
-                    child: Center(
-                      child: _isLoading 
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: onPrimary)),
-                              const SizedBox(width: 12),
-                              Text("Enviando mensaje...", style: TextStyle(color: onPrimary, fontWeight: FontWeight.bold, fontFamily: 'Oxanium')),
-                            ],
+                // BOTÓN DE ACCIÓN
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  onEnter: (_) => setState(() => _isHovered = true),
+                  onExit: (_) => setState(() => _isHovered = false),
+                  child: GestureDetector(
+                    onTap: _isLoading ? null : _sendMessage,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      width: double.infinity, // Botón ancho completo en la card
+                      height: 54,
+                      transform: Matrix4.identity()
+                        ..translate(0.0, _isHovered && !_isLoading ? -2.0 : 0.0),
+                      decoration: BoxDecoration(
+                        color: _isLoading ? colorScheme.primary.withOpacity(0.8) : colorScheme.primary,
+                        borderRadius: BorderRadius.circular(16), // Radio un poco más cuadrado para el botón full width
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.primary.withOpacity(_isHovered && !_isLoading ? 0.4 : 0.1),
+                            blurRadius: _isHovered && !_isLoading ? 20 : 10,
+                            offset: const Offset(0, 8),
                           )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                margin: EdgeInsets.only(left: _isHovered ? 8 : 0),
-                                child: Icon(Icons.send_rounded, size: 20, color: onPrimary),
-                              ),
-                              const SizedBox(width: 10),
-                              Text("Enviar Mensaje", style: TextStyle(color: onPrimary, fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Oxanium')),
-                            ],
-                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: _isLoading 
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.onPrimary)),
+                                const SizedBox(width: 12),
+                                Text("Enviando...", style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontFamily: 'Oxanium')),
+                              ],
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.send_rounded, size: 20, color: colorScheme.onPrimary),
+                                const SizedBox(width: 10),
+                                Text(
+                                  "Enviar Mensaje", 
+                                  style: TextStyle(
+                                    color: colorScheme.onPrimary, 
+                                    fontWeight: FontWeight.bold, 
+                                    fontSize: 16, 
+                                    fontFamily: 'Oxanium'
+                                  )
+                                ),
+                              ],
+                            ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -320,22 +365,18 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
           alignLabelWithHint: true,
           labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontFamily: 'Oxanium'),
           prefixIcon: Padding(
-            padding: const EdgeInsets.only(top: 16.0), // Fijo arriba para que no se mueva
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: primaryColor.withOpacity(0.7), size: 20),
-              ],
-            ),
+            padding: const EdgeInsets.only(top: 14.0, bottom: 14.0, left: 12, right: 8), 
+            child: Icon(icon, color: primaryColor.withOpacity(0.7), size: 22),
           ),
-          prefixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          prefixIconConstraints: const BoxConstraints(minWidth: 48),
           filled: true,
+          // Fondo del input un poco más oscuro que la card para contraste
           fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.2))),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1))),
           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primaryColor, width: 1.5)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          errorStyle: TextStyle(color: theme.colorScheme.error, fontSize: 12),
         ),
       ),
     );
@@ -418,7 +459,6 @@ class _SkeletonList extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar Circle
               const CircleAvatar(radius: 20, backgroundColor: Colors.white),
               const SizedBox(width: 16),
               Expanded(
@@ -428,14 +468,11 @@ class _SkeletonList extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Nombre
                         Container(width: 120, height: 12, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-                        // Tiempo (20h)
                         Container(width: 30, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Estrellitas si fuera root
                     Row(
                       children: List.generate(5, (i) => const Padding(
                         padding: EdgeInsets.only(right: 4.0),
@@ -443,7 +480,6 @@ class _SkeletonList extends StatelessWidget {
                       )),
                     ),
                     const SizedBox(height: 12),
-                    // Cuerpo del mensaje (Líneas)
                     Container(width: double.infinity, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
                     const SizedBox(height: 6),
                     Container(width: MediaQuery.of(context).size.width * 0.4, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
@@ -477,7 +513,6 @@ class RatingSummarySkeleton extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Columna Promedio
             Expanded(
               flex: 2,
               child: Column(
@@ -491,7 +526,6 @@ class RatingSummarySkeleton extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 24),
-            // Columna Barras
             Expanded(
               flex: 3,
               child: Column(

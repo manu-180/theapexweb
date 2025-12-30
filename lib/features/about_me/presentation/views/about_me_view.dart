@@ -8,7 +8,6 @@ import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/features/shared/widgets/footer.dart';
 import 'package:video_player/video_player.dart';
-import 'dart:html' as html; 
 
 class AboutMeView extends ConsumerStatefulWidget {
   const AboutMeView({super.key});
@@ -26,11 +25,11 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
     super.dispose();
   }
 
-  // Detección estricta de iPhone/iPad/iOS
+  // MEJORA: Detección Cross-Platform segura.
+  // defaultTargetPlatform ya maneja la lógica de UserAgent en Web internamente.
+  // Esto elimina la necesidad de importar 'dart:html' que rompe la compilación en Android/iOS.
   bool get _isIOS {
-    if (!kIsWeb) return defaultTargetPlatform == TargetPlatform.iOS;
-    final userAgent = html.window.navigator.userAgent.toLowerCase();
-    return userAgent.contains('iphone') || userAgent.contains('ipad') || userAgent.contains('ipod');
+    return defaultTargetPlatform == TargetPlatform.iOS;
   }
 
   @override
@@ -38,6 +37,8 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
     final themeConfig = ref.watch(currentAppThemeConfigProvider);
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 800;
+    
+    // En iOS (Web o Nativo) ocultamos el video WebM por compatibilidad
     final bool hideVisuals = _isIOS;
 
     return MouseRegion(
@@ -55,13 +56,13 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
                   constraints: const BoxConstraints(maxWidth: 900),
                   child: Column(
                     children: [
-                      // Si es iOS, no renderizamos nada (SizedBox vacío)
+                      // Si es iOS, no renderizamos el player para evitar errores de decodificación
                       if (!hideVisuals)
                         FadeInDown(
                           child: _DynamicHeroImage(themeConfig: themeConfig)
                         )
                       else
-                        const SizedBox(height: 20), // Espacio mínimo de seguridad
+                        const SizedBox(height: 20),
                         
                       FadeInUp(child: _AboutMeCard(mousePos: _mousePos)),
                     ],
@@ -83,7 +84,6 @@ class _DynamicHeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Volvemos a los WebM originales para Android/Web Desktop
     final String videoPath = switch (themeConfig.theme) {
       AppTheme.flutter   => 'assets/videos/yoflutter.webm',
       AppTheme.supabase  => 'assets/videos/yosupabase.webm',
@@ -285,7 +285,11 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
   Future<void> _initializePlayer() async {
     _controller = VideoPlayerController.asset(widget.assetPath);
     try {
-      await _controller!.initialize();
+      // FIX CRÍTICO: Timeout de seguridad.
+      // Si el video tarda más de 5s en cargar (red lenta o formato incompatible),
+      // cortamos la espera para no bloquear la UI ni dejar un spinner eterno.
+      await _controller!.initialize().timeout(const Duration(seconds: 5));
+      
       if (mounted) {
         setState(() {
           _isInitialized = true;
@@ -295,7 +299,9 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
         });
       }
     } catch (e) {
-      debugPrint("Error inicializando video: $e");
+      // Si falla (timeout o error de codec), simplemente no mostramos nada.
+      // Esto evita crashes o excepciones rojas en consola que asusten al usuario.
+      debugPrint("Advertencia: No se pudo cargar el video ${widget.assetPath}: $e");
     }
   }
 
@@ -309,6 +315,7 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _controller == null) {
+      // Placeholder transparente mientras carga o si falló
       return const SizedBox.shrink(); 
     }
 
@@ -321,9 +328,10 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
             IgnorePointer(
               child: VideoPlayer(_controller!),
             ),
+            // Capa de seguridad para clicks
             Positioned.fill(
               child: Container(
-                color: Colors.black.withOpacity(0.01),
+                color: Colors.transparent,
               ),
             ),
           ],

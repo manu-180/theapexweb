@@ -1,7 +1,7 @@
 // Archivo: lib/core/config/theme/brightness_provider.dart
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:apex/core/config/theme/app_theme_providers.dart';
 
 part 'brightness_provider.g.dart';
 
@@ -10,49 +10,35 @@ const _kThemeModeKey = 'app_theme_mode';
 
 @riverpod
 class BrightnessMode extends _$BrightnessMode {
-  late SharedPreferences _prefs;
-
+  
   @override
   ThemeMode build() {
-    // El estado inicial es 'dark' por defecto.
-    // Luego, iniciamos la carga asíncrona de SharedPreferences.
-    _initPrefs();
+    // CORRECCIÓN CRÍTICA:
+    // Accedemos a la instancia de SharedPreferences de forma SÍNCRONA.
+    // Esto es posible gracias al override en main.dart.
+    // Eliminamos el parpadeo (flicker) inicial: la app nace con el tema correcto.
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final modeString = prefs.getString(_kThemeModeKey);
+
+    // Retornamos el valor directo. Sin 'await', sin 'late', sin riesgo de null.
+    if (modeString == 'light') {
+      return ThemeMode.light;
+    }
+    
+    // Por defecto dark si no hay nada guardado
     return ThemeMode.dark;
   }
 
-  Future<void> _initPrefs() async {
-    _prefs = await SharedPreferences.getInstance();
-    final modeString = _prefs.getString(_kThemeModeKey);
-    
-    // Una vez cargado, actualizamos el estado al valor guardado.
-    switch (modeString) {
-      case 'light':
-        state = ThemeMode.light;
-        break;
-      case 'dark':
-        state = ThemeMode.dark;
-        break;
-      default:
-        // Si no hay nada guardado, mantenemos el default (dark).
-        state = ThemeMode.dark;
-    }
-  }
-
-  void setLightMode() {
-    state = ThemeMode.light;
-    _prefs.setString(_kThemeModeKey, 'light');
-  }
-
-  void setDarkMode() {
-    state = ThemeMode.dark;
-    _prefs.setString(_kThemeModeKey, 'dark');
-  }
-
   void toggleMode() {
+    // Leemos el provider sin escuchar cambios (read) para ejecutar la acción
+    final prefs = ref.read(sharedPreferencesProvider);
+    
     if (state == ThemeMode.light) {
-      setDarkMode();
+      state = ThemeMode.dark;
+      prefs.setString(_kThemeModeKey, 'dark');
     } else {
-      setLightMode();
+      state = ThemeMode.light;
+      prefs.setString(_kThemeModeKey, 'light');
     }
   }
 }

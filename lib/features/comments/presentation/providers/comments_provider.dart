@@ -18,7 +18,7 @@ class Comment {
   final bool isLikedByMe;
   final int? parentId;
   final String userId;
-  final int? rating; // <--- NUEVO CAMPO
+  final int? rating;
   final List<Comment> replies;
 
   Comment({
@@ -31,7 +31,7 @@ class Comment {
     required this.isLikedByMe,
     this.parentId,
     required this.userId,
-    this.rating, // <--- NUEVO
+    this.rating,
     this.replies = const [],
   });
 
@@ -46,7 +46,7 @@ class Comment {
       isLikedByMe: json['is_liked_by_me'] ?? false,
       parentId: json['parent_id'],
       userId: json['user_id'],
-      rating: json['rating'], // <--- LECTURA
+      rating: json['rating'],
     );
   }
   
@@ -81,8 +81,14 @@ class CommentsNotifier extends _$CommentsNotifier {
   Future<List<Comment>> build() async {
     _supabase = ref.watch(supabaseClientProvider);
     
+    // Limpieza preventiva de suscripciones
     for (var sub in _subscriptions) { await sub.unsubscribe(); }
     _subscriptions.clear();
+
+    // Gestión automática del ciclo de vida para evitar fugas
+    ref.onDispose(() {
+      for (var sub in _subscriptions) { sub.unsubscribe(); }
+    });
 
     _startRealtimeSubscription();
 
@@ -112,7 +118,7 @@ class CommentsNotifier extends _$CommentsNotifier {
       final response = await _supabase
           .from('comments_with_metadata') 
           .select()
-          .order('likes_count', ascending: false) // Orden por popularidad
+          .order('likes_count', ascending: false)
           .order('created_at', ascending: false);
 
       final flatList = (response as List).map((json) => Comment.fromJson(json)).toList();
@@ -141,10 +147,16 @@ class CommentsNotifier extends _$CommentsNotifier {
   }
 
   Future<void> postComment(String content, {int? parentId, int? rating}) async {
-    final user = ref.read(currentUserProvider);
-    if (user == null) throw Exception('Debes iniciar sesión.');
+    // 1. Verificación de sesión real (Token activo)
+    final session = _supabase.auth.currentSession;
+    if (session == null || session.isExpired) {
+      throw const AuthException('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+    }
+    
+    // Usamos el usuario de la sesión validada
+    final user = session.user; 
 
-    // 1. Estado Optimista
+    // 2. Estado Optimista (UI instantánea)
     final previousState = state;
     final currentList = state.valueOrNull ?? [];
 
@@ -159,7 +171,7 @@ class CommentsNotifier extends _$CommentsNotifier {
       likesCount: 0,
       isLikedByMe: false,
       parentId: parentId,
-      rating: rating, // <--- Rating Optimista
+      rating: rating,
       replies: [],
     );
 
@@ -175,27 +187,34 @@ class CommentsNotifier extends _$CommentsNotifier {
       state = AsyncData(updatedList);
     }
 
-    // 2. Enviar a Supabase
+    // 3. Envío a Supabase con manejo de errores transparente
     try {
       await _supabase.from('comments').insert({
         'user_id': user.id,
         'content': content,
         'parent_id': parentId, 
-        'rating': rating, // <--- Rating Real
+        'rating': rating,
       });
     } catch (e) {
+      // ROLLBACK: Restauramos el estado inmediatamente
       state = previousState; 
-      throw Exception('Error al publicar: ${e.toString()}');
+      // Relanzamos el error original para que la UI detecte RLS o AuthErrors
+      rethrow;
     }
   }
 
   Future<void> toggleLike(int commentId) async {
-    final user = ref.read(currentUserProvider);
-    if (user == null) throw Exception('Debes iniciar sesión para dar like.');
+    // Verificación de sesión
+    final session = _supabase.auth.currentSession;
+    if (session == null || session.isExpired) {
+       throw const AuthException('Debes iniciar sesión para dar like.');
+    }
+    final user = session.user;
 
     final previousState = state;
     final currentList = state.valueOrNull ?? [];
 
+    // Lógica optimista
     List<Comment> updateList(List<Comment> list) {
       return list.map((c) {
         if (c.id == commentId) {
@@ -238,8 +257,8 @@ class CommentsNotifier extends _$CommentsNotifier {
          await _supabase.from('comment_likes').insert({'user_id': user.id, 'comment_id': commentId});
        }
     } catch (e) {
-      state = previousState;
-      throw Exception('Error al dar like.');
+      state = previousState; // Rollback
+      rethrow;
     }
   }
 }

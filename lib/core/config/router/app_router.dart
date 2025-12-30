@@ -10,7 +10,7 @@ import 'package:apex/features/services/presentation/views/services_view.dart';
 
 part 'app_router.g.dart';
 
-// Creamos un GlobalKey para el ShellRoute
+// Creamos un GlobalKey para el ShellRoute para evitar que se reconstruya innecesariamente
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 @riverpod
@@ -33,9 +33,23 @@ GoRouter goRouter(GoRouterRef ref) {
             path: '/services',
             name: 'services',
             builder: (context, state) {
-              // AQUÍ ESTÁ EL CAMBIO:
-              // Leemos el 'extra' que nos manda el footer. Si no hay nada, es 0 (Webs).
-              final index = state.extra as int? ?? 0;
+              // MEJORA: Sistema híbrido de persistencia de estado
+              
+              // 1. Prioridad: Navegación interna (state.extra)
+              // Si venimos del footer con un objeto explícito, lo usamos.
+              if (state.extra is int) {
+                return ServicesView(initialIndex: state.extra as int);
+              }
+
+              // 2. Fallback: Query Parameters (URL)
+              // Permite refrescar la página o compartir links específicos: /services?view=apps
+              final viewParam = state.uri.queryParameters['view'];
+              int index = 0; // Por defecto: Web
+              
+              if (viewParam == 'apps' || viewParam == 'mobile') {
+                index = 1;
+              }
+
               return ServicesView(initialIndex: index);
             },
           ),

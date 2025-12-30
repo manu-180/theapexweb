@@ -1,5 +1,4 @@
 // Archivo: lib/features/presence/providers/presence_provider.dart
-import 'package:flutter/foundation.dart';
 import 'package:apex/core/providers/supabase_providers.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -24,39 +23,51 @@ class ConnectedUser {
   String toString() => 'User(name: $name, photo: $photoUrl)';
 }
 
-// Archivo: lib/features/presence/providers/presence_provider.dart
-// ... (mismas importaciones)
-
 @riverpod
 class PresenceNotifier extends _$PresenceNotifier {
   RealtimeChannel? _channel;
 
   @override
   List<ConnectedUser> build() {
-    // ... (mismo código de diagnóstico e inicialización)
     final supabase = ref.watch(supabaseClientProvider);
     final currentUser = ref.watch(currentUserProvider);
+    
+    // 1. Definimos la identidad del usuario actual
+    // Si no hay usuario logueado, generamos un ID temporal único para esta sesión
     final myId = currentUser?.id ?? 'anon-${DateTime.now().millisecondsSinceEpoch}';
     final metadata = currentUser?.userMetadata;
     final myName = metadata?['full_name'];
+    // Buscamos avatar en varios campos comunes de OAuth
     final myPhotoUrl = metadata?['avatar_url'] ?? metadata?['picture'] ?? metadata?['image'];
 
-    if (_channel != null) _supabaseUnsubscribe();
+    // 2. Limpieza automática al destruir el provider (Navegación/Refresco/Logout)
+    // Esto es VITAL: Cierra el socket cuando este provider ya no se usa.
+    ref.onDispose(() {
+      _channel?.unsubscribe();
+    });
+
+    // 3. Iniciamos la suscripción
     _subscribeToPresence(supabase, myId, myName, myPhotoUrl);
 
+    // Estado inicial vacío mientras conecta
     return [];
   }
 
   void _subscribeToPresence(SupabaseClient supabase, String myId, String? myName, String? myPhotoUrl) {
+    // Seguridad: Evitamos duplicar canales si ya existe uno activo
+    if (_channel != null) return;
+
     _channel = supabase.channel('online_users');
 
     _channel!
         .onPresenceSync((payload) {
+          // A. Obtenemos el estado crudo de Supabase
           final presenceStateList = _channel!.presenceState();
-          final Map<String, ConnectedUser> uniqueUsers = {}; // Usamos un Map para evitar duplicados por ID
+          final Map<String, ConnectedUser> uniqueUsers = {}; 
           
-          for (var state in presenceStateList) {
-             final presences = (state as dynamic).presences as List<dynamic>;
+          // B. Procesamos y aplanamos la lista (eliminando duplicados por ID)
+          for (var stateEntry in presenceStateList) {
+             final presences = (stateEntry as dynamic).presences as List<dynamic>;
              
              for (var userPresence in presences) {
                final data = (userPresence as dynamic).payload as Map<String, dynamic>;
@@ -65,8 +76,6 @@ class PresenceNotifier extends _$PresenceNotifier {
                final name = data['name'] as String?;
                final photoUrl = data['photo_url'] as String?;
                
-               // Si el usuario ya existe en el mapa, no lo sobreescribimos
-               // Esto evita que múltiples pestañas del mismo usuario llenen la lista
                if (!uniqueUsers.containsKey(userId)) {
                  uniqueUsers[userId] = ConnectedUser(
                    id: userId,
@@ -77,11 +86,13 @@ class PresenceNotifier extends _$PresenceNotifier {
                }
              }
           }
-          // Convertimos los valores del mapa de nuevo a una lista
+          
+          // C. Actualización segura del estado (Inmutabilidad)
           state = uniqueUsers.values.toList();
         })
         .subscribe((status, error) async {
           if (status == RealtimeSubscribeStatus.subscribed) {
+            // D. Una vez conectados, enviamos nuestra señal ("track") para que otros nos vean
             await _channel!.track({
               'user_id': myId,
               'name': myName,
@@ -90,10 +101,5 @@ class PresenceNotifier extends _$PresenceNotifier {
             });
           }
         });
-  }
-
- Future<void> _supabaseUnsubscribe() async {
-    await _channel?.unsubscribe();
-    _channel = null;
   }
 }
