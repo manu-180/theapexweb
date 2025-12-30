@@ -1,26 +1,27 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'presence_provider.dart';
+part of 'network_status_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$presenceNotifierHash() => r'a1183e0e818ad921f7ad552d6854f6277a65f1d7';
+String _$networkStatusNotifierHash() =>
+    r'a7a08bfa8132fa7433f803f1a79a39349da23f0a';
 
-/// See also [PresenceNotifier].
-@ProviderFor(PresenceNotifier)
-final presenceNotifierProvider =
-    AutoDisposeNotifierProvider<PresenceNotifier, List<ConnectedUser>>.internal(
-  PresenceNotifier.new,
-  name: r'presenceNotifierProvider',
+/// See also [NetworkStatusNotifier].
+@ProviderFor(NetworkStatusNotifier)
+final networkStatusNotifierProvider =
+    NotifierProvider<NetworkStatusNotifier, NetworkStatus>.internal(
+  NetworkStatusNotifier.new,
+  name: r'networkStatusNotifierProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
       ? null
-      : _$presenceNotifierHash,
+      : _$networkStatusNotifierHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );
 
-typedef _$PresenceNotifier = AutoDisposeNotifier<List<ConnectedUser>>;
+typedef _$NetworkStatusNotifier = Notifier<NetworkStatus>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member

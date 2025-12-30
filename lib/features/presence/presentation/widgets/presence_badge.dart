@@ -2,6 +2,7 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:apex/core/providers/network_status_provider.dart'; // <--- IMPORTACIÓN
 import 'package:apex/features/presence/providers/presence_provider.dart';
 
 class PresenceBadge extends ConsumerWidget {
@@ -11,13 +12,40 @@ class PresenceBadge extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final users = ref.watch(presenceNotifierProvider);
+    
+    // Escuchamos la red también aquí para dar feedback visual inmediato
+    final networkStatus = ref.watch(networkStatusNotifierProvider);
 
-    // --- CONFIGURACIÓN DE TAMAÑOS (Para que todo sea idéntico) ---
-    const double kAvatarRadius = 16.0; // Un poquito más grande (32px total)
-    const double kIconSize = 20.0;     // Tamaño del ícono interno
-    // -------------------------------------------------------------
+    // --- CONFIGURACIÓN DE TAMAÑOS ---
+    const double kAvatarRadius = 16.0; 
+    const double kIconSize = 20.0;     
+    // --------------------------------
 
-    // 1. ESTADO "CONECTANDO"
+    // 1. ESTADO "SIN CONEXIÓN" (Prioridad Máxima)
+    if (networkStatus == NetworkStatus.offline) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8, height: 8,
+              decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              "Offline",
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 2. ESTADO "CONECTANDO" (Hay internet pero lista vacía)
     if (users.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -66,7 +94,7 @@ class PresenceBadge extends ConsumerWidget {
           // A. MI USUARIO (Siempre visible arriba)
           PopupMenuItem(
             enabled: false,
-            height: 48, // Un poco más alto para respirar
+            height: 48, 
             child: Row(
               children: [
                 _UserAvatar(user: me, radius: kAvatarRadius, iconSize: kIconSize),
@@ -85,10 +113,9 @@ class PresenceBadge extends ConsumerWidget {
             ),
           ),
 
-          // Separador si hay otros
           if (others.isNotEmpty) const PopupMenuDivider(height: 1),
           
-          // B. OTROS USUARIOS CON NOMBRE (Uno por uno)
+          // B. OTROS USUARIOS CON NOMBRE
           ...namedUsers.map((u) {
             return PopupMenuItem(
               enabled: false,
@@ -109,9 +136,7 @@ class PresenceBadge extends ConsumerWidget {
             );
           }),
 
-          // C. LOGICA DE ANÓNIMOS (Agrupados)
-          
-          // CASO 1: Un solo anónimo -> Usamos el mismo estilo visual
+          // C. LOGICA DE ANÓNIMOS
           if (anonymousCount == 1)
              PopupMenuItem(
               enabled: false,
@@ -135,7 +160,6 @@ class PresenceBadge extends ConsumerWidget {
               ),
             ),
 
-          // CASO 2: Grupo de anónimos -> Mismo tamaño, ícono de grupo
           if (anonymousCount > 1)
             PopupMenuItem(
               enabled: false,
@@ -230,23 +254,21 @@ class _UserAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    // Caso A: Tiene foto
     if (user.photoUrl != null && user.photoUrl!.isNotEmpty) {
       return CircleAvatar(
         radius: radius, 
-        backgroundColor: theme.colorScheme.surfaceVariant,
+        backgroundColor: theme.colorScheme.surfaceContainerHighest,
         backgroundImage: NetworkImage(user.photoUrl!),
         onBackgroundImageError: (_, __) {}, 
       );
     }
 
-    // Caso B: No tiene foto (Ícono)
     return CircleAvatar(
       radius: radius,
       backgroundColor: theme.colorScheme.onSurface.withOpacity(0.08),
       child: Icon(
         user.name != null ? Icons.person : Icons.person_outline,
-        size: iconSize, // Usamos el tamaño unificado
+        size: iconSize, 
         color: theme.colorScheme.onSurface.withOpacity(0.7),
       ),
     );

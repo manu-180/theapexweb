@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:apex/core/config/router/app_router.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/config/theme/brightness_provider.dart';
+import 'package:apex/core/widgets/offline_banner.dart'; // <--- IMPORTACIÓN
 
 class App extends ConsumerWidget {
   const App({super.key});
@@ -31,9 +32,9 @@ class App extends ConsumerWidget {
       theme: themeConfig.lightTheme, // Tema claro dinámico
       darkTheme: themeConfig.darkTheme, // Tema oscuro dinámico
 
-      // --- ESCUDO GLOBAL DE UI (BLINDAJE FINAL) ---
-      // Si cualquier widget falla visualmente, mostramos esto en lugar de la pantalla gris de la muerte.
+      // --- ESCUDO GLOBAL DE UI + MONITOR DE RED ---
       builder: (context, child) {
+        // 1. Inyectamos el ErrorWidget custom (Tu escudo original)
         ErrorWidget.builder = (FlutterErrorDetails details) {
           return Material(
             color: Colors.black87,
@@ -62,7 +63,12 @@ class App extends ConsumerWidget {
             ),
           );
         };
-        return child!;
+
+        // 2. Envolvemos la app en el Monitor de Red
+        // child! es el Navigator que gestiona GoRouter
+        return OfflineStatusBanner(
+          child: child!,
+        );
       },
     );
   }

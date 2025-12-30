@@ -1,5 +1,6 @@
 // Archivo: lib/features/presence/providers/presence_provider.dart
 import 'package:apex/core/config/theme/app_theme_providers.dart'; // Para SharedPreferences
+import 'package:apex/core/providers/network_status_provider.dart'; // <--- IMPORTACIÓN CLAVE
 import 'package:apex/core/providers/supabase_providers.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -33,17 +34,18 @@ class PresenceNotifier extends _$PresenceNotifier {
   List<ConnectedUser> build() {
     final supabase = ref.watch(supabaseClientProvider);
     final currentUser = ref.watch(currentUserProvider);
-    final prefs = ref.watch(sharedPreferencesProvider); // Acceso a disco
+    final prefs = ref.watch(sharedPreferencesProvider);
     
-    // 1. Definimos la identidad de forma PERSISTENTE
+    // ESCUCHA ACTIVA: Si el estado de la red cambia, este build se vuelve a ejecutar.
+    final networkStatus = ref.watch(networkStatusNotifierProvider);
+    
+    // 1. Identidad
     String myId;
     if (currentUser != null) {
       myId = currentUser.id;
     } else {
-      // Si es anónimo, intentamos recuperar su ID de sesión anterior
       String? storedAnonId = prefs.getString(_kAnonIdKey);
       if (storedAnonId == null) {
-        // Primera vez: Generamos y guardamos
         storedAnonId = 'anon-${DateTime.now().millisecondsSinceEpoch}';
         prefs.setString(_kAnonIdKey, storedAnonId);
       }
@@ -52,19 +54,28 @@ class PresenceNotifier extends _$PresenceNotifier {
 
     final metadata = currentUser?.userMetadata;
     final myName = metadata?['full_name'];
-    // Buscamos avatar en varios campos comunes de OAuth
     final myPhotoUrl = metadata?['avatar_url'] ?? metadata?['picture'] ?? metadata?['image'];
 
-    // 2. Limpieza automática al destruir el provider
+    // 2. Limpieza
     ref.onDispose(() {
       _channel?.unsubscribe();
+      _channel = null;
     });
 
-    // 3. Iniciamos la suscripción
-    _subscribeToPresence(supabase, myId, myName, myPhotoUrl);
-
-    // Estado inicial vacío mientras conecta
-    return [];
+    // 3. Lógica de Conexión Inteligente
+    if (networkStatus == NetworkStatus.offline) {
+      // Si estamos offline, cortamos el canal explícitamente y limpiamos la lista.
+      _channel?.unsubscribe();
+      _channel = null;
+      return []; // La lista se vacía inmediatamente.
+    } else {
+      // Estamos online. Si no teníamos canal, nos suscribimos.
+      if (_channel == null) {
+        _subscribeToPresence(supabase, myId, myName, myPhotoUrl);
+      }
+      // Retornamos el estado actual (si ya había datos) o vacío mientras carga
+      return stateOrNull ?? [];
+    }
   }
 
   void _subscribeToPresence(SupabaseClient supabase, String myId, String? myName, String? myPhotoUrl) {
@@ -102,6 +113,7 @@ class PresenceNotifier extends _$PresenceNotifier {
         })
         .subscribe((status, error) async {
           if (status == RealtimeSubscribeStatus.subscribed) {
+            // Solo enviamos track si estamos realmente conectados
             await _channel!.track({
               'user_id': myId,
               'name': myName,

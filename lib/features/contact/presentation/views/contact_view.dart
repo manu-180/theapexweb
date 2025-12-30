@@ -1,5 +1,6 @@
 // Archivo: lib/features/contact/presentation/views/contact_view.dart
 import 'package:apex/core/config/theme/app_theme_providers.dart';
+import 'package:apex/core/providers/network_status_provider.dart'; // <--- IMPORTACIÓN
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shimmer/shimmer.dart';
@@ -59,7 +60,7 @@ class ContactView extends StatelessWidget {
   }
 }
 
-// --- FORMULARIO REDISEÑADO CON CARD MODERNA ---
+// --- FORMULARIO REDISEÑADO CON CARD MODERNA Y BLINDAJE DE RED ---
 class _ContactForm extends ConsumerStatefulWidget {
   const _ContactForm();
   @override
@@ -174,7 +175,6 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
       }
     } catch (e) {
       if (mounted) {
-        // CORRECCIÓN UX: Mensaje de error humano y detección de red
         final errStr = e.toString().toLowerCase();
         final isNetworkError = errStr.contains('socket') || 
                                errStr.contains('network') || 
@@ -211,11 +211,14 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // --- ESCUCHA DE RED ---
+    final networkStatus = ref.watch(networkStatusNotifierProvider);
+    final isOffline = networkStatus == NetworkStatus.offline;
+
     // --- DISEÑO DE CARD MODERNA ---
     return Container(
-      padding: const EdgeInsets.all(32), // Espacio interno generoso
+      padding: const EdgeInsets.all(32), 
       decoration: BoxDecoration(
-        // Color de fondo sutilmente diferente al scaffold para dar profundidad
         color: colorScheme.surfaceContainerLow, 
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
@@ -224,7 +227,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05), // Sombra muy sutil
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -232,7 +235,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, // Se ajusta al contenido
+        mainAxisSize: MainAxisSize.min, 
         children: [
           // HEADER DEL FORM
           Text(
@@ -256,97 +259,110 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
           // CAMPOS
           Form(
             key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, 
-              children: [
-                _buildTextField(
-                  controller: _nameController, 
-                  label: 'Tu Nombre', 
-                  icon: Icons.person_outline, 
-                  theme: theme, 
-                  validator: (v) => v?.isEmpty == true ? 'Requerido' : null, 
-                  isLastField: false
-                ),
-                const SizedBox(height: 20),
-                _buildTextField(
-                  controller: _emailController, 
-                  label: 'Tu Email', 
-                  icon: Icons.email_outlined, 
-                  keyboardType: TextInputType.emailAddress, 
-                  theme: theme, 
-                  validator: (v) => !v!.contains('@') ? 'Email inválido' : null, 
-                  isLastField: false
-                ),
-                const SizedBox(height: 20),
-                _buildTextField(
-                  controller: _messageController, 
-                  label: 'Mensaje', 
-                  icon: Icons.chat_bubble_outline, 
-                  theme: theme, 
-                  validator: (v) => v == null || v.isEmpty ? 'Escribe un mensaje' : null, 
-                  isLastField: true, 
-                  focusNode: _messageFocusNode,
-                  minLines: (_isMessageFocused || _messageController.text.isNotEmpty) ? 5 : 1, 
-                  maxLines: 5, 
-                ),
-                const SizedBox(height: 40),
+            child: Opacity(
+              opacity: isOffline ? 0.6 : 1.0, // Feedback visual de desactivado
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start, 
+                children: [
+                  _buildTextField(
+                    controller: _nameController, 
+                    label: 'Tu Nombre', 
+                    icon: Icons.person_outline, 
+                    theme: theme, 
+                    validator: (v) => v?.isEmpty == true ? 'Requerido' : null, 
+                    isLastField: false,
+                    enabled: !isOffline,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildTextField(
+                    controller: _emailController, 
+                    label: 'Tu Email', 
+                    icon: Icons.email_outlined, 
+                    keyboardType: TextInputType.emailAddress, 
+                    theme: theme, 
+                    validator: (v) => !v!.contains('@') ? 'Email inválido' : null, 
+                    isLastField: false,
+                    enabled: !isOffline,
+                  ),
+                  const SizedBox(height: 20),
+                  _buildTextField(
+                    controller: _messageController, 
+                    label: 'Mensaje', 
+                    icon: Icons.chat_bubble_outline, 
+                    theme: theme, 
+                    validator: (v) => v == null || v.isEmpty ? 'Escribe un mensaje' : null, 
+                    isLastField: true, 
+                    focusNode: _messageFocusNode,
+                    minLines: (_isMessageFocused || _messageController.text.isNotEmpty) ? 5 : 1, 
+                    maxLines: 5, 
+                    enabled: !isOffline,
+                  ),
+                  const SizedBox(height: 40),
 
-                // BOTÓN DE ACCIÓN
-                MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  onEnter: (_) => setState(() => _isHovered = true),
-                  onExit: (_) => setState(() => _isHovered = false),
-                  child: GestureDetector(
-                    onTap: _isLoading ? null : _sendMessage,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      width: double.infinity, // Botón ancho completo en la card
-                      height: 54,
-                      transform: Matrix4.identity()
-                        ..translate(0.0, _isHovered && !_isLoading ? -2.0 : 0.0),
-                      decoration: BoxDecoration(
-                        color: _isLoading ? colorScheme.primary.withOpacity(0.8) : colorScheme.primary,
-                        borderRadius: BorderRadius.circular(16), // Radio un poco más cuadrado para el botón full width
-                        boxShadow: [
-                          BoxShadow(
-                            color: colorScheme.primary.withOpacity(_isHovered && !_isLoading ? 0.4 : 0.1),
-                            blurRadius: _isHovered && !_isLoading ? 20 : 10,
-                            offset: const Offset(0, 8),
-                          )
-                        ],
-                      ),
-                      child: Center(
-                        child: _isLoading 
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.onPrimary)),
-                                const SizedBox(width: 12),
-                                Text("Enviando...", style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontFamily: 'Oxanium')),
-                              ],
-                            )
-                          : Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.send_rounded, size: 20, color: colorScheme.onPrimary),
-                                const SizedBox(width: 10),
-                                Text(
-                                  "Enviar Mensaje", 
-                                  style: TextStyle(
-                                    color: colorScheme.onPrimary, 
-                                    fontWeight: FontWeight.bold, 
-                                    fontSize: 16, 
-                                    fontFamily: 'Oxanium'
-                                  )
-                                ),
-                              ],
-                            ),
+                  // BOTÓN DE ACCIÓN BLINDADO
+                  MouseRegion(
+                    cursor: (isOffline || _isLoading) ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
+                    onEnter: (_) => setState(() => _isHovered = true),
+                    onExit: (_) => setState(() => _isHovered = false),
+                    child: GestureDetector(
+                      onTap: (isOffline || _isLoading) ? null : _sendMessage,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeInOut,
+                        width: double.infinity, 
+                        height: 54,
+                        transform: Matrix4.identity()
+                          ..translate(0.0, (_isHovered && !isOffline && !_isLoading) ? -2.0 : 0.0),
+                        decoration: BoxDecoration(
+                          color: isOffline 
+                              ? colorScheme.surfaceContainerHighest // Color grisaceo si offline
+                              : (_isLoading ? colorScheme.primary.withOpacity(0.8) : colorScheme.primary),
+                          borderRadius: BorderRadius.circular(16), 
+                          boxShadow: [
+                            if (!isOffline && ! _isLoading)
+                              BoxShadow(
+                                color: colorScheme.primary.withOpacity(_isHovered ? 0.4 : 0.1),
+                                blurRadius: _isHovered ? 20 : 10,
+                                offset: const Offset(0, 8),
+                              )
+                          ],
+                        ),
+                        child: Center(
+                          child: _isLoading 
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.onPrimary)),
+                                  const SizedBox(width: 12),
+                                  Text("Enviando...", style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontFamily: 'Oxanium')),
+                                ],
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    isOffline ? Icons.wifi_off_rounded : Icons.send_rounded, 
+                                    size: 20, 
+                                    color: isOffline ? colorScheme.onSurfaceVariant : colorScheme.onPrimary
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    isOffline ? "Sin Conexión" : "Enviar Mensaje", 
+                                    style: TextStyle(
+                                      color: isOffline ? colorScheme.onSurfaceVariant : colorScheme.onPrimary, 
+                                      fontWeight: FontWeight.bold, 
+                                      fontSize: 16, 
+                                      fontFamily: 'Oxanium'
+                                    )
+                                  ),
+                                ],
+                              ),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -364,7 +380,8 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
     TextInputType? keyboardType, 
     String? Function(String?)? validator, 
     required bool isLastField, 
-    FocusNode? focusNode
+    FocusNode? focusNode,
+    bool enabled = true,
   }) {
     final primaryColor = theme.colorScheme.primary;
 
@@ -375,6 +392,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
       child: TextFormField(
         controller: controller,
         focusNode: focusNode,
+        enabled: enabled,
         minLines: minLines,
         maxLines: maxLines,
         keyboardType: keyboardType,
@@ -393,11 +411,12 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
           ),
           prefixIconConstraints: const BoxConstraints(minWidth: 48),
           filled: true,
-          // Fondo del input un poco más oscuro que la card para contraste
           fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1))),
           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primaryColor, width: 1.5)),
+          // Borde cuando está deshabilitado
+          disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.05))),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           errorStyle: TextStyle(color: theme.colorScheme.error, fontSize: 12),
         ),
