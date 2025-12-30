@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shimmer/shimmer.dart'; // <--- IMPORTANTE: Usamos Shimmer
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:apex/features/auth/presentation/widgets/auth_modal.dart';
 import 'package:apex/features/comments/presentation/providers/comments_provider.dart';
@@ -77,7 +78,7 @@ class _CommentCardState extends ConsumerState<CommentCard> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // LÓGICA DE AVATAR CORREGIDA
+                  // LÓGICA DE AVATAR BLINDADA
                   _buildAvatar(comment.avatarUrl, isAdmin, colorScheme),
                   
                   const SizedBox(width: 16),
@@ -209,20 +210,20 @@ class _CommentCardState extends ConsumerState<CommentCard> {
     );
   }
 
-  // --- ARREGLO DE FOTOS ---
-Widget _buildAvatar(String? url, bool isAdmin, ColorScheme colors) {
-  // Verificamos si la URL es válida (no nula, no vacía y que empiece por http)
-  final bool hasValidUrl = url != null && url.isNotEmpty && url.startsWith('http');
+  // --- ARREGLO DE FOTOS (10/10: Shimmer + Error Handler) ---
+  Widget _buildAvatar(String? url, bool isAdmin, ColorScheme colors) {
+    // Verificamos si la URL es válida
+    final bool hasValidUrl = url != null && url.isNotEmpty && url.startsWith('http');
 
-  return Container(
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      border: isAdmin ? Border.all(color: colors.primary, width: 2) : null,
-      boxShadow: isAdmin ? [BoxShadow(color: colors.primary.withOpacity(0.2), blurRadius: 8)] : null,
-    ),
-    child: CircleAvatar(
-      radius: 20,
-      backgroundColor: colors.surfaceContainerHighest,
+    return Container(
+      width: 40, 
+      height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: isAdmin ? Border.all(color: colors.primary, width: 2) : null,
+        boxShadow: isAdmin ? [BoxShadow(color: colors.primary.withOpacity(0.2), blurRadius: 8)] : null,
+        color: colors.surfaceContainerHighest, // Fondo base por si acaso
+      ),
       child: ClipOval(
         child: hasValidUrl 
           ? Image.network(
@@ -230,20 +231,28 @@ Widget _buildAvatar(String? url, bool isAdmin, ColorScheme colors) {
               fit: BoxFit.cover,
               width: 40,
               height: 40,
-              // SI LA IMAGEN FALLA (POR CORS O URL ROTA), MUESTRA EL ÍCONO
-              errorBuilder: (context, error, stackTrace) => 
-                Icon(Icons.person, size: 20, color: colors.onSurfaceVariant),
-              // MIENTRAS CARGA, MUESTRA UNA MANCHA GRIS
+              // SI LA IMAGEN FALLA, MUESTRA EL ÍCONO
+              errorBuilder: (context, error, stackTrace) => Center(
+                child: Icon(Icons.person, size: 20, color: colors.onSurfaceVariant),
+              ),
+              // MIENTRAS CARGA, MUESTRA SHIMMER (PREMIUM)
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
-                return Container(color: Colors.white10);
+                return Shimmer.fromColors(
+                  baseColor: colors.onSurface.withOpacity(0.05),
+                  highlightColor: colors.onSurface.withOpacity(0.1),
+                  child: Container(
+                    width: 40, 
+                    height: 40,
+                    color: Colors.white,
+                  ),
+                );
               },
             )
-          : Icon(Icons.person, size: 20, color: colors.onSurfaceVariant),
+          : Center(child: Icon(Icons.person, size: 20, color: colors.onSurfaceVariant)),
       ),
-    ),
-  );
-}
+    );
+  }
 
   String _timeAgo(DateTime date) {
     final diff = DateTime.now().difference(date);

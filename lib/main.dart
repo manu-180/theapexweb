@@ -1,141 +1,107 @@
-// Archivo: lib/main.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:apex/app.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
+import 'package:apex/core/config/env_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-final supabaseUrlProvider = Provider<String>((ref) => throw UnimplementedError());
+// Provider global para la URL
+final supabaseUrlProvider = Provider<String>((ref) => EnvConfig.supabaseUrl);
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // 1. Env
-  try {
-    await dotenv.load(fileName: ".env");
-  } catch (e) {
-    debugPrint("Nota: .env no encontrado (OK en Producción)");
-  }
-
-  String getEnv(String key) {
-    const fromDartDefine = String.fromEnvironment('SUPABASE_URL');
-    if (fromDartDefine.isNotEmpty && key == 'SUPABASE_URL') return fromDartDefine;
-    if (key == 'SUPABASE_ANON_KEY') {
-       const keyDefine = String.fromEnvironment('SUPABASE_ANON_KEY');
-       if (keyDefine.isNotEmpty) return keyDefine;
-    }
-    return dotenv.env[key] ?? '';
-  }
-
-  // 2. Prefs
-  final prefs = await SharedPreferences.getInstance();
-
-  // 3. Supabase con Fallback de Red
-  final supabaseUrl = getEnv('SUPABASE_URL');
-  final supabaseKey = getEnv('SUPABASE_ANON_KEY');
-
-  if (supabaseUrl.isEmpty || supabaseKey.isEmpty) {
-    runApp(const _CriticalErrorApp(message: "Faltan variables de entorno"));
-    return;
-  }
-
-  try {
-    // Timeout para no dejar al usuario esperando eternamente si la red cuelga
-    await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: supabaseKey,
-    ).timeout(const Duration(seconds: 10));
-
-    // Si todo va bien, arrancamos la App normal
-    runApp(
-      ProviderScope(
-        overrides: [
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          supabaseUrlProvider.overrideWithValue(supabaseUrl),
-        ],
-        child: const App(),
-      ),
-    );
-
-  } catch (e) {
-    // Si falla la conexión inicial (DNS, Offline), mostramos la pantalla de Reintento
-    debugPrint("Error inicializando Supabase: $e");
-    runApp(_NetworkErrorApp(
-      onRetry: () {
-        // Truco sucio pero efectivo: Reiniciar la app completa navegando a '/' en web o reinvocando main
-        // En web, recargamos la página.
-        // Como no podemos hacer reload fácil desde Flutter, pedimos al usuario que recargue
-        // o re-ejecutamos main (experimental).
-        main(); 
-      }
-    ));
-  }
+  runApp(const _BootstrapApp());
 }
 
-// Pantalla bonita para errores de Configuración
-class _CriticalErrorApp extends StatelessWidget {
-  final String message;
-  const _CriticalErrorApp({required this.message});
+class _BootstrapApp extends StatefulWidget {
+  const _BootstrapApp();
+
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(child: Text("Error Crítico: $message")),
-      ),
-    );
-  }
+  State<_BootstrapApp> createState() => _BootstrapAppState();
 }
 
-// Pantalla bonita para errores de Red (Offline al inicio)
-class _NetworkErrorApp extends StatelessWidget {
-  final VoidCallback onRetry;
-  const _NetworkErrorApp({required this.onRetry});
+class _BootstrapAppState extends State<_BootstrapApp> {
+  late Future<SharedPreferences?> _initFuture;
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(), // Tema oscuro por defecto para error
-      home: Scaffold(
-        backgroundColor: const Color(0xFF0A0A0A),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.wifi_off_rounded, size: 64, color: Colors.redAccent),
-                const SizedBox(height: 24),
-                const Text(
-                  "No pudimos conectar con el servidor",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  "Verifica tu conexión a internet para cargar el portfolio.",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 32),
-                FilledButton.icon(
-                  onPressed: onRetry,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text("Reintentar"),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                  ),
-                )
-              ],
-            ),
+  void initState() {
+    super.initState();
+    _initFuture = _initializeApp();
+  }
+
+  Future<SharedPreferences?> _initializeApp() async {
+    // 1. Carga de Entorno (Silenciosa si falla)
+    await EnvConfig.load();
+
+    // 2. Preferencias (Esto es lo único vital para que Riverpod no falle)
+    final prefs = await SharedPreferences.getInstance();
+
+    // 3. Validación y Supabase (Intento optimista)
+    final url = EnvConfig.supabaseUrl;
+    final key = EnvConfig.supabaseAnonKey;
+
+    if (url.isNotEmpty && key.isNotEmpty) {
+      try {
+        // Intentamos conectar, pero si falla, NO detenemos la app.
+        await Supabase.initialize(
+          url: url,
+          anonKey: key,
+          realtimeClientOptions: const RealtimeClientOptions(
+            eventsPerSecond: 10,
           ),
-        ),
-      ),
+        ).timeout(const Duration(seconds: 5)); // Timeout corto para no hacer esperar
+      } catch (e) {
+        // Solo logueamos el error. La app abrirá igual en modo "Offline/Limitado"
+        debugPrint("Advertencia: Supabase no conectó al inicio ($e). La app continuará.");
+      }
+    } else {
+      debugPrint("Advertencia: Faltan credenciales de Supabase.");
+    }
+
+    return prefs;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<SharedPreferences?>(
+      future: _initFuture,
+      builder: (context, snapshot) {
+        // A. PANTALLA DE CARGA (Logo simple)
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: Scaffold(
+              backgroundColor: Color(0xFF0A0A0A),
+              body: Center(
+                // Un loader simple para que sepas que está pensando
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        // B. SI FALLÓ ALGO VITAL (SharedPreferences) - Muy raro
+        if (snapshot.hasError || snapshot.data == null) {
+           // Fallback de emergencia si SharedPreferences muere (casi imposible)
+           // Retornamos una app básica para no crashear
+           return MaterialApp(
+             home: Scaffold(body: Center(child: Text("Error crítico de memoria: ${snapshot.error}"))),
+           );
+        }
+
+        // C. ÉXITO (Arrancamos la App real)
+        // Nota que llegamos aquí INCLUSO si Supabase falló.
+        final prefs = snapshot.data!;
+        
+        return ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: const App(),
+        );
+      },
     );
   }
 }

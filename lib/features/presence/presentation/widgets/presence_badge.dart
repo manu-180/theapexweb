@@ -2,7 +2,8 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:apex/core/providers/network_status_provider.dart'; // <--- IMPORTACIÓN
+import 'package:shimmer/shimmer.dart'; // <--- IMPORTANTE
+import 'package:apex/core/providers/network_status_provider.dart'; 
 import 'package:apex/features/presence/providers/presence_provider.dart';
 
 class PresenceBadge extends ConsumerWidget {
@@ -12,8 +13,6 @@ class PresenceBadge extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final users = ref.watch(presenceNotifierProvider);
-    
-    // Escuchamos la red también aquí para dar feedback visual inmediato
     final networkStatus = ref.watch(networkStatusNotifierProvider);
 
     // --- CONFIGURACIÓN DE TAMAÑOS ---
@@ -21,7 +20,7 @@ class PresenceBadge extends ConsumerWidget {
     const double kIconSize = 20.0;     
     // --------------------------------
 
-    // 1. ESTADO "SIN CONEXIÓN" (Prioridad Máxima)
+    // 1. ESTADO "SIN CONEXIÓN"
     if (networkStatus == NetworkStatus.offline) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -45,7 +44,7 @@ class PresenceBadge extends ConsumerWidget {
       );
     }
 
-    // 2. ESTADO "CONECTANDO" (Hay internet pero lista vacía)
+    // 2. ESTADO "CONECTANDO"
     if (users.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -81,7 +80,6 @@ class PresenceBadge extends ConsumerWidget {
     final others = users.where((u) => !u.isMe).toList();
     final namedUsers = others.where((u) => u.name != null).toList();
     final anonymousCount = others.where((u) => u.name == null).length;
-    // ------------------------------
     
     String labelText = totalCount == 1 ? "1 online (Tú)" : "$totalCount online";
 
@@ -91,7 +89,7 @@ class PresenceBadge extends ConsumerWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       itemBuilder: (context) => <PopupMenuEntry<dynamic>>[
           
-          // A. MI USUARIO (Siempre visible arriba)
+          // A. MI USUARIO
           PopupMenuItem(
             enabled: false,
             height: 48, 
@@ -115,7 +113,7 @@ class PresenceBadge extends ConsumerWidget {
 
           if (others.isNotEmpty) const PopupMenuDivider(height: 1),
           
-          // B. OTROS USUARIOS CON NOMBRE
+          // B. OTROS USUARIOS
           ...namedUsers.map((u) {
             return PopupMenuItem(
               enabled: false,
@@ -136,8 +134,8 @@ class PresenceBadge extends ConsumerWidget {
             );
           }),
 
-          // C. LOGICA DE ANÓNIMOS
-          if (anonymousCount == 1)
+          // C. ANÓNIMOS
+          if (anonymousCount > 0)
              PopupMenuItem(
               enabled: false,
               height: 48,
@@ -146,11 +144,11 @@ class PresenceBadge extends ConsumerWidget {
                    CircleAvatar(
                     radius: kAvatarRadius,
                     backgroundColor: theme.colorScheme.onSurface.withOpacity(0.08),
-                    child: Icon(Icons.person_outline, size: kIconSize, color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                    child: Icon(Icons.group_outlined, size: kIconSize, color: theme.colorScheme.onSurface.withOpacity(0.7)),
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    "Visitante Anónimo",
+                    anonymousCount == 1 ? "Visitante Anónimo" : "Visitantes Anónimos x $anonymousCount",
                     style: TextStyle(
                       fontStyle: FontStyle.italic,
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
@@ -160,30 +158,7 @@ class PresenceBadge extends ConsumerWidget {
               ),
             ),
 
-          if (anonymousCount > 1)
-            PopupMenuItem(
-              enabled: false,
-              height: 48,
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: kAvatarRadius,
-                    backgroundColor: theme.colorScheme.onSurface.withOpacity(0.05),
-                    child: Icon(Icons.group_outlined, size: kIconSize, color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    "Visitantes Anónimos x $anonymousCount",
-                    style: TextStyle(
-                      fontStyle: FontStyle.italic,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // D. MENSAJE FINAL
+          // D. FOOTER
           if (totalCount > 1)
              PopupMenuItem(
               enabled: false,
@@ -238,7 +213,7 @@ class PresenceBadge extends ConsumerWidget {
   }
 }
 
-// --- HELPER: Avatar Unificado ---
+// --- HELPER: Avatar Unificado & Blindado ---
 class _UserAvatar extends StatelessWidget {
   final ConnectedUser user;
   final double radius;
@@ -254,15 +229,44 @@ class _UserAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    if (user.photoUrl != null && user.photoUrl!.isNotEmpty) {
-      return CircleAvatar(
-        radius: radius, 
-        backgroundColor: theme.colorScheme.surfaceContainerHighest,
-        backgroundImage: NetworkImage(user.photoUrl!),
-        onBackgroundImageError: (_, __) {}, 
+    // Validar URL
+    final bool hasValidUrl = user.photoUrl != null && user.photoUrl!.isNotEmpty;
+
+    if (hasValidUrl) {
+      return Container(
+        width: radius * 2,
+        height: radius * 2,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: theme.colorScheme.surfaceContainerHighest,
+        ),
+        child: ClipOval(
+          child: Image.network(
+            user.photoUrl!,
+            fit: BoxFit.cover,
+            // Error: Fallback a Icono
+            errorBuilder: (_, __, ___) => Center(
+               child: Icon(
+                 Icons.person_outline, 
+                 size: iconSize, 
+                 color: theme.colorScheme.onSurface.withOpacity(0.5)
+               ),
+            ),
+            // Loading: Shimmer
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Shimmer.fromColors(
+                 baseColor: theme.colorScheme.onSurface.withOpacity(0.05),
+                 highlightColor: theme.colorScheme.onSurface.withOpacity(0.1),
+                 child: Container(color: Colors.white),
+              );
+            },
+          ),
+        ),
       );
     }
 
+    // Caso base: Sin URL
     return CircleAvatar(
       radius: radius,
       backgroundColor: theme.colorScheme.onSurface.withOpacity(0.08),

@@ -2,32 +2,29 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class EnvConfig {
-  // Constructor privado
   const EnvConfig._();
 
   static Future<void> load() async {
     try {
       await dotenv.load(fileName: ".env");
     } catch (e) {
-      // Es normal no encontrar .env en producción o web, continuamos.
-      debugPrint("Nota: Archivo .env no encontrado. Se usarán variables de entorno del sistema.");
+      debugPrint("Nota: .env no cargado (Uso de variables de entorno o defaults): $e");
     }
   }
 
   static String get supabaseUrl {
-    return _get('SUPABASE_URL');
+    // CORRECCIÓN: Usamos String.fromEnvironment con el literal directo y const
+    const fromDefine = String.fromEnvironment('SUPABASE_URL');
+    if (fromDefine.isNotEmpty) return fromDefine;
+    
+    return dotenv.env['SUPABASE_URL'] ?? '';
   }
 
   static String get supabaseAnonKey {
-    return _get('SUPABASE_ANON_KEY');
-  }
-
-  static String _get(String key) {
-    // 1. Prioridad: Dart Define (Compilación: --dart-define=KEY=VALUE)
-    final fromDefine = String.fromEnvironment(key);
+    // CORRECCIÓN: Usamos String.fromEnvironment con el literal directo y const
+    const fromDefine = String.fromEnvironment('SUPABASE_ANON_KEY');
     if (fromDefine.isNotEmpty) return fromDefine;
 
-    // 2. Prioridad: Archivo .env (Desarrollo local)
-    return dotenv.env[key] ?? '';
+    return dotenv.env['SUPABASE_ANON_KEY'] ?? '';
   }
 }

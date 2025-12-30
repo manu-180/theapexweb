@@ -1,10 +1,10 @@
-// Archivo: lib/core/widgets/main_layout.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:apex/features/presence/presentation/widgets/presence_badge.dart';
-import 'package:apex/core/config/theme/app_theme.dart'; 
+import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/config/theme/brightness_provider.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
@@ -18,8 +18,7 @@ class MainLayout extends ConsumerStatefulWidget {
   ConsumerState<MainLayout> createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _MainLayoutState extends ConsumerState<MainLayout> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<Map<String, dynamic>> _navItems = [
@@ -30,75 +29,41 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: _navItems.length, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isMobile = MediaQuery.of(context).size.width < 800;
+    final isMobile = MediaQuery.of(context).size.width < 900;
+    final currentPath = GoRouterState.of(context).uri.path;
 
-    final String currentLocation = GoRouterState.of(context).uri.path;
-    final int targetIndex = _navItems.indexWhere((item) => item['path'] == currentLocation);
-
-    if (targetIndex != -1 && _tabController.index != targetIndex) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_tabController.index != targetIndex) {
-          _tabController.animateTo(targetIndex);
-        }
-      });
-    }
+    int activeIndex = _navItems.indexWhere((item) {
+      if (item['path'] == '/') return currentPath == '/';
+      return currentPath.startsWith(item['path']);
+    });
+    if (activeIndex == -1) activeIndex = 0;
 
     return Scaffold(
       key: _scaffoldKey,
       endDrawer: isMobile ? _MobileDrawer(navItems: _navItems) : null,
       appBar: AppBar(
         title: const _BrandLogo(),
-        centerTitle: false, 
+        centerTitle: false,
         automaticallyImplyLeading: false,
         actions: [
           if (!isMobile) ...[
-            IntrinsicWidth(
-              child: TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                indicatorColor: theme.colorScheme.primary,
-                indicatorWeight: 3,
-                indicatorSize: TabBarIndicatorSize.label,
-                indicatorPadding: const EdgeInsets.only(bottom: 12),
-                dividerColor: Colors.transparent,
-                overlayColor: WidgetStateProperty.all(Colors.transparent),
-                labelColor: Colors.transparent,
-                unselectedLabelColor: Colors.transparent,
-                padding: EdgeInsets.zero,
-                labelPadding: const EdgeInsets.symmetric(horizontal: 12),
-                onTap: (index) => context.goNamed(_navItems[index]['name']),
-                tabs: _navItems.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  return Tab(
-                    height: 60,
-                    child: _HoverableTab(
-                      text: entry.value['label'],
-                      isSelected: index == targetIndex, 
-                    ),
-                  );
-                }).toList(),
-              ),
+            // NAV BAR 100% DINÁMICA
+            _DynamicSlidingNavBar(
+              items: _navItems,
+              selectedIndex: activeIndex,
+              onTap: (index) => context.goNamed(_navItems[index]['name']),
             ),
+            
+            const SizedBox(width: 24),
+            
             const PresenceBadge(),
             const SizedBox(width: 12),
             _ThemeToggleButton(),
-            const SizedBox(width: 5),
+            const SizedBox(width: 8),
             const _AuthButton(),
-            const SizedBox(width: 15),
+            const SizedBox(width: 24),
           ] else ...[
             const PresenceBadge(),
             IconButton(
@@ -113,6 +78,187 @@ class _MainLayoutState extends ConsumerState<MainLayout> with SingleTickerProvid
       ),
       floatingActionButton: const Contactanos(),
       body: widget.child,
+    );
+  }
+}
+
+// --- WIDGET PRO: Sliding Nav Bar con Medición Real ---
+class _DynamicSlidingNavBar extends StatefulWidget {
+  final List<Map<String, dynamic>> items;
+  final int selectedIndex;
+  final Function(int) onTap;
+
+  const _DynamicSlidingNavBar({
+    required this.items,
+    required this.selectedIndex,
+    required this.onTap,
+  });
+
+  @override
+  State<_DynamicSlidingNavBar> createState() => _DynamicSlidingNavBarState();
+}
+
+class _DynamicSlidingNavBarState extends State<_DynamicSlidingNavBar> {
+  // Lista de Keys para medir cada texto individualmente
+  late List<GlobalKey> _keys;
+  
+  // Estado de la barra deslizante
+  double _indicatorLeft = 0;
+  double _indicatorWidth = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _keys = List.generate(widget.items.length, (_) => GlobalKey());
+    
+    // Esperamos al primer frame para medir
+    SchedulerBinding.instance.addPostFrameCallback((_) => _updateIndicator());
+  }
+
+  @override
+  void didUpdateWidget(covariant _DynamicSlidingNavBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Si cambia la selección, recalculamos posición
+    if (oldWidget.selectedIndex != widget.selectedIndex) {
+      _updateIndicator();
+    }
+  }
+
+  void _updateIndicator() {
+    if (!mounted) return;
+    
+    // Obtenemos el contexto del item seleccionado actual
+    final key = _keys[widget.selectedIndex];
+    final RenderBox? renderBox = key.currentContext?.findRenderObject() as RenderBox?;
+
+    if (renderBox != null) {
+      // Buscamos la posición relativa al padre (el Stack de la NavBar)
+      // Esto requiere encontrar el RenderBox del widget padre.
+      // Simplificación: Asumimos que los items están en una Row al inicio (0,0) del Stack.
+      // Calculamos el offset X sumando anchos previos + paddings es complejo.
+      // MEJOR ESTRATEGIA: Usar `localToGlobal` y convertir.
+      
+      // Pero como estamos dentro de un Stack > Row, la posición X relativa al Stack
+      // es exactamente lo que necesitamos.
+      
+      // Truco: Medimos la posición global del Item y la del Stack padre, y restamos.
+      final parentRenderBox = context.findRenderObject() as RenderBox?;
+      if (parentRenderBox != null) {
+        final itemOffset = renderBox.localToGlobal(Offset.zero);
+        final parentOffset = parentRenderBox.localToGlobal(Offset.zero);
+        
+        final relativeX = itemOffset.dx - parentOffset.dx;
+        
+        setState(() {
+          _indicatorLeft = relativeX;
+          _indicatorWidth = renderBox.size.width;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+
+    return SizedBox(
+      height: 56,
+      child: Stack(
+        alignment: Alignment.centerLeft,
+        children: [
+          // 1. LOS BOTONES (Con Keys para medir)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: widget.items.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              final isSelected = index == widget.selectedIndex;
+
+              return Padding(
+                // Espaciado dinámico real entre items
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: InkWell(
+                  onTap: () => widget.onTap(index),
+                  hoverColor: Colors.transparent,
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  child: Center(
+                    child: Container(
+                      // Ponemos la Key aquí para medir ESTE contenedor exacto (el texto)
+                      key: _keys[index],
+                      padding: const EdgeInsets.symmetric(vertical: 8), // Area de click vertical
+                      child: _HoverText(
+                        text: item['label'],
+                        isSelected: isSelected,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+
+          // 2. LA BARRA DESLIZANTE (Se mueve a donde le digamos)
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.fastOutSlowIn,
+            left: _indicatorLeft,
+            width: _indicatorWidth, // Ancho dinámico igual al texto
+            bottom: 10, // Altura ajustada
+            child: Container(
+              height: 3,
+              decoration: BoxDecoration(
+                color: primaryColor,
+                borderRadius: BorderRadius.circular(2),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.4),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  )
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HoverText extends StatefulWidget {
+  final String text;
+  final bool isSelected;
+  const _HoverText({required this.text, required this.isSelected});
+
+  @override
+  State<_HoverText> createState() => _HoverTextState();
+}
+
+class _HoverTextState extends State<_HoverText> {
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = (widget.isSelected || _isHovering) 
+        ? theme.colorScheme.primary 
+        : theme.colorScheme.onSurface;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedDefaultTextStyle(
+        duration: const Duration(milliseconds: 200),
+        style: theme.textTheme.titleSmall!.copyWith(
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
+          color: color,
+        ),
+        child: Text(widget.text),
+      ),
     );
   }
 }
@@ -338,40 +484,6 @@ class _MobileDrawer extends ConsumerWidget {
     if (label == 'Servicios') return FontAwesomeIcons.layerGroup;
     if (label == 'Sobre Mí') return Icons.person_rounded;
     return Icons.mail_rounded;
-  }
-}
-
-class _HoverableTab extends StatefulWidget {
-  final String text;
-  final bool isSelected;
-  const _HoverableTab({required this.text, required this.isSelected});
-  @override
-  State<_HoverableTab> createState() => _HoverableTabState();
-}
-
-class _HoverableTabState extends State<_HoverableTab> {
-  bool _isHovering = false;
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final Color textColor = (widget.isSelected || _isHovering)
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurface;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      cursor: SystemMouseCursors.click,
-      child: AnimatedDefaultTextStyle(
-        duration: const Duration(milliseconds: 150),
-        style: theme.textTheme.titleSmall!.copyWith(
-          fontWeight: FontWeight.bold,
-          fontSize: 15,
-          color: textColor,
-        ),
-        child: Text(widget.text),
-      ),
-    );
   }
 }
 
