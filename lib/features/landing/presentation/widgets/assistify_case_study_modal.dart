@@ -40,16 +40,26 @@ class AssistifyCaseStudyModal extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // --- IMAGEN OPTIMIZADA ---
-                  Image.asset(
-                    'assets/icons/logo_assistify.png',
-                    height: 48,
-                    width: 48,
-                    fit: BoxFit.contain,
-                    // TRUCO PRO 1: High usa interpolación bicúbica (más suave y nítida)
-                    filterQuality: FilterQuality.high, 
-                    // TRUCO PRO 2: Suaviza los bordes serrados
-                    isAntiAlias: true, 
+                  // --- IMAGEN OPTIMIZADA & BLINDADA ---
+                  ClipRRect( 
+                    // Agregamos clip por si el fallback es cuadrado
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/icons/logo_assistify.png',
+                      height: 48,
+                      width: 48,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high, 
+                      isAntiAlias: true,
+                      // SI LA IMAGEN FALLA, MOSTRAMOS ICONO DE RESPALDO
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 48, width: 48,
+                          color: colorScheme.primary.withOpacity(0.1),
+                          child: Icon(FontAwesomeIcons.mobileScreen, color: colorScheme.primary, size: 24),
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(

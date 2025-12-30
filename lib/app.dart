@@ -30,6 +30,40 @@ class App extends ConsumerWidget {
       themeMode: themeMode,
       theme: themeConfig.lightTheme, // Tema claro dinámico
       darkTheme: themeConfig.darkTheme, // Tema oscuro dinámico
+
+      // --- ESCUDO GLOBAL DE UI (BLINDAJE FINAL) ---
+      // Si cualquier widget falla visualmente, mostramos esto en lugar de la pantalla gris de la muerte.
+      builder: (context, child) {
+        ErrorWidget.builder = (FlutterErrorDetails details) {
+          return Material(
+            color: Colors.black87,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.bug_report_rounded, color: Colors.orangeAccent, size: 48),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Algo salió mal visualmente",
+                      style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "No te preocupes, la app sigue funcionando. Intenta recargar.",
+                      style: TextStyle(color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        };
+        return child!;
+      },
     );
   }
 }

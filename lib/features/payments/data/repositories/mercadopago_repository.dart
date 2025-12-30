@@ -1,12 +1,12 @@
 // Archivo: lib/features/payments/data/repositories/mercadopago_repository.dart
 import 'dart:convert';
+import 'dart:io'; 
 import 'package:flutter/foundation.dart';
 import 'package:apex/core/providers/supabase_providers.dart';
 import 'package:apex/features/services/domain/models/plan_model.dart';
 import 'package:apex/main.dart'; 
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 part 'mercadopago_repository.g.dart';
 
@@ -16,23 +16,23 @@ class MercadoPagoRepository {
   final SupabaseClient _supabase;
   final String _supabaseUrl;
   
-  /// Llama a la Edge Function para crear la preferencia de pago en Mercado Pago.
-  Future<void> createPreferenceAndLaunchCheckout({
+  /// Genera la preferencia y RETORNA la URL (String) para que la UI decida cómo abrirla.
+  /// Esto desacopla la lógica de negocio de la interfaz y evita bloqueos de popups.
+  Future<String> createPreference({
     required ServicePlan plan,
     required String userEmail, 
     required String? userId, 
   }) async {
     
-    final session = _supabase.auth.currentSession;
-    final jwt = session?.accessToken;
-
+    // Verificación proactiva de conexión antes de llamar
     try {
-      // 1. Llamada a la Edge Function
+      final session = _supabase.auth.currentSession;
+      final jwt = session?.accessToken;
+
       final response = await _supabase.functions.invoke(
         'create_preference_manuel',
         headers: {
           'Content-Type': 'application/json',
-          // Enviamos el JWT explícitamente para asegurar contextos autenticados
           if (jwt != null) 'Authorization': 'Bearer $jwt',
         },
         body: jsonEncode({
@@ -48,7 +48,6 @@ class MercadoPagoRepository {
 
       final responseData = response.data;
       
-      // Validación robusta de respuesta
       if (responseData is Map && responseData.containsKey('error')) {
          throw Exception(responseData['error']);
       }
@@ -59,31 +58,20 @@ class MercadoPagoRepository {
         throw Exception('El servidor no devolvió el enlace de pago.');
       }
 
-      final uri = Uri.parse(checkoutUrl);
-
-      // 2. Lanzamiento Optimizado (Sin canLaunchUrl redundante)
-      // Intentamos abrir directamente. En web, esto reduce la latencia 
-      // y minimiza la chance de bloqueo por el navegador.
-      try {
-        await launchUrl(
-          uri, 
-          // externalApplication es lo correcto para salir de la PWA/SPA hacia MP
-          mode: LaunchMode.externalApplication,
-        );
-      } catch (e) {
-        debugPrint('Error lanzando URL: $e');
-        // Si falla externalApplication (raro), intentamos fallback a platformDefault
-        await launchUrl(uri, mode: LaunchMode.platformDefault);
-      }
+      return checkoutUrl;
 
     } on FunctionException catch (e) {
-      // Errores específicos de Supabase Functions
-      final msg = e.details?.toString() ?? e.reasonPhrase ?? 'Error en la función de pagos';
-      debugPrint('Error de Edge Function: $msg');
-      throw Exception('Error de conexión con pagos: $msg');
+      // Error específico de Supabase Functions
+      final msg = e.details?.toString() ?? e.reasonPhrase ?? 'Error en el servidor de pagos';
+      throw Exception(msg); // Relanzamos como excepción limpia para la UI
+    } on SocketException {
+      throw Exception('No tienes conexión a internet.');
     } catch (e) {
-      // Errores generales
-      debugPrint('Error general en checkout: $e');
+      // Cualquier otro error (ej: timeout, parsing)
+      debugPrint('Error en repositorio de pagos: $e');
+      if (e.toString().contains('XMLHttpRequest')) {
+         throw Exception('Error de red o CORS. Verifica tu conexión.');
+      }
       rethrow; 
     }
   }

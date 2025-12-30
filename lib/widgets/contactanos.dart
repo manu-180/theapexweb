@@ -1,5 +1,6 @@
 // Archivo: lib/widgets/contactanos.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Necesario para el Clipboard
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:apex/core/config/app_constants.dart'; // Importamos la fuente de verdad
@@ -23,10 +24,37 @@ class _ContactanosState extends State<Contactanos> {
         'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
 
     try {
+      // Intentamos abrir en modo aplicación externa (mejor para móviles y desktop apps)
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         throw 'No se pudo abrir WhatsApp';
       }
     } catch (e) {
+      // --- FALLBACK A PRUEBA DE BALAS ---
+      // Si falla (ej: en web con bloqueador de popups), copiamos al portapapeles y avisamos.
+      if (mounted) {
+        Clipboard.setData(const ClipboardData(text: phoneNumber));
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.copy, color: Colors.white, size: 16),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'No pudimos abrir WhatsApp. Número copiado al portapapeles.',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
       debugPrint('Error al abrir WhatsApp: $e');
     }
   }
@@ -60,6 +88,14 @@ class _ContactanosState extends State<Contactanos> {
               color: Colors.white.withOpacity(_isHovering ? 0.3 : 0.0),
               width: 1.5,
             ),
+            boxShadow: [
+              if (_isHovering)
+                BoxShadow(
+                  color: colorScheme.primary.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                )
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

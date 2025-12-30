@@ -25,10 +25,6 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
     super.dispose();
   }
 
-  // CORRECCIÓN DE COMPATIBILIDAD:
-  // Safari (WebKit) tiene soporte limitado para WebM con canal Alfa (Transparencia).
-  // Esto afecta tanto a iOS como a macOS. Detectamos ambos para evitar
-  // mostrar un reproductor roto a usuarios de Mac.
   bool get _isAppleEcosystem {
     return defaultTargetPlatform == TargetPlatform.iOS || 
            defaultTargetPlatform == TargetPlatform.macOS;
@@ -40,8 +36,8 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 800;
     
-    // Si estamos en el ecosistema Apple, ocultamos el video para evitar errores visuales
-    final bool hideVisuals = _isAppleEcosystem;
+    // Si estamos en Apple, mostramos el fallback estático en lugar del video
+    final bool useStaticFallback = _isAppleEcosystem;
 
     return MouseRegion(
       onHover: (event) => _mousePos.value = event.position,
@@ -58,14 +54,11 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
                   constraints: const BoxConstraints(maxWidth: 900),
                   child: Column(
                     children: [
-                      // Solo mostramos el video si NO estamos en Apple
-                      if (!hideVisuals)
-                        FadeInDown(
-                          child: _DynamicHeroImage(themeConfig: themeConfig)
-                        )
-                      else
-                        // Espaciador para mantener armonía visual sin el video
-                        const SizedBox(height: 20),
+                      FadeInDown(
+                        child: useStaticFallback 
+                          ? _StaticHeroImage(themeConfig: themeConfig)
+                          : _DynamicHeroImage(themeConfig: themeConfig)
+                      ),
                         
                       FadeInUp(child: _AboutMeCard(mousePos: _mousePos)),
                     ],
@@ -75,6 +68,35 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
             ),
             const Footer(),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// NUEVO WIDGET: Fallback estático para Apple
+class _StaticHeroImage extends StatelessWidget {
+  final AppThemeConfig themeConfig;
+  const _StaticHeroImage({required this.themeConfig});
+
+  @override
+  Widget build(BuildContext context) {
+    // Usamos el icono del tema o uno por defecto
+    final icon = themeConfig.logoIcon ?? FontAwesomeIcons.code;
+    final color = Theme.of(context).colorScheme.primary;
+
+    return SizedBox(
+      height: 250,
+      width: double.infinity,
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(30),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withOpacity(0.1),
+            border: Border.all(color: color.withOpacity(0.3), width: 2),
+          ),
+          child: Icon(icon, size: 80, color: color),
         ),
       ),
     );
@@ -114,6 +136,9 @@ class _DynamicHeroImage extends StatelessWidget {
   }
 }
 
+// ... (El resto del archivo _AboutMeCard y _TransparentVideoPlayer se mantiene igual)
+// Asegúrate de copiar el resto del archivo original aquí si lo reemplazas completo.
+// Por brevedad, asumo que mantienes las clases _AboutMeCard y _TransparentVideoPlayer originales.
 class _AboutMeCard extends StatelessWidget {
   final ValueNotifier<Offset> mousePos;
   const _AboutMeCard({required this.mousePos});
@@ -288,9 +313,7 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
   Future<void> _initializePlayer() async {
     _controller = VideoPlayerController.asset(widget.assetPath);
     try {
-      // Timeout de seguridad: Si tarda más de 5s, cortamos.
       await _controller!.initialize().timeout(const Duration(seconds: 5));
-      
       if (mounted) {
         setState(() {
           _isInitialized = true;
@@ -300,7 +323,6 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
         });
       }
     } catch (e) {
-      // Fallo silencioso si el formato no es compatible
       debugPrint("Advertencia: No se pudo cargar el video ${widget.assetPath}: $e");
     }
   }
@@ -327,7 +349,6 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
             IgnorePointer(
               child: VideoPlayer(_controller!),
             ),
-            // Capa de seguridad para clicks
             Positioned.fill(
               child: Container(
                 color: Colors.transparent,

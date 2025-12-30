@@ -7,35 +7,34 @@ class AuthRepository {
 
   final SupabaseClient _supabase;
 
-  /// Retorna un Stream que emite el [User] actual cuando el estado de auth cambia.
   Stream<User?> get authStateChanges => _supabase.auth.onAuthStateChange.map(
         (data) => data.session?.user,
       );
   
-  /// Retorna el [User] actual, si existe.
   User? get currentUser => _supabase.auth.currentUser;
 
-  /// Inicia el flujo de inicio de sesión con Google OAuth.
   Future<void> signInWithGoogle() async {
     try {
-      // CORRECCIÓN: URL Dinámica.
-      // En lugar de escribir el dominio a mano, dejamos que Dart detecte 
-      // dónde está alojada la web (Uri.base.origin).
-      // Esto funciona para: theapexweb.com, www.theapexweb.com, vercel.app, etc.
       String? redirectTo;
       
       if (kIsWeb) {
+        // CORRECCIÓN: Evitamos problemas con fragments en la URL base
+        // Si estamos en https://midominio.com/#/contact, queremos redireccionar a la raíz
+        // o a una ruta limpia.
+        String origin = Uri.base.origin;
+        if (!origin.startsWith('http')) {
+           // Fallback por si origin viene vacío en algunos navegadores
+           origin = Uri.base.scheme + '://' + Uri.base.host;
+           if (Uri.base.hasPort) origin += ':${Uri.base.port}';
+        }
+
         if (kDebugMode) {
-          // En modo Debug (localhost), pasamos null para que Supabase use 
-          // la configuración por defecto del Dashboard (usualmente localhost:3000).
-          redirectTo = null;
+          redirectTo = null; // Supabase usa localhost:3000 por defecto
         } else {
-          // En Producción, construimos la URL basada en el dominio actual.
-          // Ejemplo: https://tu-dominio.com/#/contact
-          redirectTo = '${Uri.base.origin}/#/contact';
+          // IMPORTANTE: Asegúrate de tener esta URL exacta en "Redirect URLs" en Supabase
+          redirectTo = '$origin/'; // Redirigimos al Home para evitar problemas con hashes
         }
       } else {
-        // En Android/iOS usamos el deep link nativo
         redirectTo = 'io.supabase.flutter://callback';
       }
 
@@ -44,13 +43,11 @@ class AuthRepository {
         redirectTo: redirectTo,
       );
     } catch (e) {
-      // Manejar el error (ej. mostrar SnackBar)
       debugPrint('Error en signInWithGoogle: $e');
       rethrow;
     }
   }
 
-  /// Cierra la sesión del usuario actual.
   Future<void> signOut() async {
     try {
       await _supabase.auth.signOut();

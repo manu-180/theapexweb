@@ -1,6 +1,7 @@
 // Archivo: lib/features/comments/presentation/widgets/comment_input_area.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // Importante para tipos de Excepción
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:apex/features/auth/presentation/widgets/auth_modal.dart';
 import 'package:apex/features/comments/presentation/providers/comments_provider.dart';
@@ -26,8 +27,6 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
   int _rating = 0; 
   bool _isPosting = false;
   bool _showRatingSelector = false;
-  
-  // NUEVO: Estado para controlar el mensaje de error inline
   bool _showRatingError = false; 
 
   @override
@@ -46,24 +45,20 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
     if (widget.replyingTo != null && _showRatingSelector) {
       setState(() {
         _showRatingSelector = false;
-        _showRatingError = false; // Limpiamos error si cambia a respuesta
+        _showRatingError = false; 
       });
     }
     if (widget.replyingTo == null && oldWidget.replyingTo != null && _focusNode.hasFocus) {
       setState(() => _showRatingSelector = true);
     }
-    
     if (widget.replyingTo != null && !_focusNode.hasFocus) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _focusNode.requestFocus();
-      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _focusNode.requestFocus());
     }
   }
 
  void _submit() async {
-    // 1. Verificamos el estado de autenticación a través del Stream para máxima precisión
-    final authState = ref.read(authStateStreamProvider);
-    final user = authState.valueOrNull;
+    // 1. Verificación PROACTIVA de sesión (Mejor que esperar al error)
+    final user = ref.read(currentUserProvider);
 
     if (user == null) {
       _focusNode.unfocus();
@@ -74,9 +69,7 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
     final content = _controller.text.trim();
     if (content.isEmpty) return;
 
-    // VALIDACIÓN VISUAL (Sin SnackBar)
     if (widget.replyingTo == null && _rating == 0) {
-      // Activamos el estado de error para mostrar la alerta visual
       setState(() => _showRatingError = true);
       return;
     }
@@ -96,16 +89,31 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
       setState(() {
         _rating = 0;
         _showRatingSelector = false;
-        _showRatingError = false; // Reset error
+        _showRatingError = false; 
       });
       _focusNode.unfocus();
 
     } catch (e) {
-      // 2. Si el servidor rechaza por falta de permisos (RLS / Sesión expirada), disparamos el login
-      if (e.toString().contains('row-level security') || e.toString().contains('42501')) {
+      // 2. Manejo de errores ROBUSTO
+      bool isAuthError = false;
+      String errorMessage = 'Ocurrió un error inesperado';
+
+      if (e is PostgrestException) {
+        // Código 42501 = Permisos insuficientes (RLS)
+        if (e.code == '42501') {
+          isAuthError = true;
+        } else {
+          errorMessage = e.message;
+        }
+      } else if (e is AuthException) {
+        isAuthError = true;
+      }
+
+      if (isAuthError) {
+         _focusNode.unfocus();
          showDialog(context: context, builder: (_) => const AuthRequiredModal());
       } else {
-         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     } finally {
       if (mounted) setState(() => _isPosting = false);
@@ -117,7 +125,6 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // 3. ESCUCHA ACTIVA: Si el usuario se desloguea mientras tiene el foco, lanzamos el modal
     ref.listen(authStateStreamProvider, (previous, next) {
       if (next.value == null && _focusNode.hasFocus) {
         _focusNode.unfocus();
@@ -128,7 +135,6 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- HEADER DE RESPUESTA ---
         if (widget.replyingTo != null)
           Container(
             margin: const EdgeInsets.only(bottom: 12),
@@ -165,7 +171,6 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
             ),
           ),
 
-        // --- SELECTOR DE ESTRELLAS (ANIMADO) ---
         AnimatedSize(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutBack,
@@ -176,7 +181,6 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Título + Mensaje de Error (Row)
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -187,9 +191,6 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                               fontWeight: FontWeight.bold
                             ),
                           ),
-                          
-                          // --- MENSAJE DE ERROR ELEGANTE ---
-                          // Usamos AnimatedOpacity para que aparezca suavemente
                           AnimatedOpacity(
                             opacity: _showRatingError ? 1.0 : 0.0,
                             duration: const Duration(milliseconds: 300),
@@ -221,10 +222,7 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                           ),
                         ],
                       ),
-                      
                       const SizedBox(height: 8),
-                      
-                      // Las Estrellas
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: List.generate(5, (index) {
@@ -233,7 +231,7 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                             onTap: () {
                               setState(() {
                                 _rating = starIndex;
-                                _showRatingError = false; // Ocultar error al tocar
+                                _showRatingError = false; 
                               });
                             },
                             child: Padding(
@@ -244,7 +242,7 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                                 child: Icon(
                                   starIndex <= _rating ? Icons.star_rounded : Icons.star_outline_rounded,
                                   color: _showRatingError 
-                                      ? colorScheme.error.withOpacity(0.5) // Feedback visual en las estrellas también
+                                      ? colorScheme.error.withOpacity(0.5) 
                                       : Colors.amber,
                                   size: 36,
                                 ),
@@ -259,7 +257,6 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
               : const SizedBox.shrink(),
         ),
 
-        // --- CAMPO DE TEXTO ---
         TextField(
           controller: _controller,
           focusNode: _focusNode,
@@ -278,7 +275,6 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                 : 'Deja tu opinión...',
             filled: true,
             fillColor: colorScheme.surfaceContainerLow,
-            // Si hay error, pintamos el borde suavemente de rojo
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: _showRatingError 
@@ -300,7 +296,6 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                 : IconButton(
                     icon: Icon(
                       Icons.send_rounded, 
-                      // El color del ícono cambia si hay error o si está listo
                       color: _rating > 0 || widget.replyingTo != null 
                           ? colorScheme.primary 
                           : (_showRatingError ? colorScheme.error : colorScheme.outline)
@@ -312,5 +307,4 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
       ],
     );
   }
- 
 }
