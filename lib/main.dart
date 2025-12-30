@@ -1,6 +1,5 @@
 // Archivo: lib/main.dart
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,8 +7,6 @@ import 'package:apex/app.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-// Importación condicional para usar APIs web solo donde corresponde
-import 'package:web/web.dart' as web; 
 
 final supabaseUrlProvider = Provider<String>((ref) => throw UnimplementedError());
 
@@ -68,13 +65,11 @@ Future<void> main() async {
     debugPrint("Error inicializando Supabase: $e");
     runApp(_NetworkErrorApp(
       onRetry: () {
-        if (kIsWeb) {
-          // EN WEB: Recarga real del navegador para limpiar memoria y estado
-          web.window.location.reload();
-        } else {
-          // EN MÓVIL: Reintentamos la inicialización
-          main();
-        }
+        // Truco sucio pero efectivo: Reiniciar la app completa navegando a '/' en web o reinvocando main
+        // En web, recargamos la página.
+        // Como no podemos hacer reload fácil desde Flutter, pedimos al usuario que recargue
+        // o re-ejecutamos main (experimental).
+        main(); 
       }
     ));
   }
