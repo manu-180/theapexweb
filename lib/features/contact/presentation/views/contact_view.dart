@@ -174,8 +174,31 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
       }
     } catch (e) {
       if (mounted) {
+        // CORRECCIÓN UX: Mensaje de error humano y detección de red
+        final errStr = e.toString().toLowerCase();
+        final isNetworkError = errStr.contains('socket') || 
+                               errStr.contains('network') || 
+                               errStr.contains('xmlhttprequest') || 
+                               errStr.contains('connection');
+                               
+        final userMessage = isNetworkError 
+            ? 'Sin conexión a internet. Verifica tu red.' 
+            : 'No pudimos enviar el mensaje. Inténtalo de nuevo.';
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.redAccent)
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text(userMessage, style: const TextStyle(fontWeight: FontWeight.bold))),
+              ],
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+          )
         );
       }
     } finally {
@@ -407,7 +430,6 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
         commentsState.when(
           data: (comments) => RatingSummary(comments: comments),
           loading: () => const RatingSummarySkeleton(), 
-          // CORRECCIÓN: Widget de error vacío si falla el summary (es secundario)
           error: (_, __) => const SizedBox.shrink()
         ),
         const SizedBox(height: 30),
@@ -417,7 +439,6 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
         const SizedBox(height: 20),
         commentsState.when(
           loading: () => const _SkeletonList(), 
-          // CORRECCIÓN: Widget de Error Profesional con Botón de Reintento
           error: (err, stack) => Center(
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 24),

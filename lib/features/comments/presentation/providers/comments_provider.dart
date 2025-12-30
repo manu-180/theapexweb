@@ -81,11 +81,10 @@ class CommentsNotifier extends _$CommentsNotifier {
   Future<List<Comment>> build() async {
     _supabase = ref.watch(supabaseClientProvider);
     
-    // Limpieza preventiva de suscripciones
+    // Limpieza preventiva
     for (var sub in _subscriptions) { await sub.unsubscribe(); }
     _subscriptions.clear();
 
-    // Gestión automática del ciclo de vida para evitar fugas
     ref.onDispose(() {
       for (var sub in _subscriptions) { sub.unsubscribe(); }
     });
@@ -114,13 +113,13 @@ class CommentsNotifier extends _$CommentsNotifier {
   }
 
   Future<List<Comment>> _fetchComments() async {
-    // CORRECCIÓN: Eliminamos el try-catch que silenciaba los errores.
-    // Dejamos que la excepción suba para que Riverpod gestione el AsyncError en la UI.
+    // CORRECCIÓN PERFORMANCE: Límite de seguridad para evitar cuellos de botella
     final response = await _supabase
         .from('comments_with_metadata') 
         .select()
         .order('likes_count', ascending: false)
-        .order('created_at', ascending: false);
+        .order('created_at', ascending: false)
+        .limit(50); // <--- LÍMITE AGREGADO
 
     final flatList = (response as List).map((json) => Comment.fromJson(json)).toList();
 
@@ -143,16 +142,13 @@ class CommentsNotifier extends _$CommentsNotifier {
   }
 
   Future<void> postComment(String content, {int? parentId, int? rating}) async {
-    // 1. Verificación de sesión real (Token activo)
     final session = _supabase.auth.currentSession;
     if (session == null || session.isExpired) {
       throw const AuthException('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
     }
     
-    // Usamos el usuario de la sesión validada
     final user = session.user; 
 
-    // 2. Estado Optimista (UI instantánea)
     final previousState = state;
     final currentList = state.valueOrNull ?? [];
 
@@ -183,7 +179,6 @@ class CommentsNotifier extends _$CommentsNotifier {
       state = AsyncData(updatedList);
     }
 
-    // 3. Envío a Supabase con manejo de errores transparente
     try {
       await _supabase.from('comments').insert({
         'user_id': user.id,
@@ -192,15 +187,12 @@ class CommentsNotifier extends _$CommentsNotifier {
         'rating': rating,
       });
     } catch (e) {
-      // ROLLBACK: Restauramos el estado inmediatamente
       state = previousState; 
-      // Relanzamos el error original para que la UI detecte RLS o AuthErrors
       rethrow;
     }
   }
 
   Future<void> toggleLike(int commentId) async {
-    // Verificación de sesión
     final session = _supabase.auth.currentSession;
     if (session == null || session.isExpired) {
        throw const AuthException('Debes iniciar sesión para dar like.');
@@ -210,7 +202,6 @@ class CommentsNotifier extends _$CommentsNotifier {
     final previousState = state;
     final currentList = state.valueOrNull ?? [];
 
-    // Lógica optimista
     List<Comment> updateList(List<Comment> list) {
       return list.map((c) {
         if (c.id == commentId) {
@@ -253,7 +244,7 @@ class CommentsNotifier extends _$CommentsNotifier {
          await _supabase.from('comment_likes').insert({'user_id': user.id, 'comment_id': commentId});
        }
     } catch (e) {
-      state = previousState; // Rollback
+      state = previousState; 
       rethrow;
     }
   }

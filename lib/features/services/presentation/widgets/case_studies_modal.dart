@@ -102,7 +102,7 @@ class CaseStudiesModal extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     child: Row(
                       children: [
-                        // --- Logo Circular ---
+                        // --- Logo Circular Blindado ---
                         Container(
                           width: 56,
                           height: 56,
@@ -117,34 +117,8 @@ class CaseStudiesModal extends StatelessWidget {
                               )
                             ],
                           ),
-                          // LÓGICA DE RENDERIZADO: ¿Letra o Imagen?
                           child: Center(
-                            child: project.logoLetter != null
-                                ? Text(
-                                    project.logoLetter!,
-                                    style: const TextStyle(
-                                      color: Colors.white, // Letra Blanca
-                                      fontSize: 28,        // Grande
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Oxanium', // Fuente consistente
-                                    ),
-                                  )
-                                : Padding(
-                                    // Reduje el padding de 8 a 6 para que el logo se vea un poco más grande
-                                    padding: const EdgeInsets.all(6.0),
-                                    // CORRECCIÓN: Quitamos el ClipOval aquí.
-                                    // El contenedor ya es circular (shape: BoxShape.circle).
-                                    // La imagen debe ajustarse adentro sin recortarse.
-                                    child: Image.asset(
-                                      project.logoAsset!,
-                                      fit: BoxFit.contain, // Se ajusta sin salirse
-                                      errorBuilder: (context, error, stackTrace) => Icon(
-                                        Icons.broken_image, 
-                                        color: theme.colorScheme.onSurface,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
+                            child: _SafeLogo(project: project, theme: theme),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -197,6 +171,54 @@ class CaseStudiesModal extends StatelessWidget {
           const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+}
+
+// --- WIDGET DEFENSIVO PARA LOGOS ---
+class _SafeLogo extends StatelessWidget {
+  final CaseStudy project;
+  final ThemeData theme;
+
+  const _SafeLogo({required this.project, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    // 1. Prioridad: Letra (Más ligero y seguro)
+    if (project.logoLetter != null && project.logoLetter!.isNotEmpty) {
+      return Text(
+        project.logoLetter!,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Oxanium',
+        ),
+      );
+    }
+
+    // 2. Fallback: Imagen (Si existe path)
+    if (project.logoAsset != null && project.logoAsset!.isNotEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(6.0),
+        child: Image.asset(
+          project.logoAsset!,
+          fit: BoxFit.contain,
+          // Blindaje contra errores de carga (404 asset not found)
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.broken_image_rounded,
+            color: theme.colorScheme.onSurface,
+            size: 24,
+          ),
+        ),
+      );
+    }
+
+    // 3. Último recurso: Icono genérico (Si todo lo demás es null)
+    return Icon(
+      Icons.rocket_launch_rounded,
+      color: project.brandColor,
+      size: 24,
     );
   }
 }
