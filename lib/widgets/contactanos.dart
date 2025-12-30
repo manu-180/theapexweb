@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:apex/core/config/app_constants.dart'; // Importamos la fuente de verdad
 
 class Contactanos extends StatefulWidget {
   const Contactanos({super.key});
@@ -14,7 +15,8 @@ class _ContactanosState extends State<Contactanos> {
   bool _isHovering = false;
 
   Future<void> _launchWhatsApp() async {
-    const phoneNumber = '5491134272488';
+    // CORRECCIÓN: Usamos la constante centralizada
+    const phoneNumber = AppConstants.whatsappNumber;
     const message = 'Hola, necesito ayuda con Assistify.';
     
     final uri = Uri.parse(
@@ -44,8 +46,6 @@ class _ContactanosState extends State<Contactanos> {
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeOutExpo,
           
-          // SIN TRANSFORM (Eliminada la elevación/levitación)
-          
           // Ancho dinámico (Píldora vs Círculo)
           width: _isHovering ? 160 : 60, 
           height: 60,
@@ -55,13 +55,11 @@ class _ContactanosState extends State<Contactanos> {
             color: colorScheme.primary,
             borderRadius: BorderRadius.circular(30),
             
-            // Borde sutil que aparece en hover para resaltar sin usar sombras
+            // Borde sutil que aparece en hover
             border: Border.all(
               color: Colors.white.withOpacity(_isHovering ? 0.3 : 0.0),
               width: 1.5,
             ),
-            
-            // SIN SOMBRAS (Diseño Flat puro)
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

@@ -407,6 +407,7 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
         commentsState.when(
           data: (comments) => RatingSummary(comments: comments),
           loading: () => const RatingSummarySkeleton(), 
+          // CORRECCIÓN: Widget de error vacío si falla el summary (es secundario)
           error: (_, __) => const SizedBox.shrink()
         ),
         const SizedBox(height: 30),
@@ -416,7 +417,50 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
         const SizedBox(height: 20),
         commentsState.when(
           loading: () => const _SkeletonList(), 
-          error: (err, stack) => Center(child: Text('Error: $err')),
+          // CORRECCIÓN: Widget de Error Profesional con Botón de Reintento
+          error: (err, stack) => Center(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 24),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.errorContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: theme.colorScheme.error.withOpacity(0.3)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.cloud_off_rounded, color: theme.colorScheme.error, size: 40),
+                  const SizedBox(height: 12),
+                  Text(
+                    "No pudimos cargar los comentarios",
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.bold
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Por favor, verifica tu conexión e inténtalo de nuevo.",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: () => ref.invalidate(commentsNotifierProvider),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text("Reintentar"),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.error,
+                      foregroundColor: theme.colorScheme.onError,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
           data: (comments) {
             if (comments.isEmpty) {
               return Center(

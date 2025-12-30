@@ -18,12 +18,30 @@ class AuthRepository {
   /// Inicia el flujo de inicio de sesión con Google OAuth.
   Future<void> signInWithGoogle() async {
     try {
+      // CORRECCIÓN: URL Dinámica.
+      // En lugar de escribir el dominio a mano, dejamos que Dart detecte 
+      // dónde está alojada la web (Uri.base.origin).
+      // Esto funciona para: theapexweb.com, www.theapexweb.com, vercel.app, etc.
+      String? redirectTo;
+      
+      if (kIsWeb) {
+        if (kDebugMode) {
+          // En modo Debug (localhost), pasamos null para que Supabase use 
+          // la configuración por defecto del Dashboard (usualmente localhost:3000).
+          redirectTo = null;
+        } else {
+          // En Producción, construimos la URL basada en el dominio actual.
+          // Ejemplo: https://tu-dominio.com/#/contact
+          redirectTo = '${Uri.base.origin}/#/contact';
+        }
+      } else {
+        // En Android/iOS usamos el deep link nativo
+        redirectTo = 'io.supabase.flutter://callback';
+      }
+
       await _supabase.auth.signInWithOAuth(
         OAuthProvider.google, 
-    
-        redirectTo: kIsWeb 
-            ? (kDebugMode ? null : 'https://theapexweb.com/#/contact') 
-            : 'io.supabase.flutter://callback',
+        redirectTo: redirectTo,
       );
     } catch (e) {
       // Manejar el error (ej. mostrar SnackBar)

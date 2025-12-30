@@ -25,11 +25,13 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
     super.dispose();
   }
 
-  // MEJORA: Detección Cross-Platform segura.
-  // defaultTargetPlatform ya maneja la lógica de UserAgent en Web internamente.
-  // Esto elimina la necesidad de importar 'dart:html' que rompe la compilación en Android/iOS.
-  bool get _isIOS {
-    return defaultTargetPlatform == TargetPlatform.iOS;
+  // CORRECCIÓN DE COMPATIBILIDAD:
+  // Safari (WebKit) tiene soporte limitado para WebM con canal Alfa (Transparencia).
+  // Esto afecta tanto a iOS como a macOS. Detectamos ambos para evitar
+  // mostrar un reproductor roto a usuarios de Mac.
+  bool get _isAppleEcosystem {
+    return defaultTargetPlatform == TargetPlatform.iOS || 
+           defaultTargetPlatform == TargetPlatform.macOS;
   }
 
   @override
@@ -38,8 +40,8 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 800;
     
-    // En iOS (Web o Nativo) ocultamos el video WebM por compatibilidad
-    final bool hideVisuals = _isIOS;
+    // Si estamos en el ecosistema Apple, ocultamos el video para evitar errores visuales
+    final bool hideVisuals = _isAppleEcosystem;
 
     return MouseRegion(
       onHover: (event) => _mousePos.value = event.position,
@@ -56,12 +58,13 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
                   constraints: const BoxConstraints(maxWidth: 900),
                   child: Column(
                     children: [
-                      // Si es iOS, no renderizamos el player para evitar errores de decodificación
+                      // Solo mostramos el video si NO estamos en Apple
                       if (!hideVisuals)
                         FadeInDown(
                           child: _DynamicHeroImage(themeConfig: themeConfig)
                         )
                       else
+                        // Espaciador para mantener armonía visual sin el video
                         const SizedBox(height: 20),
                         
                       FadeInUp(child: _AboutMeCard(mousePos: _mousePos)),
@@ -285,9 +288,7 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
   Future<void> _initializePlayer() async {
     _controller = VideoPlayerController.asset(widget.assetPath);
     try {
-      // FIX CRÍTICO: Timeout de seguridad.
-      // Si el video tarda más de 5s en cargar (red lenta o formato incompatible),
-      // cortamos la espera para no bloquear la UI ni dejar un spinner eterno.
+      // Timeout de seguridad: Si tarda más de 5s, cortamos.
       await _controller!.initialize().timeout(const Duration(seconds: 5));
       
       if (mounted) {
@@ -299,8 +300,7 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
         });
       }
     } catch (e) {
-      // Si falla (timeout o error de codec), simplemente no mostramos nada.
-      // Esto evita crashes o excepciones rojas en consola que asusten al usuario.
+      // Fallo silencioso si el formato no es compatible
       debugPrint("Advertencia: No se pudo cargar el video ${widget.assetPath}: $e");
     }
   }
@@ -315,7 +315,6 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
   @override
   Widget build(BuildContext context) {
     if (!_isInitialized || _controller == null) {
-      // Placeholder transparente mientras carga o si falló
       return const SizedBox.shrink(); 
     }
 

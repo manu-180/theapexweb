@@ -114,36 +114,32 @@ class CommentsNotifier extends _$CommentsNotifier {
   }
 
   Future<List<Comment>> _fetchComments() async {
-    try {
-      final response = await _supabase
-          .from('comments_with_metadata') 
-          .select()
-          .order('likes_count', ascending: false)
-          .order('created_at', ascending: false);
+    // CORRECCIÓN: Eliminamos el try-catch que silenciaba los errores.
+    // Dejamos que la excepción suba para que Riverpod gestione el AsyncError en la UI.
+    final response = await _supabase
+        .from('comments_with_metadata') 
+        .select()
+        .order('likes_count', ascending: false)
+        .order('created_at', ascending: false);
 
-      final flatList = (response as List).map((json) => Comment.fromJson(json)).toList();
+    final flatList = (response as List).map((json) => Comment.fromJson(json)).toList();
 
-      final List<Comment> parents = [];
-      final Map<int, List<Comment>> childrenMap = {};
+    final List<Comment> parents = [];
+    final Map<int, List<Comment>> childrenMap = {};
 
-      for (var c in flatList) {
-        if (c.parentId == null) {
-          parents.add(c);
-        } else {
-          childrenMap.putIfAbsent(c.parentId!, () => []).add(c);
-        }
+    for (var c in flatList) {
+      if (c.parentId == null) {
+        parents.add(c);
+      } else {
+        childrenMap.putIfAbsent(c.parentId!, () => []).add(c);
       }
-
-      return parents.map((p) {
-        final replies = childrenMap[p.id] ?? [];
-        replies.sort((a, b) => a.createdAt.compareTo(b.createdAt)); 
-        return p.copyWith(replies: replies);
-      }).toList();
-
-    } catch (e) {
-      debugPrint("Error fetching comments: $e");
-      return []; 
     }
+
+    return parents.map((p) {
+      final replies = childrenMap[p.id] ?? [];
+      replies.sort((a, b) => a.createdAt.compareTo(b.createdAt)); 
+      return p.copyWith(replies: replies);
+    }).toList();
   }
 
   Future<void> postComment(String content, {int? parentId, int? rating}) async {

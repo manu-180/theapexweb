@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:apex/core/config/app_constants.dart'; // 1. Importamos la fuente de verdad
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
-// import 'package:apex/features/auth/presentation/widgets/auth_modal.dart'; // Ya no es necesario aquí
 import 'package:apex/features/payments/data/repositories/mercadopago_repository.dart';
 import 'package:apex/features/services/domain/models/plan_model.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -21,8 +21,12 @@ class _ContactModalState extends ConsumerState<ContactModal> {
   bool _isLoadingPayment = false;
 
   void _launchWhatsApp() async {
+    // 2. CORRECCIÓN: Usamos la constante centralizada
+    final phone = AppConstants.whatsappNumber;
     final message = "Hola Manuel, estuve viendo tu portfolio. Me interesa el plan *${widget.plan.name}* para potenciar mi negocio. ¿Podemos coordinar una reunión?";
-    final url = "https://wa.me/5491134272488?text=${Uri.encodeComponent(message)}";
+    
+    // Construcción limpia de la URL
+    final url = "https://wa.me/$phone?text=${Uri.encodeComponent(message)}";
     
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -35,8 +39,6 @@ class _ContactModalState extends ConsumerState<ContactModal> {
   Future<void> _launchMercadoPago() async {
     final user = ref.read(currentUserProvider);
     
-    // MENTORÍA: Eliminamos la validación obligatoria de usuario. 
-    // Si no hay usuario, enviamos null o un string genérico.
     setState(() => _isLoadingPayment = true);
     
     try {

@@ -27,11 +27,12 @@ class MercadoPagoRepository {
     final jwt = session?.accessToken;
 
     try {
+      // 1. Llamada a la Edge Function
       final response = await _supabase.functions.invoke(
         'create_preference_manuel',
         headers: {
           'Content-Type': 'application/json',
-          // Si hay JWT lo mandamos, si no, Supabase usará la anonKey por defecto del cliente
+          // Enviamos el JWT explícitamente para asegurar contextos autenticados
           if (jwt != null) 'Authorization': 'Bearer $jwt',
         },
         body: jsonEncode({
@@ -47,6 +48,7 @@ class MercadoPagoRepository {
 
       final responseData = response.data;
       
+      // Validación robusta de respuesta
       if (responseData is Map && responseData.containsKey('error')) {
          throw Exception(responseData['error']);
       }
@@ -58,21 +60,34 @@ class MercadoPagoRepository {
       }
 
       final uri = Uri.parse(checkoutUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        throw Exception('No se pudo abrir la pasarela de pagos.');
+
+      // 2. Lanzamiento Optimizado (Sin canLaunchUrl redundante)
+      // Intentamos abrir directamente. En web, esto reduce la latencia 
+      // y minimiza la chance de bloqueo por el navegador.
+      try {
+        await launchUrl(
+          uri, 
+          // externalApplication es lo correcto para salir de la PWA/SPA hacia MP
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (e) {
+        debugPrint('Error lanzando URL: $e');
+        // Si falla externalApplication (raro), intentamos fallback a platformDefault
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
 
     } on FunctionException catch (e) {
-      final msg = e.details?.toString() ?? e.reasonPhrase ?? 'Error en la función';
+      // Errores específicos de Supabase Functions
+      final msg = e.details?.toString() ?? e.reasonPhrase ?? 'Error en la función de pagos';
       debugPrint('Error de Edge Function: $msg');
-      throw Exception('Error al conectar con el servidor de pagos.');
+      throw Exception('Error de conexión con pagos: $msg');
     } catch (e) {
-      debugPrint('Error en checkout: $e');
-      throw Exception('No se pudo iniciar el pago.');
+      // Errores generales
+      debugPrint('Error general en checkout: $e');
+      rethrow; 
     }
-  }}
+  }
+}
 
 @riverpod
 MercadoPagoRepository mercadoPagoRepository(MercadoPagoRepositoryRef ref) {
