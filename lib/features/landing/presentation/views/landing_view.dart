@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
+import 'package:apex/core/widgets/inspector_gadget.dart'; // <--- IMPORTACIÓN RAYOS X
 import 'package:apex/features/landing/presentation/widgets/assistify_case_study_modal.dart';
 import 'package:apex/features/landing/presentation/widgets/tech_card.dart';
 import 'package:apex/features/shared/widgets/footer.dart'; 
@@ -48,67 +49,80 @@ class _LandingViewState extends ConsumerState<LandingView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // --- SECCIÓN DE TÍTULOS ---
-                      FadeInDown(
-                        duration: const Duration(milliseconds: 800),
-                        child: Text(
-                          'Desarrollador Full-Stack & Mobile',
-                          style: theme.textTheme.displaySmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                            letterSpacing: -0.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // CAMBIO AQUÍ: FadeInUp -> FadeInDown para que entre desde arriba
-                      FadeInDown(
-                        delay: const Duration(milliseconds: 300),
-                        child: Text(
-                          'Especializado en crear experiencias de usuario fluidas y eficientes\ncon Flutter, Supabase y Riverpod.',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            height: 1.3,
-                          ),
-                          textAlign: TextAlign.center,
+                      // --- SECCIÓN DE TÍTULOS CON RAYOS X ---
+                      InspectorGadget(
+                        name: "Hero Header",
+                        techSpecs: "Tipografía Responsiva • AnimateDo FadeIn • Layout Constraints",
+                        icon: Icons.title,
+                        child: Column(
+                          children: [
+                            FadeInDown(
+                              duration: const Duration(milliseconds: 800),
+                              child: Text(
+                                'Desarrollador Full-Stack & Mobile',
+                                style: theme.textTheme.displaySmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                  letterSpacing: -0.5,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            
+                            FadeInDown(
+                              delay: const Duration(milliseconds: 300),
+                              child: Text(
+                                'Especializado en crear experiencias de usuario fluidas y eficientes\ncon Flutter, Supabase y Riverpod.',
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  height: 1.3,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 80),
 
-                      // --- STACK TECNOLÓGICO (Cards de arriba) ---
-                      Wrap(
-                        spacing: 24,     
-                        runSpacing: 24, 
-                        alignment: WrapAlignment.center,
-                        children: [
-                          // --- FLUTTER ---
-                          Container(
-                            constraints: const BoxConstraints(maxWidth: cardWidth),
-                            height: cardHeight, 
-                            child: _FlutterCard(_mousePosNotifier),
-                          ),
-                          
-                          // --- SUPABASE ---
-                          Container(
-                            constraints: const BoxConstraints(maxWidth: cardWidth),
-                            height: cardHeight, 
-                            child: _SupabaseCard(_mousePosNotifier),
-                          ),
-                          
-                          // --- RIVERPOD ---
-                          Container(
-                            constraints: const BoxConstraints(maxWidth: cardWidth),
-                            height: cardHeight, 
-                            child: _RiverpodCard(_mousePosNotifier),
-                          ),
-                        ],
+                      // --- STACK TECNOLÓGICO (Cards de arriba) CON RAYOS X ---
+                      InspectorGadget(
+                        name: "Tech Stack Grid",
+                        techSpecs: "Wrap Layout (Flow) • Hover Effects • State Management Injection",
+                        icon: FontAwesomeIcons.layerGroup,
+                        child: Wrap(
+                          spacing: 24,     
+                          runSpacing: 24, 
+                          alignment: WrapAlignment.center,
+                          children: [
+                            // --- FLUTTER ---
+                            Container(
+                              constraints: const BoxConstraints(maxWidth: cardWidth),
+                              height: cardHeight, 
+                              child: _FlutterCard(_mousePosNotifier),
+                            ),
+                            
+                            // --- SUPABASE ---
+                            Container(
+                              constraints: const BoxConstraints(maxWidth: cardWidth),
+                              height: cardHeight, 
+                              child: _SupabaseCard(_mousePosNotifier),
+                            ),
+                            
+                            // --- RIVERPOD ---
+                            Container(
+                              constraints: const BoxConstraints(maxWidth: cardWidth),
+                              height: cardHeight, 
+                              child: _RiverpodCard(_mousePosNotifier),
+                            ),
+                          ],
+                        ),
                       ),
 
                       const SizedBox(height: 60),
 
-                      // --- PROYECTO DESTACADO (Card de abajo) ---
+                      // --- PROYECTO DESTACADO (Card de abajo) CON RAYOS X ---
                       FadeInUp(
                         delay: const Duration(milliseconds: 500),
                         child: Column(
@@ -132,9 +146,14 @@ class _LandingViewState extends ConsumerState<LandingView> {
                             ),
                             const SizedBox(height: 30),
                             
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 800), 
-                              child: _AssistifyCard(_mousePosNotifier),
+                            InspectorGadget(
+                              name: "Case Study Module",
+                              techSpecs: "Navegación Modal Personalizada • Theme Override • Asset Optimization",
+                              icon: FontAwesomeIcons.mobileScreen,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 800), 
+                                child: _AssistifyCard(_mousePosNotifier),
+                              ),
                             ),
                           ],
                         ),
@@ -154,7 +173,7 @@ class _LandingViewState extends ConsumerState<LandingView> {
   }
 }
 
-// --- WIDGETS PRIVADOS PARA LAS CARDS (Sin cambios) ---
+// --- WIDGETS PRIVADOS PARA LAS CARDS (Sin cambios lógicos, solo visuales) ---
 
 class _FlutterCard extends StatelessWidget {
   final ValueNotifier<Offset> mousePos;

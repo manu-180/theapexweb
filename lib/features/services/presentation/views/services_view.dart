@@ -3,9 +3,10 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:apex/core/widgets/inspector_gadget.dart'; // <--- IMPORTACIÓN RAYOS X
 import 'package:apex/features/services/data/repositories/plans_repository.dart';
 import 'package:apex/features/services/presentation/widgets/plan_card.dart';
-import 'package:apex/features/shared/widgets/footer.dart'; // Importante
+import 'package:apex/features/shared/widgets/footer.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
 class ServicesView extends ConsumerStatefulWidget {
@@ -79,80 +80,96 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
                   ),
                   const SizedBox(height: 40),
 
-                  // --- TOGGLE SWITCH ---
-                  FadeIn(
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(50),
-                        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildToggleItem("Desarrollo Web", 0),
-                          const SizedBox(width: 4),
-                          _buildToggleItem("Aplicaciones Móviles", 1),
-                        ],
+                  // --- TOGGLE SWITCH CON RAYOS X ---
+                  InspectorGadget(
+                    name: "Selector de Estado",
+                    techSpecs: "StatefulWidget Reactivo • Actualización Atómica",
+                    icon: FontAwesomeIcons.toggleOff,
+                    child: FadeIn(
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(50),
+                          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildToggleItem("Desarrollo Web", 0),
+                            const SizedBox(width: 4),
+                            _buildToggleItem("Aplicaciones Móviles", 1),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                   
                   const SizedBox(height: 48),
 
-                  // --- LISTA DE PLANES ---
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 500),
-                    child: ScreenTypeLayout.builder(
-                      key: ValueKey<int>(_selectedIndex), 
-                      mobile: (context) => ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: currentPlans.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 32),
-                        itemBuilder: (context, index) => Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: 350,
-                              maxHeight: 560,
-                            ),
-                            child: PlanCard(
-                              plan: currentPlans[index],
-                              mousePos: _mousePos,
+                  // --- LISTA DE PLANES CON RAYOS X ---
+                  InspectorGadget(
+                    name: "Motor de Precios",
+                    techSpecs: "Clean Architecture (Repository Pattern) • Mapeo de Entidades",
+                    icon: FontAwesomeIcons.tags,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 500),
+                      child: ScreenTypeLayout.builder(
+                        key: ValueKey<int>(_selectedIndex), 
+                        mobile: (context) => ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: currentPlans.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 32),
+                          itemBuilder: (context, index) => Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: 350,
+                                maxHeight: 560,
+                              ),
+                              child: PlanCard(
+                                plan: currentPlans[index],
+                                mousePos: _mousePos,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      desktop: (context) => Wrap(
-                        spacing: 24,
-                        runSpacing: 24,
-                        alignment: WrapAlignment.center,
-                        children: currentPlans.map((plan) => SizedBox(
-                          width: 350,
-                          height: 500, 
-                          child: PlanCard(
-                            plan: plan,
-                            mousePos: _mousePos,
-                          ),
-                        )).toList(),
+                        desktop: (context) => Wrap(
+                          spacing: 24,
+                          runSpacing: 24,
+                          alignment: WrapAlignment.center,
+                          children: currentPlans.map((plan) => SizedBox(
+                            width: 350,
+                            height: 500, 
+                            child: PlanCard(
+                              plan: plan,
+                              mousePos: _mousePos,
+                            ),
+                          )).toList(),
+                        ),
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 60),
-                  FadeInUp(
-                    delay: const Duration(milliseconds: 400),
-                    child: _TrustCard(
-                      mousePos: _mousePos,
-                      selectedIndex: _selectedIndex,
+                  
+                  // --- TRUST CARD CON RAYOS X ---
+                  InspectorGadget(
+                    name: "Módulo de Confianza",
+                    techSpecs: "Diseño Adaptativo (Mobile/Desktop) • Renderizado Condicional",
+                    icon: FontAwesomeIcons.shieldHalved,
+                    child: FadeInUp(
+                      delay: const Duration(milliseconds: 400),
+                      child: _TrustCard(
+                        mousePos: _mousePos,
+                        selectedIndex: _selectedIndex,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
             
-            // --- EL FOOTER VA AQUÍ (Al final de la columna principal) ---
             const SizedBox(height: 60),
             const Footer(),
           ],
@@ -200,7 +217,6 @@ class _TrustCard extends StatelessWidget {
     final isApp = selectedIndex == 1;
     final brandColor = theme.colorScheme.primary; 
     
-    // Detectamos si es móvil para cambiar el alineamiento del Wrap
     final isMobile = MediaQuery.of(context).size.width < 800;
     
     final iconMain = isApp ? FontAwesomeIcons.rocket : FontAwesomeIcons.laptopCode;
@@ -314,7 +330,6 @@ class _TrustCard extends StatelessWidget {
                     Wrap(
                       spacing: 12,
                       runSpacing: 12,
-                      // CAMBIO: Alineación dinámica basada en si es móvil
                       alignment: isMobile ? WrapAlignment.start : WrapAlignment.center,
                       children: chips,
                     ),

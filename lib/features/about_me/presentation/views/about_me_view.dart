@@ -1,5 +1,6 @@
 // Archivo: lib/features/about_me/presentation/views/about_me_view.dart
 import 'package:animate_do/animate_do.dart';
+import 'package:apex/core/widgets/inspector_gadget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -97,7 +98,14 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
                           : _DynamicHeroImage(themeConfig: themeConfig)
                       ),
                         
-                      FadeInUp(child: _AboutMeCard(mousePos: _mousePos)),
+                    FadeInUp(
+                        child: InspectorGadget( // <--- AQUI ENVOLVEMOS LA CARD
+                          name: "Storytelling Component",
+                          techSpecs: "Responsive Layout • Glassmorphism Gradient • Custom Typography",
+                          icon: FontAwesomeIcons.bookOpen,
+                          child: _AboutMeCard(mousePos: _mousePos),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -169,7 +177,7 @@ class _DynamicHeroImage extends StatelessWidget {
       ),
     };
 
-    return SizedBox(
+   return SizedBox(
       height: 250, 
       width: double.infinity,
       child: Center(
@@ -177,12 +185,15 @@ class _DynamicHeroImage extends StatelessWidget {
           offset: const Offset(0, 45),
           child: Transform.scale(
             scale: 1.8, 
-            child: _TransparentVideoPlayer(
-              // Usamos SOLO el path del video como Key.
-              // Esto evita que se destruya el player al cambiar solo de Light a Dark.
-              key: ValueKey(videoPath), 
-              assetPath: videoPath,
-              placeholderPath: imagePath, 
+           child: InspectorGadget(
+              name: "Sistema de Video Hero",
+              techSpecs: "Reproducción sin cortes • Pre-carga de Assets • Capa WebM Transparente",
+              icon: FontAwesomeIcons.video,
+              child: _TransparentVideoPlayer(
+                key: ValueKey(videoPath), 
+                assetPath: videoPath,
+                placeholderPath: imagePath, 
+              ),
             ),
           ),
         ),

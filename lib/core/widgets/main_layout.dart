@@ -1,11 +1,11 @@
 // Archivo: lib/core/widgets/main_layout.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart'; 
+import 'package:url_launcher/url_launcher.dart';
 import 'package:apex/features/presence/presentation/widgets/presence_badge.dart';
 import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
@@ -13,6 +13,8 @@ import 'package:apex/core/config/theme/brightness_provider.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:apex/core/config/app_constants.dart';
 import 'package:apex/widgets/contactanos.dart';
+import 'package:apex/core/widgets/inspector_gadget.dart'; 
+import 'package:apex/core/providers/inspector_provider.dart'; // <--- IMPORTANTE: Provider del Inspector
 
 class MainLayout extends ConsumerStatefulWidget {
   const MainLayout({required this.child, super.key});
@@ -54,14 +56,12 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     showDialog(
       context: context,
       builder: (context) => _ShortcutsHelpDialog(
-        // Pasamos la lógica de WhatsApp para reutilizarla dentro del diálogo
         onWhatsApp: _triggerWhatsApp,
       ),
     );
   }
 
-  // --- ARQUITECTURA: CENTRALIZAMOS LOS ATAJOS ---
-  // Esto permite que MainLayout y el Dialog compartan la misma lógica.
+  // --- ATAJOS CENTRALIZADOS ---
   Map<ShortcutActivator, VoidCallback> _getGlobalShortcuts(BuildContext context, WidgetRef ref) {
     return {
       // NAVEGACIÓN
@@ -85,6 +85,9 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       const SingleActivator(LogicalKeyboardKey.keyW): _triggerWhatsApp,
       const SingleActivator(LogicalKeyboardKey.keyL): () => ref.read(authRepositoryProvider).signInWithGoogle(),
       
+      // INSPECTOR (Toggle con tecla I)
+      const SingleActivator(LogicalKeyboardKey.keyI): () => ref.read(inspectorModeProvider.notifier).toggle(),
+
       // DIÁLOGO
       const SingleActivator(LogicalKeyboardKey.keyK): _showShortcutsDialog, 
       const SingleActivator(LogicalKeyboardKey.question): _showShortcutsDialog, 
@@ -126,10 +129,23 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 const PresenceBadge(),
                 const SizedBox(width: 16),
                 
-                _ToolsBar(onHelpTap: _showShortcutsDialog),
+                // Envuelto en InspectorGadget para presumir de sí mismo
+                InspectorGadget(
+                  name: "Panel de Control",
+                  techSpecs: "Estado Global (Riverpod) • Atajos de Teclado (FocusNode)",
+                  icon: FontAwesomeIcons.sliders,
+                  child: _ToolsBar(onHelpTap: _showShortcutsDialog),
+                ),
 
                 const SizedBox(width: 16),
-                const _AuthButton(),
+                
+                InspectorGadget(
+                  name: "Autenticación OAuth",
+                  techSpecs: "Stream Reactivo (User?) • Persistencia de Sesión",
+                  icon: FontAwesomeIcons.shieldHalved,
+                  child: const _AuthButton(),
+                ),
+                
                 const SizedBox(width: 24),
               ] else ...[
                 const PresenceBadge(),
@@ -151,6 +167,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   }
 }
 
+// --- WIDGET BARRA DE HERRAMIENTAS (TEMA + RESET + INSPECTOR + ATAJOS) ---
 class _ToolsBar extends ConsumerWidget {
   final VoidCallback onHelpTap;
   const _ToolsBar({required this.onHelpTap});
@@ -159,6 +176,9 @@ class _ToolsBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final color = theme.colorScheme.primary; 
+    
+    // Escuchamos el estado del inspector para pintar el ícono
+    final isInspectorActive = ref.watch(inspectorModeProvider);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -170,6 +190,7 @@ class _ToolsBar extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // TEMA
           IconButton(
             onPressed: () => ref.read(brightnessModeProvider.notifier).toggleMode(),
             icon: Icon(theme.brightness == Brightness.dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
@@ -180,6 +201,7 @@ class _ToolsBar extends ConsumerWidget {
           
           Container(width: 1, height: 20, color: theme.colorScheme.outline.withOpacity(0.2)),
 
+          // RESET
           IconButton(
             onPressed: () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
             icon: const Icon(Icons.refresh_rounded),
@@ -190,6 +212,20 @@ class _ToolsBar extends ConsumerWidget {
 
           Container(width: 1, height: 20, color: theme.colorScheme.outline.withOpacity(0.2)),
 
+          // --- INSPECTOR TOGGLE (Reintegrado) ---
+          IconButton(
+            onPressed: () => ref.read(inspectorModeProvider.notifier).toggle(),
+            icon: Icon(isInspectorActive ? Icons.build_circle : Icons.build_circle_outlined),
+            // Cyan si está activo para destacar
+            color: isInspectorActive ? Colors.cyanAccent : color,
+            tooltip: "Modo Ingeniería (I)",
+            iconSize: 20,
+          ),
+
+          Container(width: 1, height: 20, color: theme.colorScheme.outline.withOpacity(0.2)),
+          // -------------------------------------
+
+          // ATAJOS
           IconButton(
             onPressed: onHelpTap,
             icon: const Icon(Icons.keyboard_command_key_rounded),
@@ -203,8 +239,7 @@ class _ToolsBar extends ConsumerWidget {
   }
 }
 
-// --- DIÁLOGO INTELIGENTE ---
-// Ahora hereda ConsumerWidget para poder ejecutar acciones de Riverpod (Temas, etc)
+// --- DIÁLOGO DE AYUDA ---
 class _ShortcutsHelpDialog extends ConsumerWidget {
   final VoidCallback onWhatsApp;
   
@@ -215,19 +250,17 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Helper para navegar y cerrar el diálogo al mismo tiempo
     void navAndClose(String routeName, {Object? extra}) {
-      Navigator.pop(context); // Cerramos diálogo
-      context.goNamed(routeName, extra: extra); // Navegamos
+      Navigator.pop(context);
+      context.goNamed(routeName, extra: extra);
     }
 
     return CallbackShortcuts(
       bindings: {
-        // --- 1. COMANDOS DE CONTROL DE DIÁLOGO ---
         const SingleActivator(LogicalKeyboardKey.keyK): () => Navigator.pop(context),
         const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.pop(context),
 
-        // --- 2. TEMAS Y ACCIONES (Se mantienen abiertos para probar) ---
+        // Temas y Acciones (Mantienen el diálogo abierto para probar)
         const SingleActivator(LogicalKeyboardKey.digit1): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
         const SingleActivator(LogicalKeyboardKey.digit2): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.flutter),
         const SingleActivator(LogicalKeyboardKey.digit3): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.supabase),
@@ -237,8 +270,10 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
         const SingleActivator(LogicalKeyboardKey.keyT): () => ref.read(brightnessModeProvider.notifier).toggleMode(),
         const SingleActivator(LogicalKeyboardKey.keyL): () => ref.read(authRepositoryProvider).signInWithGoogle(),
         const SingleActivator(LogicalKeyboardKey.keyW): onWhatsApp,
+        // Inspector también funciona con el diálogo abierto
+        const SingleActivator(LogicalKeyboardKey.keyI): () => ref.read(inspectorModeProvider.notifier).toggle(),
 
-        // --- 3. NAVEGACIÓN (Cierran el diálogo) ---
+        // Navegación (Cierra el diálogo)
         const SingleActivator(LogicalKeyboardKey.keyH): () => navAndClose('home'),
         const SingleActivator(LogicalKeyboardKey.keyA): () => navAndClose('about'),
         const SingleActivator(LogicalKeyboardKey.keyC): () => navAndClose('contact'),
@@ -295,6 +330,7 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
                         title: "Acciones",
                         items: const [
                           {'key': 'T', 'desc': 'Modo Claro/Oscuro'},
+                          {'key': 'I', 'desc': 'Modo Ingeniería (Rayos X)'}, // <--- LISTADO
                           {'key': '1-5', 'desc': 'Cambiar Tema'},
                           {'key': 'R', 'desc': 'Resetear Tema'},
                           {'key': 'L', 'desc': 'Login Google'},
@@ -314,6 +350,10 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
   }
 }
 
+// ... _MobileDrawer, _ShortcutSection, _DynamicSlidingNavBar, _HoverText, _BrandLogo, _AuthButton 
+// ... (Estas clases NO cambian, cópialas del archivo anterior o manténlas igual).
+
+// --- DRAWER PARA MÓVIL ---
 class _MobileDrawer extends ConsumerWidget {
   final List<Map<String, dynamic>> navItems;
   final VoidCallback onHelpTap; 

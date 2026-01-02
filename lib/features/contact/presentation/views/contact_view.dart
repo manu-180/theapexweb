@@ -1,8 +1,10 @@
 // Archivo: lib/features/contact/presentation/views/contact_view.dart
 import 'package:apex/core/config/theme/app_theme_providers.dart';
-import 'package:apex/core/providers/network_status_provider.dart'; // <--- IMPORTACIÓN
+import 'package:apex/core/providers/network_status_provider.dart';
+import 'package:apex/core/widgets/inspector_gadget.dart'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; 
 import 'package:shimmer/shimmer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:lottie/lottie.dart';
@@ -60,7 +62,7 @@ class ContactView extends StatelessWidget {
   }
 }
 
-// --- FORMULARIO REDISEÑADO CON CARD MODERNA Y BLINDAJE DE RED ---
+// --- FORMULARIO CON RAYOS X ---
 class _ContactForm extends ConsumerStatefulWidget {
   const _ContactForm();
   @override
@@ -210,162 +212,161 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
-    // --- ESCUCHA DE RED ---
     final networkStatus = ref.watch(networkStatusNotifierProvider);
     final isOffline = networkStatus == NetworkStatus.offline;
 
-    // --- DISEÑO DE CARD MODERNA ---
-    return Container(
-      padding: const EdgeInsets.all(32), 
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow, 
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: colorScheme.outline.withOpacity(0.1),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+    return InspectorGadget(
+      name: "Formulario Serverless",
+      techSpecs: "Validación Reactiva (Riverpod) • Trigger de Edge Function (Deno) • SMTP Relay",
+      icon: FontAwesomeIcons.envelopeOpenText,
+      child: Container(
+        padding: const EdgeInsets.all(32), 
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLow, 
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: colorScheme.outline.withOpacity(0.1),
+            width: 1,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, 
-        children: [
-          // HEADER DEL FORM
-          Text(
-            '¡Hablemos de tu proyecto!', 
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold, 
-              color: colorScheme.primary,
-              fontFamily: 'Oxanium',
-              letterSpacing: -0.5,
-            )
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Completa el formulario y te responderé a la brevedad.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
-          ),
-          const SizedBox(height: 32),
-          
-          // CAMPOS
-          Form(
-            key: _formKey,
-            child: Opacity(
-              opacity: isOffline ? 0.6 : 1.0, // Feedback visual de desactivado
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start, 
-                children: [
-                  _buildTextField(
-                    controller: _nameController, 
-                    label: 'Tu Nombre', 
-                    icon: Icons.person_outline, 
-                    theme: theme, 
-                    validator: (v) => v?.isEmpty == true ? 'Requerido' : null, 
-                    isLastField: false,
-                    enabled: !isOffline,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildTextField(
-                    controller: _emailController, 
-                    label: 'Tu Email', 
-                    icon: Icons.email_outlined, 
-                    keyboardType: TextInputType.emailAddress, 
-                    theme: theme, 
-                    validator: (v) => !v!.contains('@') ? 'Email inválido' : null, 
-                    isLastField: false,
-                    enabled: !isOffline,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildTextField(
-                    controller: _messageController, 
-                    label: 'Mensaje', 
-                    icon: Icons.chat_bubble_outline, 
-                    theme: theme, 
-                    validator: (v) => v == null || v.isEmpty ? 'Escribe un mensaje' : null, 
-                    isLastField: true, 
-                    focusNode: _messageFocusNode,
-                    minLines: (_isMessageFocused || _messageController.text.isNotEmpty) ? 5 : 1, 
-                    maxLines: 5, 
-                    enabled: !isOffline,
-                  ),
-                  const SizedBox(height: 40),
-
-                  // BOTÓN DE ACCIÓN BLINDADO
-                  MouseRegion(
-                    cursor: (isOffline || _isLoading) ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
-                    onEnter: (_) => setState(() => _isHovered = true),
-                    onExit: (_) => setState(() => _isHovered = false),
-                    child: GestureDetector(
-                      onTap: (isOffline || _isLoading) ? null : _sendMessage,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeInOut,
-                        width: double.infinity, 
-                        height: 54,
-                        transform: Matrix4.identity()
-                          ..translate(0.0, (_isHovered && !isOffline && !_isLoading) ? -2.0 : 0.0),
-                        decoration: BoxDecoration(
-                          color: isOffline 
-                              ? colorScheme.surfaceContainerHighest // Color grisaceo si offline
-                              : (_isLoading ? colorScheme.primary.withOpacity(0.8) : colorScheme.primary),
-                          borderRadius: BorderRadius.circular(16), 
-                          boxShadow: [
-                            if (!isOffline && ! _isLoading)
-                              BoxShadow(
-                                color: colorScheme.primary.withOpacity(_isHovered ? 0.4 : 0.1),
-                                blurRadius: _isHovered ? 20 : 10,
-                                offset: const Offset(0, 8),
-                              )
-                          ],
-                        ),
-                        child: Center(
-                          child: _isLoading 
-                            ? Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.onPrimary)),
-                                  const SizedBox(width: 12),
-                                  Text("Enviando...", style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontFamily: 'Oxanium')),
-                                ],
-                              )
-                            : Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    isOffline ? Icons.wifi_off_rounded : Icons.send_rounded, 
-                                    size: 20, 
-                                    color: isOffline ? colorScheme.onSurfaceVariant : colorScheme.onPrimary
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    isOffline ? "Sin Conexión" : "Enviar Mensaje", 
-                                    style: TextStyle(
-                                      color: isOffline ? colorScheme.onSurfaceVariant : colorScheme.onPrimary, 
-                                      fontWeight: FontWeight.bold, 
-                                      fontSize: 16, 
-                                      fontFamily: 'Oxanium'
-                                    )
-                                  ),
-                                ],
-                              ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, 
+          children: [
+            Text(
+              '¡Hablemos de tu proyecto!', 
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold, 
+                color: colorScheme.primary,
+                fontFamily: 'Oxanium',
+                letterSpacing: -0.5,
+              )
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Completa el formulario y te responderé a la brevedad.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 32),
+            
+            Form(
+              key: _formKey,
+              child: Opacity(
+                opacity: isOffline ? 0.6 : 1.0, 
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start, 
+                  children: [
+                    _buildTextField(
+                      controller: _nameController, 
+                      label: 'Tu Nombre', 
+                      icon: Icons.person_outline, 
+                      theme: theme, 
+                      validator: (v) => v?.isEmpty == true ? 'Requerido' : null, 
+                      isLastField: false,
+                      enabled: !isOffline,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildTextField(
+                      controller: _emailController, 
+                      label: 'Tu Email', 
+                      icon: Icons.email_outlined, 
+                      keyboardType: TextInputType.emailAddress, 
+                      theme: theme, 
+                      validator: (v) => !v!.contains('@') ? 'Email inválido' : null, 
+                      isLastField: false,
+                      enabled: !isOffline,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildTextField(
+                      controller: _messageController, 
+                      label: 'Mensaje', 
+                      icon: Icons.chat_bubble_outline, 
+                      theme: theme, 
+                      validator: (v) => v == null || v.isEmpty ? 'Escribe un mensaje' : null, 
+                      isLastField: true, 
+                      focusNode: _messageFocusNode,
+                      minLines: (_isMessageFocused || _messageController.text.isNotEmpty) ? 5 : 1, 
+                      maxLines: 5, 
+                      enabled: !isOffline,
+                    ),
+                    const SizedBox(height: 40),
+      
+                    MouseRegion(
+                      cursor: (isOffline || _isLoading) ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
+                      onEnter: (_) => setState(() => _isHovered = true),
+                      onExit: (_) => setState(() => _isHovered = false),
+                      child: GestureDetector(
+                        onTap: (isOffline || _isLoading) ? null : _sendMessage,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          width: double.infinity, 
+                          height: 54,
+                          transform: Matrix4.identity()
+                            ..translate(0.0, (_isHovered && !isOffline && !_isLoading) ? -2.0 : 0.0),
+                          decoration: BoxDecoration(
+                            color: isOffline 
+                                ? colorScheme.surfaceContainerHighest 
+                                : (_isLoading ? colorScheme.primary.withOpacity(0.8) : colorScheme.primary),
+                            borderRadius: BorderRadius.circular(16), 
+                            boxShadow: [
+                              if (!isOffline && ! _isLoading)
+                                BoxShadow(
+                                  color: colorScheme.primary.withOpacity(_isHovered ? 0.4 : 0.1),
+                                  blurRadius: _isHovered ? 20 : 10,
+                                  offset: const Offset(0, 8),
+                                )
+                            ],
+                          ),
+                          child: Center(
+                            child: _isLoading 
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.onPrimary)),
+                                    const SizedBox(width: 12),
+                                    Text("Enviando...", style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontFamily: 'Oxanium')),
+                                  ],
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      isOffline ? Icons.wifi_off_rounded : Icons.send_rounded, 
+                                      size: 20, 
+                                      color: isOffline ? colorScheme.onSurfaceVariant : colorScheme.onPrimary
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      isOffline ? "Sin Conexión" : "Enviar Mensaje", 
+                                      style: TextStyle(
+                                        color: isOffline ? colorScheme.onSurfaceVariant : colorScheme.onPrimary, 
+                                        fontWeight: FontWeight.bold, 
+                                        fontSize: 16, 
+                                        fontFamily: 'Oxanium'
+                                      )
+                                    ),
+                                  ],
+                                ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -415,7 +416,6 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1))),
           focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primaryColor, width: 1.5)),
-          // Borde cuando está deshabilitado
           disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.05))),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           errorStyle: TextStyle(color: theme.colorScheme.error, fontSize: 12),
@@ -446,11 +446,22 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
       children: [
         Text('Opiniones de clientes', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
         const SizedBox(height: 20),
-        commentsState.when(
-          data: (comments) => RatingSummary(comments: comments),
-          loading: () => const RatingSummarySkeleton(), 
-          error: (_, __) => const SizedBox.shrink()
+        
+        // --- AQUÍ APLICAMOS EL INSPECTOR ---
+        // Envolvemos el Resumen de Calificaciones. Es un bloque compacto y visible.
+        InspectorGadget(
+          name: "Motor de Opiniones Realtime",
+          techSpecs: "Sincronización WebSocket (Supabase) • CRUD en Tiempo Real • RLS Security",
+          icon: FontAwesomeIcons.comments,
+          // preferBelow: false por defecto (sale arriba, que es lo que queremos)
+          child: commentsState.when(
+            data: (comments) => RatingSummary(comments: comments),
+            loading: () => const RatingSummarySkeleton(), 
+            error: (_, __) => const SizedBox.shrink()
+          ),
         ),
+        // -----------------------------------
+
         const SizedBox(height: 30),
         CommentInputArea(replyingTo: _replyingTo, onCancelReply: _onCancelReply),
         const SizedBox(height: 30),
