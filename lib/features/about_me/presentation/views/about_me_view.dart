@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
+import 'package:apex/core/config/theme/brightness_provider.dart';
 import 'package:apex/features/shared/widgets/footer.dart';
 import 'package:video_player/video_player.dart';
 
@@ -20,6 +21,38 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
   final ValueNotifier<Offset> _mousePos = ValueNotifier(Offset.zero);
 
   @override
+  void initState() {
+    super.initState();
+    // ESTRATEGIA DE PRE-CACHING:
+    // Apenas carga la vista, le decimos a Flutter que vaya leyendo TODAS las imágenes
+    // en segundo plano. Cuando el usuario cambie de tema, la imagen ya estará en RAM.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _precacheAllAssets());
+  }
+
+  void _precacheAllAssets() {
+    // Lista completa de tus assets (5 temas x 2 modos)
+    final assets = [
+      'assets/images/yoflutter_placeholder.png',
+      'assets/images/yoflutter_placeholder_light.png',
+      'assets/images/yosupabase_placeholder.png',
+      'assets/images/yosupabase_placeholder_light.png',
+      'assets/images/yoriverpod_placeholder.png',
+      'assets/images/yoriverpod_placeholder_light.png',
+      'assets/images/yoassistify_placeholder.png',
+      'assets/images/yoassistify_placeholder_light.png',
+      'assets/images/yoapex_placeholder.png',
+      'assets/images/yoapex_placeholder_light.png',
+    ];
+
+    for (final path in assets) {
+      // Usamos try-catch silencioso por si falta algún archivo, para no ensuciar la consola
+      try {
+        precacheImage(AssetImage(path), context);
+      } catch (_) {}
+    }
+  }
+
+  @override
   void dispose() {
     _mousePos.dispose();
     super.dispose();
@@ -32,11 +65,13 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
 
   @override
   Widget build(BuildContext context) {
+    // Escucha activa de cambios de tema
+    final themeMode = ref.watch(brightnessModeProvider);
     final themeConfig = ref.watch(currentAppThemeConfigProvider);
+    
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 800;
     
-    // Si estamos en Apple, mostramos el fallback estático en lugar del video
     final bool useStaticFallback = _isAppleEcosystem;
 
     return MouseRegion(
@@ -55,6 +90,8 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
                   child: Column(
                     children: [
                       FadeInDown(
+                        // Key única combinada para animar cambios drásticos si es necesario
+                        key: ValueKey('hero-${themeConfig.theme.name}-$themeMode'),
                         child: useStaticFallback 
                           ? _StaticHeroImage(themeConfig: themeConfig)
                           : _DynamicHeroImage(themeConfig: themeConfig)
@@ -141,9 +178,8 @@ class _DynamicHeroImage extends StatelessWidget {
           child: Transform.scale(
             scale: 1.8, 
             child: _TransparentVideoPlayer(
-              // CORRECCIÓN CRÍTICA: Quitamos 'isDark' del Key.
-              // Ahora el widget NO se destruye al cambiar el tema, 
-              // el video sigue corriendo fluido y sin cortes.
+              // Usamos SOLO el path del video como Key.
+              // Esto evita que se destruya el player al cambiar solo de Light a Dark.
               key: ValueKey(videoPath), 
               assetPath: videoPath,
               placeholderPath: imagePath, 
@@ -329,11 +365,10 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
     _initializePlayer();
   }
 
-  // --- SOLUCIÓN AL PARPADEO: PRE-CACHE ---
+  // REFUERZO: Si cambian las dependencias (ej: tema), forzamos precache local también
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Le decimos a Flutter: "Carga esta imagen YA, no esperes a pintarla"
     precacheImage(AssetImage(widget.placeholderPath), context);
   }
 
@@ -369,23 +404,21 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    // Definimos el widget de imagen optimizado para reutilizarlo
+    // IMAGEN OPTIMIZADA: Gapless + FrameBuilder para evitar parpadeos blancos
     final placeholderImage = Image.asset(
       widget.placeholderPath,
-      fit: BoxFit.contain, // O cover según necesites
+      fit: BoxFit.contain, 
       width: double.infinity,
       height: double.infinity,
-      gaplessPlayback: true, // EVITA PARPADEO al cambiar assets
-      // Si ocurre un error, muestra transparente en vez de la caja roja fea
+      gaplessPlayback: true, // CLAVE: Mantiene la imagen vieja hasta que la nueva carga
       errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-      // Mientras carga el frame, muestra transparente (evita glitches visuales)
       frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        // Si no ha cargado el frame, no mostramos nada (evita glitches)
         if (wasSynchronouslyLoaded || frame != null) return child;
         return const SizedBox.shrink();
       },
     );
 
-    // Si no está inicializado, mostramos SOLO la imagen (optimizada)
     if (!_isInitialized || _controller == null) {
       return placeholderImage;
     }
@@ -395,22 +428,19 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // CAPA 1: Video
           IgnorePointer(
             child: VideoPlayer(_controller!),
           ),
           
-          // CAPA 2: Placeholder con Fade Out
           IgnorePointer(
             child: AnimatedOpacity(
               opacity: _showPlaceholder ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 600),
               curve: Curves.easeOut,
-              child: placeholderImage, // Reutilizamos la imagen optimizada
+              child: placeholderImage,
             ),
           ),
           
-          // CAPA 3: Overlay Transparente
           Positioned.fill(
             child: Container(color: Colors.transparent),
           ),

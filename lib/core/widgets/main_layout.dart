@@ -53,8 +53,42 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   void _showShortcutsDialog() {
     showDialog(
       context: context,
-      builder: (context) => const _ShortcutsHelpDialog(),
+      builder: (context) => _ShortcutsHelpDialog(
+        // Pasamos la lógica de WhatsApp para reutilizarla dentro del diálogo
+        onWhatsApp: _triggerWhatsApp,
+      ),
     );
+  }
+
+  // --- ARQUITECTURA: CENTRALIZAMOS LOS ATAJOS ---
+  // Esto permite que MainLayout y el Dialog compartan la misma lógica.
+  Map<ShortcutActivator, VoidCallback> _getGlobalShortcuts(BuildContext context, WidgetRef ref) {
+    return {
+      // NAVEGACIÓN
+      const SingleActivator(LogicalKeyboardKey.keyH): () => context.goNamed('home'),
+      const SingleActivator(LogicalKeyboardKey.keyA): () => context.goNamed('about'),
+      const SingleActivator(LogicalKeyboardKey.keyC): () => context.goNamed('contact'),
+      const SingleActivator(LogicalKeyboardKey.keyS): () => context.goNamed('services', extra: 0),
+      const SingleActivator(LogicalKeyboardKey.keyM): () => context.goNamed('services', extra: 1),
+
+      // TEMAS
+      const SingleActivator(LogicalKeyboardKey.digit1): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
+      const SingleActivator(LogicalKeyboardKey.digit2): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.flutter),
+      const SingleActivator(LogicalKeyboardKey.digit3): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.supabase),
+      const SingleActivator(LogicalKeyboardKey.digit4): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.riverpod),
+      const SingleActivator(LogicalKeyboardKey.digit5): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify),
+      
+      const SingleActivator(LogicalKeyboardKey.keyR): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
+      const SingleActivator(LogicalKeyboardKey.keyT): () => ref.read(brightnessModeProvider.notifier).toggleMode(),
+
+      // ACCIONES
+      const SingleActivator(LogicalKeyboardKey.keyW): _triggerWhatsApp,
+      const SingleActivator(LogicalKeyboardKey.keyL): () => ref.read(authRepositoryProvider).signInWithGoogle(),
+      
+      // DIÁLOGO
+      const SingleActivator(LogicalKeyboardKey.keyK): _showShortcutsDialog, 
+      const SingleActivator(LogicalKeyboardKey.question): _showShortcutsDialog, 
+    };
   }
 
   @override
@@ -70,36 +104,12 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     if (activeIndex == -1) activeIndex = 0;
 
     return CallbackShortcuts(
-      bindings: {
-        // NAVEGACIÓN
-        const SingleActivator(LogicalKeyboardKey.keyH): () => context.goNamed('home'),
-        const SingleActivator(LogicalKeyboardKey.keyA): () => context.goNamed('about'),
-        const SingleActivator(LogicalKeyboardKey.keyC): () => context.goNamed('contact'),
-        const SingleActivator(LogicalKeyboardKey.keyS): () => context.goNamed('services', extra: 0),
-        const SingleActivator(LogicalKeyboardKey.keyM): () => context.goNamed('services', extra: 1),
-
-        // TEMAS
-        const SingleActivator(LogicalKeyboardKey.digit1): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
-        const SingleActivator(LogicalKeyboardKey.digit2): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.flutter),
-        const SingleActivator(LogicalKeyboardKey.digit3): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.supabase),
-        const SingleActivator(LogicalKeyboardKey.digit4): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.riverpod),
-        const SingleActivator(LogicalKeyboardKey.digit5): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify),
-        
-        const SingleActivator(LogicalKeyboardKey.keyR): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
-        const SingleActivator(LogicalKeyboardKey.keyT): () => ref.read(brightnessModeProvider.notifier).toggleMode(),
-
-        // ACCIONES
-        const SingleActivator(LogicalKeyboardKey.keyW): _triggerWhatsApp,
-        const SingleActivator(LogicalKeyboardKey.keyL): () => ref.read(authRepositoryProvider).signInWithGoogle(),
-        // NOTA: Aquí solo ABRIMOS. El cierre lo maneja el diálogo mismo.
-        const SingleActivator(LogicalKeyboardKey.keyK): _showShortcutsDialog, 
-        const SingleActivator(LogicalKeyboardKey.question): _showShortcutsDialog, 
-      },
+      bindings: _getGlobalShortcuts(context, ref),
       child: Focus(
         autofocus: true, 
         child: Scaffold(
           key: _scaffoldKey,
-          endDrawer: isMobile ? _MobileDrawer(navItems: _navItems) : null,
+          endDrawer: isMobile ? _MobileDrawer(navItems: _navItems, onHelpTap: _showShortcutsDialog) : null,
           appBar: AppBar(
             title: const _BrandLogo(),
             centerTitle: false,
@@ -116,9 +126,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 const PresenceBadge(),
                 const SizedBox(width: 16),
                 
-                // --- NUEVA BARRA DE HERRAMIENTAS UNIFICADA ---
                 _ToolsBar(onHelpTap: _showShortcutsDialog),
-                // ---------------------------------------------
 
                 const SizedBox(width: 16),
                 const _AuthButton(),
@@ -143,7 +151,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   }
 }
 
-// --- WIDGET NUEVO: Agrupa Tema, Reset y Ayuda ---
 class _ToolsBar extends ConsumerWidget {
   final VoidCallback onHelpTap;
   const _ToolsBar({required this.onHelpTap});
@@ -151,7 +158,7 @@ class _ToolsBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final color = theme.colorScheme.primary; // Color unificado
+    final color = theme.colorScheme.primary; 
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
@@ -163,7 +170,6 @@ class _ToolsBar extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 1. TEMA (Sol/Luna)
           IconButton(
             onPressed: () => ref.read(brightnessModeProvider.notifier).toggleMode(),
             icon: Icon(theme.brightness == Brightness.dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
@@ -172,10 +178,8 @@ class _ToolsBar extends ConsumerWidget {
             iconSize: 20,
           ),
           
-          // Separador sutil
           Container(width: 1, height: 20, color: theme.colorScheme.outline.withOpacity(0.2)),
 
-          // 2. RESET
           IconButton(
             onPressed: () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
             icon: const Icon(Icons.refresh_rounded),
@@ -186,11 +190,10 @@ class _ToolsBar extends ConsumerWidget {
 
           Container(width: 1, height: 20, color: theme.colorScheme.outline.withOpacity(0.2)),
 
-          // 3. ATAJOS (Teclado)
           IconButton(
             onPressed: onHelpTap,
             icon: const Icon(Icons.keyboard_command_key_rounded),
-            color: color, // ¡Ahora tiene el color del tema!
+            color: color, 
             tooltip: "Ver Atajos (K)",
             iconSize: 20,
           ),
@@ -200,23 +203,48 @@ class _ToolsBar extends ConsumerWidget {
   }
 }
 
-class _ShortcutsHelpDialog extends StatelessWidget {
-  const _ShortcutsHelpDialog();
+// --- DIÁLOGO INTELIGENTE ---
+// Ahora hereda ConsumerWidget para poder ejecutar acciones de Riverpod (Temas, etc)
+class _ShortcutsHelpDialog extends ConsumerWidget {
+  final VoidCallback onWhatsApp;
+  
+  const _ShortcutsHelpDialog({required this.onWhatsApp});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // AQUI ESTA EL SECRETO: 
-    // Usamos CallbackShortcuts DENTRO del diálogo para que escuche la 'K'
-    // y se cierre a sí mismo.
+    // Helper para navegar y cerrar el diálogo al mismo tiempo
+    void navAndClose(String routeName, {Object? extra}) {
+      Navigator.pop(context); // Cerramos diálogo
+      context.goNamed(routeName, extra: extra); // Navegamos
+    }
+
     return CallbackShortcuts(
       bindings: {
+        // --- 1. COMANDOS DE CONTROL DE DIÁLOGO ---
         const SingleActivator(LogicalKeyboardKey.keyK): () => Navigator.pop(context),
         const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.pop(context),
+
+        // --- 2. TEMAS Y ACCIONES (Se mantienen abiertos para probar) ---
+        const SingleActivator(LogicalKeyboardKey.digit1): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
+        const SingleActivator(LogicalKeyboardKey.digit2): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.flutter),
+        const SingleActivator(LogicalKeyboardKey.digit3): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.supabase),
+        const SingleActivator(LogicalKeyboardKey.digit4): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.riverpod),
+        const SingleActivator(LogicalKeyboardKey.digit5): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify),
+        const SingleActivator(LogicalKeyboardKey.keyR): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
+        const SingleActivator(LogicalKeyboardKey.keyT): () => ref.read(brightnessModeProvider.notifier).toggleMode(),
+        const SingleActivator(LogicalKeyboardKey.keyL): () => ref.read(authRepositoryProvider).signInWithGoogle(),
+        const SingleActivator(LogicalKeyboardKey.keyW): onWhatsApp,
+
+        // --- 3. NAVEGACIÓN (Cierran el diálogo) ---
+        const SingleActivator(LogicalKeyboardKey.keyH): () => navAndClose('home'),
+        const SingleActivator(LogicalKeyboardKey.keyA): () => navAndClose('about'),
+        const SingleActivator(LogicalKeyboardKey.keyC): () => navAndClose('contact'),
+        const SingleActivator(LogicalKeyboardKey.keyS): () => navAndClose('services', extra: 0),
+        const SingleActivator(LogicalKeyboardKey.keyM): () => navAndClose('services', extra: 1),
       },
-      // Focus necesario para atrapar eventos de teclado dentro del Dialog
       child: Focus(
         autofocus: true, 
         child: Dialog(
@@ -236,7 +264,6 @@ class _ShortcutsHelpDialog extends StatelessWidget {
                       const SizedBox(width: 12),
                       Text("Atajos de Teclado", style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
                       const Spacer(),
-                      // Hint visual para cerrar
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
@@ -287,8 +314,148 @@ class _ShortcutsHelpDialog extends StatelessWidget {
   }
 }
 
-// ... _ShortcutSection, _DynamicSlidingNavBar, _HoverText, _BrandLogo, _MobileDrawer, _AuthButton 
-// ... SE MANTIENEN IGUAL (Copia el resto del archivo anterior) ...
+class _MobileDrawer extends ConsumerWidget {
+  final List<Map<String, dynamic>> navItems;
+  final VoidCallback onHelpTap; 
+
+  const _MobileDrawer({
+    required this.navItems, 
+    required this.onHelpTap 
+  });
+  
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final themeConfig = ref.watch(currentAppThemeConfigProvider);
+    final isNeutral = themeConfig.theme == AppTheme.neutral;
+
+    final Widget apexIcon = Transform(
+      alignment: Alignment.center,
+      transform: Matrix4.identity()..scale(0.7, 1.1),
+      child: Icon(FontAwesomeIcons.chevronUp, color: colorScheme.primary, size: 26),
+    );
+
+    final Widget logoWidget;
+    if (isNeutral) {
+      logoWidget = apexIcon;
+    } else if (themeConfig.logoAsset != null) {
+      logoWidget = Image.asset(
+        themeConfig.logoAsset!,
+        height: 32, 
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) => apexIcon,
+      );
+    } else {
+      logoWidget = Icon(
+        themeConfig.logoIcon ?? FontAwesomeIcons.chevronUp, 
+        color: colorScheme.primary, 
+        size: 26
+      );
+    }
+
+    return Drawer(
+      width: MediaQuery.of(context).size.width * 0.85, 
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              border: Border(bottom: BorderSide(color: colorScheme.outline.withOpacity(0.1))),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                 Row(
+                   mainAxisSize: MainAxisSize.min,
+                   children: [
+                     logoWidget,
+                     const SizedBox(width: 12),
+                     Text(
+                       'APEX',
+                       style: theme.textTheme.headlineSmall?.copyWith(
+                         fontWeight: FontWeight.w900,
+                         letterSpacing: 3.0,
+                         color: colorScheme.primary,
+                         height: 1.0,
+                       ),
+                     ),
+                   ],
+                 ),
+                 IconButton(
+                   icon: const Icon(Icons.close), 
+                   color: colorScheme.primary, 
+                   onPressed: () => Navigator.pop(context)
+                 ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              children: navItems.map((item) {
+                final bool isActive = GoRouterState.of(context).uri.path == item['path'];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: isActive ? colorScheme.primary.withOpacity(0.1) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    title: Text(item['label'], style: TextStyle(fontWeight: isActive ? FontWeight.bold : FontWeight.w500, color: isActive ? colorScheme.primary : colorScheme.onSurface)),
+                    leading: Icon(_getIconForLabel(item['label']), color: isActive ? colorScheme.primary : colorScheme.onSurfaceVariant),
+                    onTap: () { Navigator.pop(context); context.goNamed(item['name']); },
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              border: Border(top: BorderSide(color: colorScheme.outline.withOpacity(0.1))),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0, left: 4),
+                  child: Text(
+                    "PREFERENCIAS",
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+                _ToolsBar(onHelpTap: onHelpTap),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: const _AuthButton(fullWidth: true),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getIconForLabel(String label) {
+    if (label == 'Home') return Icons.home_rounded;
+    if (label == 'Servicios') return FontAwesomeIcons.layerGroup;
+    if (label == 'Sobre Mí') return Icons.person_rounded;
+    return Icons.mail_rounded;
+  }
+}
 
 class _ShortcutSection extends StatelessWidget {
   final String title;
@@ -483,7 +650,6 @@ class _HoverTextState extends State<_HoverText> {
   }
 }
 
-
 class _BrandLogo extends ConsumerWidget {
   const _BrandLogo();
   @override
@@ -497,7 +663,6 @@ class _BrandLogo extends ConsumerWidget {
       transform: Matrix4.identity()..scale(0.7, 1.1),
       child: Icon(FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
     );
-    
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -537,156 +702,6 @@ class _BrandLogo extends ConsumerWidget {
         ),
       ),
     );
-  }
-}
-
-class _MobileDrawer extends ConsumerWidget {
-  final List<Map<String, dynamic>> navItems;
-  const _MobileDrawer({required this.navItems});
-
-  
-  
-  
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-
-      void _showShortcutsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => const _ShortcutsHelpDialog(),
-    );
-  }
-
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final themeConfig = ref.watch(currentAppThemeConfigProvider);
-    final isNeutral = themeConfig.theme == AppTheme.neutral;
-
-    final Widget apexIcon = Transform(
-      alignment: Alignment.center,
-      transform: Matrix4.identity()..scale(0.7, 1.1),
-      child: Icon(FontAwesomeIcons.chevronUp, color: colorScheme.primary, size: 26),
-    );
-
-    final Widget logoWidget;
-    if (isNeutral) {
-      logoWidget = apexIcon;
-    } else if (themeConfig.logoAsset != null) {
-      logoWidget = Image.asset(
-        themeConfig.logoAsset!,
-        height: 32, 
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => apexIcon,
-      );
-    } else {
-      logoWidget = Icon(
-        themeConfig.logoIcon ?? FontAwesomeIcons.chevronUp, 
-        color: colorScheme.primary, 
-        size: 26
-      );
-    }
-
-    return Drawer(
-      width: MediaQuery.of(context).size.width * 0.85, 
-      backgroundColor: colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              border: Border(bottom: BorderSide(color: colorScheme.outline.withOpacity(0.1))),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                 Row(
-                   mainAxisSize: MainAxisSize.min,
-                   children: [
-                     logoWidget,
-                     const SizedBox(width: 12),
-                     Text(
-                       'APEX',
-                       style: theme.textTheme.headlineSmall?.copyWith(
-                         fontWeight: FontWeight.w900,
-                         letterSpacing: 3.0,
-                         color: colorScheme.primary,
-                         height: 1.0,
-                       ),
-                     ),
-                   ],
-                 ),
-                 IconButton(
-                   icon: const Icon(Icons.close), 
-                   color: colorScheme.primary, 
-                   onPressed: () => Navigator.pop(context)
-                 ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              children: navItems.map((item) {
-                final bool isActive = GoRouterState.of(context).uri.path == item['path'];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: isActive ? colorScheme.primary.withOpacity(0.1) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ListTile(
-                    title: Text(item['label'], style: TextStyle(fontWeight: isActive ? FontWeight.bold : FontWeight.w500, color: isActive ? colorScheme.primary : colorScheme.onSurface)),
-                    leading: Icon(_getIconForLabel(item['label']), color: isActive ? colorScheme.primary : colorScheme.onSurfaceVariant),
-                    onTap: () { Navigator.pop(context); context.goNamed(item['name']); },
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              border: Border(top: BorderSide(color: colorScheme.outline.withOpacity(0.1))),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0, left: 4),
-                  child: Text(
-                    "PREFERENCIAS",
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ),
-                // --- AQUÍ TAMBIÉN ACTUALIZAMOS EL DRAWER PARA QUE TENGA LA BARRA UNIFICADA ---
-                _ToolsBar(onHelpTap: _showShortcutsDialog),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: const _AuthButton(fullWidth: true),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getIconForLabel(String label) {
-    if (label == 'Home') return Icons.home_rounded;
-    if (label == 'Servicios') return FontAwesomeIcons.layerGroup;
-    if (label == 'Sobre Mí') return Icons.person_rounded;
-    return Icons.mail_rounded;
   }
 }
 
