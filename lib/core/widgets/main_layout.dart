@@ -1,13 +1,17 @@
+// Archivo: lib/core/widgets/main_layout.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart'; 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart'; 
 import 'package:apex/features/presence/presentation/widgets/presence_badge.dart';
 import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/config/theme/brightness_provider.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
+import 'package:apex/core/config/app_constants.dart';
 import 'package:apex/widgets/contactanos.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
@@ -28,6 +32,31 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     {'label': 'Contacto', 'path': '/contact', 'name': 'contact'},
   ];
 
+  Future<void> _triggerWhatsApp() async {
+    const phoneNumber = AppConstants.whatsappNumber;
+    const message = 'Hola, vengo desde los atajos de teclado 🚀';
+    final uri = Uri.parse('https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
+    
+    try {
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw 'No se pudo abrir';
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+           const SnackBar(content: Text('No se pudo abrir WhatsApp (Error de navegador)')),
+        );
+      }
+    }
+  }
+
+  void _showShortcutsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => const _ShortcutsHelpDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -40,49 +69,264 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     });
     if (activeIndex == -1) activeIndex = 0;
 
-    return Scaffold(
-      key: _scaffoldKey,
-      endDrawer: isMobile ? _MobileDrawer(navItems: _navItems) : null,
-      appBar: AppBar(
-        title: const _BrandLogo(),
-        centerTitle: false,
-        automaticallyImplyLeading: false,
-        actions: [
-          if (!isMobile) ...[
-            // NAV BAR 100% DINÁMICA
-            _DynamicSlidingNavBar(
-              items: _navItems,
-              selectedIndex: activeIndex,
-              onTap: (index) => context.goNamed(_navItems[index]['name']),
-            ),
-            
-            const SizedBox(width: 24),
-            
-            const PresenceBadge(),
-            const SizedBox(width: 12),
-            _ThemeToggleButton(),
-            const SizedBox(width: 8),
-            const _AuthButton(),
-            const SizedBox(width: 24),
-          ] else ...[
-            const PresenceBadge(),
-            IconButton(
-              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-              icon: const Icon(Icons.menu_rounded, size: 28),
-              color: theme.colorScheme.primary,
-              tooltip: 'Menú',
-            ),
-            const SizedBox(width: 16),
-          ],
-        ],
+    return CallbackShortcuts(
+      bindings: {
+        // NAVEGACIÓN
+        const SingleActivator(LogicalKeyboardKey.keyH): () => context.goNamed('home'),
+        const SingleActivator(LogicalKeyboardKey.keyA): () => context.goNamed('about'),
+        const SingleActivator(LogicalKeyboardKey.keyC): () => context.goNamed('contact'),
+        const SingleActivator(LogicalKeyboardKey.keyS): () => context.goNamed('services', extra: 0),
+        const SingleActivator(LogicalKeyboardKey.keyM): () => context.goNamed('services', extra: 1),
+
+        // TEMAS
+        const SingleActivator(LogicalKeyboardKey.digit1): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
+        const SingleActivator(LogicalKeyboardKey.digit2): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.flutter),
+        const SingleActivator(LogicalKeyboardKey.digit3): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.supabase),
+        const SingleActivator(LogicalKeyboardKey.digit4): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.riverpod),
+        const SingleActivator(LogicalKeyboardKey.digit5): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify),
+        
+        const SingleActivator(LogicalKeyboardKey.keyR): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
+        const SingleActivator(LogicalKeyboardKey.keyT): () => ref.read(brightnessModeProvider.notifier).toggleMode(),
+
+        // ACCIONES
+        const SingleActivator(LogicalKeyboardKey.keyW): _triggerWhatsApp,
+        const SingleActivator(LogicalKeyboardKey.keyL): () => ref.read(authRepositoryProvider).signInWithGoogle(),
+        // NOTA: Aquí solo ABRIMOS. El cierre lo maneja el diálogo mismo.
+        const SingleActivator(LogicalKeyboardKey.keyK): _showShortcutsDialog, 
+        const SingleActivator(LogicalKeyboardKey.question): _showShortcutsDialog, 
+      },
+      child: Focus(
+        autofocus: true, 
+        child: Scaffold(
+          key: _scaffoldKey,
+          endDrawer: isMobile ? _MobileDrawer(navItems: _navItems) : null,
+          appBar: AppBar(
+            title: const _BrandLogo(),
+            centerTitle: false,
+            automaticallyImplyLeading: false,
+            actions: [
+              if (!isMobile) ...[
+                _DynamicSlidingNavBar(
+                  items: _navItems,
+                  selectedIndex: activeIndex,
+                  onTap: (index) => context.goNamed(_navItems[index]['name']),
+                ),
+                
+                const SizedBox(width: 24),
+                const PresenceBadge(),
+                const SizedBox(width: 16),
+                
+                // --- NUEVA BARRA DE HERRAMIENTAS UNIFICADA ---
+                _ToolsBar(onHelpTap: _showShortcutsDialog),
+                // ---------------------------------------------
+
+                const SizedBox(width: 16),
+                const _AuthButton(),
+                const SizedBox(width: 24),
+              ] else ...[
+                const PresenceBadge(),
+                IconButton(
+                  onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                  icon: const Icon(Icons.menu_rounded, size: 28),
+                  color: theme.colorScheme.primary,
+                  tooltip: 'Menú',
+                ),
+                const SizedBox(width: 16),
+              ],
+            ],
+          ),
+          floatingActionButton: const Contactanos(),
+          body: widget.child,
+        ),
       ),
-      floatingActionButton: const Contactanos(),
-      body: widget.child,
     );
   }
 }
 
-// --- WIDGET PRO: Sliding Nav Bar con Medición Real ---
+// --- WIDGET NUEVO: Agrupa Tema, Reset y Ayuda ---
+class _ToolsBar extends ConsumerWidget {
+  final VoidCallback onHelpTap;
+  const _ToolsBar({required this.onHelpTap});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.primary; // Color unificado
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outline.withOpacity(0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 1. TEMA (Sol/Luna)
+          IconButton(
+            onPressed: () => ref.read(brightnessModeProvider.notifier).toggleMode(),
+            icon: Icon(theme.brightness == Brightness.dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
+            color: color,
+            tooltip: "Cambiar Modo (T)",
+            iconSize: 20,
+          ),
+          
+          // Separador sutil
+          Container(width: 1, height: 20, color: theme.colorScheme.outline.withOpacity(0.2)),
+
+          // 2. RESET
+          IconButton(
+            onPressed: () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
+            icon: const Icon(Icons.refresh_rounded),
+            color: color,
+            tooltip: "Resetear Tema (R)",
+            iconSize: 20,
+          ),
+
+          Container(width: 1, height: 20, color: theme.colorScheme.outline.withOpacity(0.2)),
+
+          // 3. ATAJOS (Teclado)
+          IconButton(
+            onPressed: onHelpTap,
+            icon: const Icon(Icons.keyboard_command_key_rounded),
+            color: color, // ¡Ahora tiene el color del tema!
+            tooltip: "Ver Atajos (K)",
+            iconSize: 20,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShortcutsHelpDialog extends StatelessWidget {
+  const _ShortcutsHelpDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // AQUI ESTA EL SECRETO: 
+    // Usamos CallbackShortcuts DENTRO del diálogo para que escuche la 'K'
+    // y se cierre a sí mismo.
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyK): () => Navigator.pop(context),
+        const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.pop(context),
+      },
+      // Focus necesario para atrapar eventos de teclado dentro del Dialog
+      child: Focus(
+        autofocus: true, 
+        child: Dialog(
+          backgroundColor: colorScheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.keyboard, color: colorScheme.primary),
+                      const SizedBox(width: 12),
+                      Text("Atajos de Teclado", style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                      const Spacer(),
+                      // Hint visual para cerrar
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text("ESC / K", style: TextStyle(fontSize: 10, color: colorScheme.onSurfaceVariant, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Wrap(
+                    spacing: 40,
+                    runSpacing: 24,
+                    children: [
+                      _ShortcutSection(
+                        title: "Navegación",
+                        items: const [
+                          {'key': 'H', 'desc': 'Ir al Home'},
+                          {'key': 'S', 'desc': 'Servicios (Web)'},
+                          {'key': 'M', 'desc': 'Servicios (Apps)'},
+                          {'key': 'A', 'desc': 'Sobre Mí'},
+                          {'key': 'C', 'desc': 'Contacto'},
+                        ],
+                      ),
+                      _ShortcutSection(
+                        title: "Acciones",
+                        items: const [
+                          {'key': 'T', 'desc': 'Modo Claro/Oscuro'},
+                          {'key': '1-5', 'desc': 'Cambiar Tema'},
+                          {'key': 'R', 'desc': 'Resetear Tema'},
+                          {'key': 'L', 'desc': 'Login Google'},
+                          {'key': 'W', 'desc': 'Abrir WhatsApp'},
+                          {'key': 'K', 'desc': 'Cerrar este menú'},
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ... _ShortcutSection, _DynamicSlidingNavBar, _HoverText, _BrandLogo, _MobileDrawer, _AuthButton 
+// ... SE MANTIENEN IGUAL (Copia el resto del archivo anterior) ...
+
+class _ShortcutSection extends StatelessWidget {
+  final String title;
+  final List<Map<String, String>> items;
+
+  const _ShortcutSection({required this.title, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+        const SizedBox(height: 12),
+        ...items.map((item) => Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+                ),
+                child: Text(item['key']!, style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+              ),
+              const SizedBox(width: 12),
+              Text(item['desc']!),
+            ],
+          ),
+        )),
+      ],
+    );
+  }
+}
+
 class _DynamicSlidingNavBar extends StatefulWidget {
   final List<Map<String, dynamic>> items;
   final int selectedIndex;
@@ -99,10 +343,7 @@ class _DynamicSlidingNavBar extends StatefulWidget {
 }
 
 class _DynamicSlidingNavBarState extends State<_DynamicSlidingNavBar> {
-  // Lista de Keys para medir cada texto individualmente
   late List<GlobalKey> _keys;
-  
-  // Estado de la barra deslizante
   double _indicatorLeft = 0;
   double _indicatorWidth = 0;
 
@@ -110,15 +351,12 @@ class _DynamicSlidingNavBarState extends State<_DynamicSlidingNavBar> {
   void initState() {
     super.initState();
     _keys = List.generate(widget.items.length, (_) => GlobalKey());
-    
-    // Esperamos al primer frame para medir
     SchedulerBinding.instance.addPostFrameCallback((_) => _updateIndicator());
   }
 
   @override
   void didUpdateWidget(covariant _DynamicSlidingNavBar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Si cambia la selección, recalculamos posición
     if (oldWidget.selectedIndex != widget.selectedIndex) {
       _updateIndicator();
     }
@@ -126,27 +364,14 @@ class _DynamicSlidingNavBarState extends State<_DynamicSlidingNavBar> {
 
   void _updateIndicator() {
     if (!mounted) return;
-    
-    // Obtenemos el contexto del item seleccionado actual
     final key = _keys[widget.selectedIndex];
     final RenderBox? renderBox = key.currentContext?.findRenderObject() as RenderBox?;
 
     if (renderBox != null) {
-      // Buscamos la posición relativa al padre (el Stack de la NavBar)
-      // Esto requiere encontrar el RenderBox del widget padre.
-      // Simplificación: Asumimos que los items están en una Row al inicio (0,0) del Stack.
-      // Calculamos el offset X sumando anchos previos + paddings es complejo.
-      // MEJOR ESTRATEGIA: Usar `localToGlobal` y convertir.
-      
-      // Pero como estamos dentro de un Stack > Row, la posición X relativa al Stack
-      // es exactamente lo que necesitamos.
-      
-      // Truco: Medimos la posición global del Item y la del Stack padre, y restamos.
       final parentRenderBox = context.findRenderObject() as RenderBox?;
       if (parentRenderBox != null) {
         final itemOffset = renderBox.localToGlobal(Offset.zero);
         final parentOffset = parentRenderBox.localToGlobal(Offset.zero);
-        
         final relativeX = itemOffset.dx - parentOffset.dx;
         
         setState(() {
@@ -167,7 +392,6 @@ class _DynamicSlidingNavBarState extends State<_DynamicSlidingNavBar> {
       child: Stack(
         alignment: Alignment.centerLeft,
         children: [
-          // 1. LOS BOTONES (Con Keys para medir)
           Row(
             mainAxisSize: MainAxisSize.min,
             children: widget.items.asMap().entries.map((entry) {
@@ -176,7 +400,6 @@ class _DynamicSlidingNavBarState extends State<_DynamicSlidingNavBar> {
               final isSelected = index == widget.selectedIndex;
 
               return Padding(
-                // Espaciado dinámico real entre items
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: InkWell(
                   onTap: () => widget.onTap(index),
@@ -185,9 +408,8 @@ class _DynamicSlidingNavBarState extends State<_DynamicSlidingNavBar> {
                   highlightColor: Colors.transparent,
                   child: Center(
                     child: Container(
-                      // Ponemos la Key aquí para medir ESTE contenedor exacto (el texto)
                       key: _keys[index],
-                      padding: const EdgeInsets.symmetric(vertical: 8), // Area de click vertical
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       child: _HoverText(
                         text: item['label'],
                         isSelected: isSelected,
@@ -198,14 +420,12 @@ class _DynamicSlidingNavBarState extends State<_DynamicSlidingNavBar> {
               );
             }).toList(),
           ),
-
-          // 2. LA BARRA DESLIZANTE (Se mueve a donde le digamos)
           AnimatedPositioned(
             duration: const Duration(milliseconds: 350),
             curve: Curves.fastOutSlowIn,
             left: _indicatorLeft,
-            width: _indicatorWidth, // Ancho dinámico igual al texto
-            bottom: 10, // Altura ajustada
+            width: _indicatorWidth,
+            bottom: 10,
             child: Container(
               height: 3,
               decoration: BoxDecoration(
@@ -263,6 +483,7 @@ class _HoverTextState extends State<_HoverText> {
   }
 }
 
+
 class _BrandLogo extends ConsumerWidget {
   const _BrandLogo();
   @override
@@ -276,6 +497,7 @@ class _BrandLogo extends ConsumerWidget {
       transform: Matrix4.identity()..scale(0.7, 1.1),
       child: Icon(FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
     );
+    
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -321,9 +543,20 @@ class _BrandLogo extends ConsumerWidget {
 class _MobileDrawer extends ConsumerWidget {
   final List<Map<String, dynamic>> navItems;
   const _MobileDrawer({required this.navItems});
+
+  
+  
   
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+
+      void _showShortcutsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => const _ShortcutsHelpDialog(),
+    );
+  }
+
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final themeConfig = ref.watch(currentAppThemeConfigProvider);
@@ -434,38 +667,8 @@ class _MobileDrawer extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => ref.read(brightnessModeProvider.notifier).toggleMode(),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        icon: Icon(
-                          theme.brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode,
-                          size: 18,
-                        ),
-                        label: Text(
-                          theme.brightness == Brightness.dark ? "Claro" : "Oscuro",
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    IconButton.filledTonal(
-                      onPressed: () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
-                      tooltip: "Restaurar Tema",
-                      style: IconButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.all(12),
-                      ),
-                      icon: const Icon(Icons.refresh_rounded, size: 20),
-                    ),
-                  ],
-                ),
+                // --- AQUÍ TAMBIÉN ACTUALIZAMOS EL DRAWER PARA QUE TENGA LA BARRA UNIFICADA ---
+                _ToolsBar(onHelpTap: _showShortcutsDialog),
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
@@ -484,28 +687,6 @@ class _MobileDrawer extends ConsumerWidget {
     if (label == 'Servicios') return FontAwesomeIcons.layerGroup;
     if (label == 'Sobre Mí') return Icons.person_rounded;
     return Icons.mail_rounded;
-  }
-}
-
-class _ThemeToggleButton extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          onPressed: () => ref.read(brightnessModeProvider.notifier).toggleMode(),
-          icon: Icon(theme.brightness == Brightness.dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
-          color: theme.colorScheme.primary,
-        ),
-        IconButton(
-          onPressed: () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
-          icon: const Icon(Icons.refresh_rounded, size: 20),
-          color: theme.colorScheme.primary,
-        ),
-      ],
-    );
   }
 }
 

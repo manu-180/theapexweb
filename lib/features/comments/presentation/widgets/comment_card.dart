@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:shimmer/shimmer.dart'; // <--- IMPORTANTE: Usamos Shimmer
+import 'package:shimmer/shimmer.dart'; 
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:apex/features/auth/presentation/widgets/auth_modal.dart';
 import 'package:apex/features/comments/presentation/providers/comments_provider.dart';
@@ -54,138 +54,147 @@ class _CommentCardState extends ConsumerState<CommentCard> {
         ? "Ocultar respuestas" 
         : "Ver $replyCount ${replyCount == 1 ? 'respuesta' : 'respuestas'}";
 
+    // --- CORRECCIÓN UX: CURSOR CONDICIONAL ---
+    // Si hay respuestas, toda la card es "clicable" (Manito).
+    // Si no hay, es "básico" (Flecha), para no engañar al usuario.
+    final cursorType = comment.replies.isNotEmpty 
+        ? SystemMouseCursors.click 
+        : SystemMouseCursors.basic;
+
     return Padding(
       padding: EdgeInsets.only(bottom: isRoot ? 32.0 : 8.0), 
       child: Column(
         children: [
-          GestureDetector(
-            onTap: _toggleReplies, 
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 2), 
-              decoration: BoxDecoration(
-                color: cardColor, 
-                border: Border.all(color: borderColor),
-                borderRadius: BorderRadius.circular(16), 
-                boxShadow: isAdmin ? [ 
-                  BoxShadow(
-                    color: colorScheme.primary.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  )
-                ] : null,
-              ),
-              padding: const EdgeInsets.all(16), 
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // LÓGICA DE AVATAR BLINDADA
-                  _buildAvatar(comment.avatarUrl, isAdmin, colorScheme),
-                  
-                  const SizedBox(width: 16),
-                  
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded( 
-                              child: Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      comment.userName,
-                                      style: theme.textTheme.labelLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                        color: isAdmin ? colorScheme.primary : colorScheme.onSurface,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                  if (isRoot && comment.rating != null) ...[
-                                    const SizedBox(width: 8),
-                                    Row(
-                                      children: List.generate(comment.rating!, (index) => 
-                                        const Icon(Icons.star_rounded, size: 14, color: Colors.amber)
-                                      ),
-                                    )
-                                  ],
-                                  if (isAdmin) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: colorScheme.primary.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(color: colorScheme.primary.withOpacity(0.5)),
-                                      ),
+          MouseRegion(
+            cursor: cursorType, // <--- AQUI APLICAMOS LA LÓGICA
+            child: GestureDetector(
+              onTap: _toggleReplies, 
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 2), 
+                decoration: BoxDecoration(
+                  color: cardColor, 
+                  border: Border.all(color: borderColor),
+                  borderRadius: BorderRadius.circular(16), 
+                  boxShadow: isAdmin ? [ 
+                    BoxShadow(
+                      color: colorScheme.primary.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ] : null,
+                ),
+                padding: const EdgeInsets.all(16), 
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildAvatar(comment.avatarUrl, isAdmin, colorScheme),
+                    
+                    const SizedBox(width: 16),
+                    
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded( 
+                                child: Row(
+                                  children: [
+                                    Flexible(
                                       child: Text(
-                                        "Admin",
-                                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colorScheme.primary),
-                                      ),
-                                    )
-                                  ],
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _timeAgo(comment.createdAt),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          comment.content,
-                          style: theme.textTheme.bodyMedium?.copyWith(height: 1.5, fontSize: 15),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            _LikeButton(comment: comment),
-                            if (isRoot) ...[
-                              const SizedBox(width: 20),
-                              InkWell(
-                                onTap: () => widget.onReply(comment), 
-                                borderRadius: BorderRadius.circular(4),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.reply_rounded, size: 14, color: colorScheme.onSurfaceVariant),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        "Responder",
-                                        style: theme.textTheme.labelSmall?.copyWith(
+                                        comment.userName,
+                                        style: theme.textTheme.labelLarge?.copyWith(
                                           fontWeight: FontWeight.bold,
-                                          color: colorScheme.onSurfaceVariant,
+                                          color: isAdmin ? colorScheme.primary : colorScheme.onSurface,
                                         ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
                                       ),
+                                    ),
+                                    if (isRoot && comment.rating != null) ...[
+                                      const SizedBox(width: 8),
+                                      Row(
+                                        children: List.generate(comment.rating!, (index) => 
+                                          const Icon(Icons.star_rounded, size: 14, color: Colors.amber)
+                                        ),
+                                      )
                                     ],
-                                  ),
+                                    if (isAdmin) ...[
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        decoration: BoxDecoration(
+                                          color: colorScheme.primary.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: colorScheme.primary.withOpacity(0.5)),
+                                        ),
+                                        child: Text(
+                                          "Admin",
+                                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: colorScheme.primary),
+                                        ),
+                                      )
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _timeAgo(comment.createdAt),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 11,
                                 ),
                               ),
                             ],
-                            if (comment.replies.isNotEmpty) ...[
-                               const Spacer(),
-                               AnimatedCrossFade(
-                                 firstChild: _RepliesBadge(text: replyText, icon: Icons.keyboard_arrow_down_rounded),
-                                 secondChild: _RepliesBadge(text: replyText, icon: Icons.keyboard_arrow_up_rounded),
-                                 crossFadeState: _showReplies ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                                 duration: const Duration(milliseconds: 200),
-                               ),
-                            ]
-                          ],
-                        ),
-                      ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            comment.content,
+                            style: theme.textTheme.bodyMedium?.copyWith(height: 1.5, fontSize: 15),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              _LikeButton(comment: comment),
+                              if (isRoot) ...[
+                                const SizedBox(width: 20),
+                                InkWell(
+                                  onTap: () => widget.onReply(comment), 
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.reply_rounded, size: 14, color: colorScheme.onSurfaceVariant),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          "Responder",
+                                          style: theme.textTheme.labelSmall?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (comment.replies.isNotEmpty) ...[
+                                 const Spacer(),
+                                 AnimatedCrossFade(
+                                   firstChild: _RepliesBadge(text: replyText, icon: Icons.keyboard_arrow_down_rounded),
+                                   secondChild: _RepliesBadge(text: replyText, icon: Icons.keyboard_arrow_up_rounded),
+                                   crossFadeState: _showReplies ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                                   duration: const Duration(milliseconds: 200),
+                                 ),
+                              ]
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -210,9 +219,7 @@ class _CommentCardState extends ConsumerState<CommentCard> {
     );
   }
 
-  // --- ARREGLO DE FOTOS (10/10: Shimmer + Error Handler) ---
   Widget _buildAvatar(String? url, bool isAdmin, ColorScheme colors) {
-    // Verificamos si la URL es válida
     final bool hasValidUrl = url != null && url.isNotEmpty && url.startsWith('http');
 
     return Container(
@@ -222,7 +229,7 @@ class _CommentCardState extends ConsumerState<CommentCard> {
         shape: BoxShape.circle,
         border: isAdmin ? Border.all(color: colors.primary, width: 2) : null,
         boxShadow: isAdmin ? [BoxShadow(color: colors.primary.withOpacity(0.2), blurRadius: 8)] : null,
-        color: colors.surfaceContainerHighest, // Fondo base por si acaso
+        color: colors.surfaceContainerHighest, 
       ),
       child: ClipOval(
         child: hasValidUrl 
@@ -231,11 +238,9 @@ class _CommentCardState extends ConsumerState<CommentCard> {
               fit: BoxFit.cover,
               width: 40,
               height: 40,
-              // SI LA IMAGEN FALLA, MUESTRA EL ÍCONO
               errorBuilder: (context, error, stackTrace) => Center(
                 child: Icon(Icons.person, size: 20, color: colors.onSurfaceVariant),
               ),
-              // MIENTRAS CARGA, MUESTRA SHIMMER (PREMIUM)
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
                 return Shimmer.fromColors(

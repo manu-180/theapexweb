@@ -74,14 +74,12 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
   }
 }
 
-// NUEVO WIDGET: Fallback estático para Apple
 class _StaticHeroImage extends StatelessWidget {
   final AppThemeConfig themeConfig;
   const _StaticHeroImage({required this.themeConfig});
 
   @override
   Widget build(BuildContext context) {
-    // Usamos el icono del tema o uno por defecto
     final icon = themeConfig.logoIcon ?? FontAwesomeIcons.code;
     final color = Theme.of(context).colorScheme.primary;
 
@@ -109,12 +107,29 @@ class _DynamicHeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String videoPath = switch (themeConfig.theme) {
-      AppTheme.flutter   => 'assets/videos/yoflutter.webm',
-      AppTheme.supabase  => 'assets/videos/yosupabase.webm',
-      AppTheme.riverpod  => 'assets/videos/yoriverpod.webm',
-      AppTheme.assistify => 'assets/videos/yoassistify.webm',
-      AppTheme.neutral   => 'assets/videos/yoapex.webm',
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final (String videoPath, String imagePath) = switch (themeConfig.theme) {
+      AppTheme.flutter   => (
+        'assets/videos/yoflutter.webm', 
+        isDark ? 'assets/images/yoflutter_placeholder.png' : 'assets/images/yoflutter_placeholder_light.png'
+      ),
+      AppTheme.supabase  => (
+        'assets/videos/yosupabase.webm', 
+        isDark ? 'assets/images/yosupabase_placeholder.png' : 'assets/images/yosupabase_placeholder_light.png'
+      ),
+      AppTheme.riverpod  => (
+        'assets/videos/yoriverpod.webm', 
+        isDark ? 'assets/images/yoriverpod_placeholder.png' : 'assets/images/yoriverpod_placeholder_light.png'
+      ),
+      AppTheme.assistify => (
+        'assets/videos/yoassistify.webm', 
+        isDark ? 'assets/images/yoassistify_placeholder.png' : 'assets/images/yoassistify_placeholder_light.png'
+      ),
+      AppTheme.neutral   => (
+        'assets/videos/yoapex.webm', 
+        isDark ? 'assets/images/yoapex_placeholder.png' : 'assets/images/yoapex_placeholder_light.png'
+      ),
     };
 
     return SizedBox(
@@ -126,8 +141,12 @@ class _DynamicHeroImage extends StatelessWidget {
           child: Transform.scale(
             scale: 1.8, 
             child: _TransparentVideoPlayer(
+              // CORRECCIÓN CRÍTICA: Quitamos 'isDark' del Key.
+              // Ahora el widget NO se destruye al cambiar el tema, 
+              // el video sigue corriendo fluido y sin cortes.
               key: ValueKey(videoPath), 
               assetPath: videoPath,
+              placeholderPath: imagePath, 
             ),
           ),
         ),
@@ -136,9 +155,6 @@ class _DynamicHeroImage extends StatelessWidget {
   }
 }
 
-// ... (El resto del archivo _AboutMeCard y _TransparentVideoPlayer se mantiene igual)
-// Asegúrate de copiar el resto del archivo original aquí si lo reemplazas completo.
-// Por brevedad, asumo que mantienes las clases _AboutMeCard y _TransparentVideoPlayer originales.
 class _AboutMeCard extends StatelessWidget {
   final ValueNotifier<Offset> mousePos;
   const _AboutMeCard({required this.mousePos});
@@ -290,10 +306,12 @@ class _AboutMeCard extends StatelessWidget {
 
 class _TransparentVideoPlayer extends StatefulWidget {
   final String assetPath;
+  final String placeholderPath; 
 
   const _TransparentVideoPlayer({
     super.key, 
-    required this.assetPath
+    required this.assetPath,
+    required this.placeholderPath,
   });
 
   @override
@@ -303,6 +321,7 @@ class _TransparentVideoPlayer extends StatefulWidget {
 class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
   VideoPlayerController? _controller;
   bool _isInitialized = false;
+  bool _showPlaceholder = true; 
 
   @override
   void initState() {
@@ -310,16 +329,30 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
     _initializePlayer();
   }
 
+  // --- SOLUCIÓN AL PARPADEO: PRE-CACHE ---
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Le decimos a Flutter: "Carga esta imagen YA, no esperes a pintarla"
+    precacheImage(AssetImage(widget.placeholderPath), context);
+  }
+
   Future<void> _initializePlayer() async {
     _controller = VideoPlayerController.asset(widget.assetPath);
     try {
       await _controller!.initialize().timeout(const Duration(seconds: 5));
+      
       if (mounted) {
+        _controller!.setLooping(true);
+        _controller!.setVolume(0.0);
+        await _controller!.play();
+
         setState(() {
           _isInitialized = true;
-          _controller!.setLooping(true);
-          _controller!.setVolume(0.0);
-          _controller!.play();
+        });
+
+        Future.delayed(const Duration(milliseconds: 150), () {
+          if (mounted) setState(() => _showPlaceholder = false);
         });
       }
     } catch (e) {
@@ -336,26 +369,52 @@ class _TransparentVideoPlayerState extends State<_TransparentVideoPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    // Definimos el widget de imagen optimizado para reutilizarlo
+    final placeholderImage = Image.asset(
+      widget.placeholderPath,
+      fit: BoxFit.contain, // O cover según necesites
+      width: double.infinity,
+      height: double.infinity,
+      gaplessPlayback: true, // EVITA PARPADEO al cambiar assets
+      // Si ocurre un error, muestra transparente en vez de la caja roja fea
+      errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+      // Mientras carga el frame, muestra transparente (evita glitches visuales)
+      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+        if (wasSynchronouslyLoaded || frame != null) return child;
+        return const SizedBox.shrink();
+      },
+    );
+
+    // Si no está inicializado, mostramos SOLO la imagen (optimizada)
     if (!_isInitialized || _controller == null) {
-      return const SizedBox.shrink(); 
+      return placeholderImage;
     }
 
-    return FadeIn(
-      duration: const Duration(milliseconds: 500),
-      child: AspectRatio(
-        aspectRatio: _controller!.value.aspectRatio,
-        child: Stack(
-          children: [
-            IgnorePointer(
-              child: VideoPlayer(_controller!),
+    return AspectRatio(
+      aspectRatio: _controller!.value.aspectRatio,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // CAPA 1: Video
+          IgnorePointer(
+            child: VideoPlayer(_controller!),
+          ),
+          
+          // CAPA 2: Placeholder con Fade Out
+          IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: _showPlaceholder ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOut,
+              child: placeholderImage, // Reutilizamos la imagen optimizada
             ),
-            Positioned.fill(
-              child: Container(
-                color: Colors.transparent,
-              ),
-            ),
-          ],
-        ),
+          ),
+          
+          // CAPA 3: Overlay Transparente
+          Positioned.fill(
+            child: Container(color: Colors.transparent),
+          ),
+        ],
       ),
     );
   }
