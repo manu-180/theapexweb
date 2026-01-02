@@ -18,7 +18,7 @@ class _ContactanosState extends State<Contactanos> {
   Future<void> _launchWhatsApp() async {
     // CORRECCIÓN: Usamos la constante centralizada
     const phoneNumber = AppConstants.whatsappNumber;
-    const message = 'Hola, necesito ayuda con Assistify.';
+const message = 'Hola, estoy buscando un desarrollador para llevar a cabo un proyecto digital y me gustaría saber más sobre tus servicios.';
     
     final uri = Uri.parse(
         'https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');

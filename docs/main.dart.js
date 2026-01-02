@@ -52996,7 +52996,7 @@ a7(){return new A.KG()}}
 A.KG.prototype={
 Cf(){var s=0,r=A.v(t.H),q=1,p=[],o=this,n,m,l,k,j,i
 var $async$Cf=A.w(function(a,b){if(a===1){p.push(b)
-s=q}for(;;)switch(s){case 0:j=A.bO("https://wa.me/5491134272488?text="+A.oH(2,"Hola, necesito ayuda con Assistify.",B.W,!1),0,null)
+s=q}for(;;)switch(s){case 0:j=A.bO("https://wa.me/5491134272488?text="+A.oH(2,"Hola, estoy buscando un desarrollador para llevar a cabo un proyecto digital y me gustar\xeda saber m\xe1s sobre tus servicios.",B.W,!1),0,null)
 q=3
 s=6
 return A.p(A.oN(j,B.dB,null),$async$Cf)
