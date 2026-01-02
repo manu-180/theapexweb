@@ -9,7 +9,7 @@ class InspectorGadget extends ConsumerWidget {
   final String name;      
   final String techSpecs; 
   final IconData icon;
-  final bool preferBelow; 
+  // Ya no necesitamos preferBelow porque ahora es una etiqueta fija
 
   const InspectorGadget({
     super.key,
@@ -17,7 +17,6 @@ class InspectorGadget extends ConsumerWidget {
     required this.name,
     required this.techSpecs,
     this.icon = FontAwesomeIcons.code,
-    this.preferBelow = false, 
   });
 
   @override
@@ -29,81 +28,105 @@ class InspectorGadget extends ConsumerWidget {
     if (!isInspectorOn) return child;
 
     // --- PALETA DE COLORES ADAPTATIVA ---
-    final bgColor = isDark 
-        ? const Color(0xFF0F172A).withOpacity(0.95) 
-        : Colors.white.withOpacity(0.98); 
-        
     final accentColor = isDark 
         ? const Color(0xFF38BDF8)  // Cyan claro
         : const Color(0xFF0284C7); // Azul técnico
 
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final iconContentColor = isDark ? Colors.black : Colors.white;
+    final bgColor = isDark 
+        ? const Color(0xFF0F172A).withOpacity(0.90) 
+        : Colors.white.withOpacity(0.95);
 
-    // 2. CORRECCIÓN: Envolvemos TODO en el Tooltip nuevamente
-    // Así el usuario puede pasar el mouse por cualquier parte del contenido.
-    return Tooltip(
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: accentColor, width: 1.5), 
-        boxShadow: [
-          BoxShadow(
-            color: accentColor.withOpacity(isDark ? 0.2 : 0.1), 
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    return Stack(
+      children: [
+        // A. EL WIDGET ORIGINAL
+        // Lo envolvemos en un Container con borde para marcar el área
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: accentColor.withOpacity(0.5), 
+              width: 1.5,
+            ),
+            color: accentColor.withOpacity(0.05), // Tinte suave fondo
+            borderRadius: BorderRadius.circular(12),
           ),
-        ],
-      ),
-      padding: const EdgeInsets.all(12),
-      textStyle: TextStyle(color: textColor, fontFamily: 'monospace', fontSize: 12),
-      richMessage: TextSpan(
-        children: [
-          TextSpan(
-            text: "$name\n", 
-            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: accentColor)
-          ),
-          TextSpan(text: techSpecs),
-        ],
-      ),
-      preferBelow: preferBelow,
-      verticalOffset: 20, 
-      
-      child: Stack(
-        children: [
-          // A. BORDE TÉCNICO
-          Positioned.fill(
+          child: child,
+        ),
+        
+        // B. LA ETIQUETA TÉCNICA (HUD)
+        // Usamos Positioned para pegarlo abajo del widget.
+        // Usamos IgnorePointer para que si la etiqueta tapa un botón, 
+        // ¡todavía puedas hacer clic en el botón a través del texto!
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: IgnorePointer( 
             child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12), 
-                border: Border.all(
-                  color: accentColor.withOpacity(0.5), 
-                  width: 1.5,
-                  style: BorderStyle.solid,
+                color: bgColor,
+                border: Border(
+                  top: BorderSide(color: accentColor, width: 1.5), // Línea separadora
                 ),
-                color: accentColor.withOpacity(0.05),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(10), // Ajuste -2px del borde padre
+                  bottomRight: Radius.circular(10),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Título con Icono
+                  Row(
+                    children: [
+                      Icon(icon, size: 10, color: accentColor),
+                      const SizedBox(width: 6),
+                      Text(
+                        name.toUpperCase(), 
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900, 
+                          fontSize: 10, 
+                          color: accentColor,
+                          letterSpacing: 1.0,
+                        )
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  // Specs
+                  Text(
+                    techSpecs,
+                    style: TextStyle(
+                      color: textColor, 
+                      fontFamily: 'monospace', 
+                      fontSize: 10,
+                      height: 1.2
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-          
-          // B. CONTENIDO
-          child, 
-          
-          // C. BADGE (Visual)
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), topRight: Radius.circular(8)),
+        ),
+
+        // C. INDICADOR DE ESQUINA (Opcional, decorativo)
+        Positioned(
+          top: 0,
+          right: 0,
+          child: Container(
+            width: 10, 
+            height: 10,
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(color: accentColor, width: 2),
+                right: BorderSide(color: accentColor, width: 2),
               ),
-              child: Icon(icon, size: 12, color: iconContentColor),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
