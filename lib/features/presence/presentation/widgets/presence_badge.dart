@@ -2,7 +2,8 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shimmer/shimmer.dart'; // <--- IMPORTANTE
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:apex/core/providers/network_status_provider.dart'; 
 import 'package:apex/features/presence/providers/presence_provider.dart';
 
@@ -12,268 +13,281 @@ class PresenceBadge extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
     final users = ref.watch(presenceNotifierProvider);
     final networkStatus = ref.watch(networkStatusNotifierProvider);
 
-    // --- CONFIGURACIÓN DE TAMAÑOS ---
-    const double kAvatarRadius = 16.0; 
-    const double kIconSize = 20.0;     
-    // --------------------------------
+    // --- LÓGICA DE ESTADOS ---
+    final isOffline = networkStatus == NetworkStatus.offline;
+    final isConnecting = !isOffline && users.isEmpty;
+    final isOnline = !isOffline && users.isNotEmpty;
 
-    // 1. ESTADO "SIN CONEXIÓN"
-    if (networkStatus == NetworkStatus.offline) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
+    // Configuración visual según estado
+    Widget statusIconOrAnim;
+    Color statusColor;
+    String statusText;
+
+    if (isOffline) {
+      statusColor = colorScheme.error;
+      statusText = "Offline";
+      statusIconOrAnim = Icon(Icons.wifi_off_rounded, size: 14, color: statusColor);
+    } else if (isConnecting) {
+      statusColor = Colors.orangeAccent;
+      statusText = "Conectando...";
+      statusIconOrAnim = SizedBox(
+        width: 10, height: 10, 
+        child: CircularProgressIndicator(strokeWidth: 2, color: statusColor)
+      );
+    } else {
+      statusColor = const Color(0xFF00E676); // Verde
+      statusText = "${users.length} Online";
+      // BLINDAJE: SizedBox estricto para evitar rebotes de layout
+      statusIconOrAnim = SizedBox(
+        width: 10, height: 10,
+        child: Pulse(
+          infinite: true,
+          duration: const Duration(seconds: 2),
+          child: Center(
+            child: Container(
               width: 8, height: 8,
-              decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              "Offline",
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.error,
+              decoration: BoxDecoration(
+                color: statusColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(color: statusColor.withOpacity(0.6), blurRadius: 6, spreadRadius: 1)
+                ]
               ),
             ),
-          ],
+          ),
         ),
       );
     }
 
-    // 2. ESTADO "CONECTANDO"
-    if (users.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8, height: 8,
-              decoration: const BoxDecoration(color: Colors.orangeAccent, shape: BoxShape.circle),
+    // --- DEFINICIÓN DEL CONTENIDO INTERNO ---
+    final innerContent = Container(
+      height: 34, // Altura fija para evitar overflow
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          statusIconOrAnim,
+          const SizedBox(width: 8),
+          Text(
+            statusText,
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: isOffline ? statusColor : colorScheme.onSurface,
+              height: 1.0,
             ),
-            const SizedBox(width: 8),
-            Text(
-              "Conectando...",
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final totalCount = users.length;
-    
-    // Identificamos quién soy yo
-    final me = users.firstWhere(
-      (u) => u.isMe, 
-      orElse: () => ConnectedUser(id: 'unknown', isMe: true, name: 'Yo')
+          ),
+          if (isOnline) ...[
+            const SizedBox(width: 4),
+            Icon(Icons.keyboard_arrow_down_rounded, size: 14, color: colorScheme.onSurfaceVariant),
+          ]
+        ],
+      ),
     );
 
-    // --- LÓGICA DE AGRUPAMIENTO ---
+    // --- CONSTRUCCIÓN DEL CONTENEDOR PRINCIPAL (PÍLDORA) ---
+    // Usamos Material para manejar el color, la forma y CORTAR (Clip) el efecto de hover.
+    final badgeDecoration = Material(
+      color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias, // <--- ESTO ES LA CLAVE: Corta el hover cuadrado
+      child: isOnline
+          ? _buildMenuButton(context, ref, innerContent, users, colorScheme)
+          : innerContent, // Si no es online, solo mostramos el contenido sin botón
+    );
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      // Envolvemos en un contenedor transparente para el margen externo
+      child: badgeDecoration,
+    );
+  }
+
+  Widget _buildMenuButton(
+    BuildContext context, 
+    WidgetRef ref, 
+    Widget child, 
+    List<ConnectedUser> users, 
+    ColorScheme colorScheme
+  ) {
+    final me = users.firstWhere((u) => u.isMe, orElse: () => ConnectedUser(id: '?', isMe: true, name: 'Yo'));
     final others = users.where((u) => !u.isMe).toList();
-    final namedUsers = others.where((u) => u.name != null).toList();
-    final anonymousCount = others.where((u) => u.name == null).length;
-    
-    String labelText = totalCount == 1 ? "1 online (Tú)" : "$totalCount online";
+    final realUsers = others.where((u) => u.name != null && !u.name!.startsWith('anon-')).toList();
+    final anonymousCount = others.length - realUsers.length;
 
     return PopupMenuButton(
-      tooltip: 'Ver quién está conectado',
+      tooltip: 'Comunidad',
       offset: const Offset(0, 45),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+      shadowColor: Colors.black26,
+      padding: EdgeInsets.zero, // Quitamos padding para que el hover llene la píldora
+      
+      // BLINDAJE: Tipo explícito para evitar error de compilación
       itemBuilder: (context) => <PopupMenuEntry<dynamic>>[
-          
-          // A. MI USUARIO
+        PopupMenuItem(
+          enabled: false,
+          child: _UserRow(user: me, isMe: true),
+        ),
+        const PopupMenuDivider(),
+        
+        if (realUsers.isNotEmpty) ...[
+           PopupMenuItem(
+            enabled: false,
+            height: 30,
+            child: Text("Comunidad", style: TextStyle(fontSize: 10, color: colorScheme.primary, fontWeight: FontWeight.bold)),
+          ),
+          ...realUsers.map((u) => PopupMenuItem(
+            enabled: false, 
+            height: 40,
+            child: _UserRow(user: u, isMe: false),
+          )),
+        ],
+
+        if (anonymousCount > 0) ...[
+          if (realUsers.isNotEmpty) const PopupMenuDivider(),
           PopupMenuItem(
             enabled: false,
-            height: 48, 
+            height: 40,
             child: Row(
               children: [
-                _UserAvatar(user: me, radius: kAvatarRadius, iconSize: kIconSize),
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                  child: Icon(FontAwesomeIcons.userSecret, size: 12, color: colorScheme.onSurfaceVariant),
+                ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    me.name != null ? "${me.name} (Tú)" : "Tú (Visitante Anónimo)",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface, 
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                Text(
+                  "$anonymousCount Visitante${anonymousCount > 1 ? 's' : ''}",
+                  style: TextStyle(fontStyle: FontStyle.italic, color: colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
           ),
-
-          if (others.isNotEmpty) const PopupMenuDivider(height: 1),
-          
-          // B. OTROS USUARIOS
-          ...namedUsers.map((u) {
-            return PopupMenuItem(
-              enabled: false,
-              height: 48,
-              child: Row(
-                children: [
-                  _UserAvatar(user: u, radius: kAvatarRadius, iconSize: kIconSize),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      u.name!,
-                      style: TextStyle(color: theme.colorScheme.onSurface),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-
-          // C. ANÓNIMOS
-          if (anonymousCount > 0)
-             PopupMenuItem(
-              enabled: false,
-              height: 48,
-              child: Row(
-                children: [
-                   CircleAvatar(
-                    radius: kAvatarRadius,
-                    backgroundColor: theme.colorScheme.onSurface.withOpacity(0.08),
-                    child: Icon(Icons.group_outlined, size: kIconSize, color: theme.colorScheme.onSurface.withOpacity(0.7)),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    anonymousCount == 1 ? "Visitante Anónimo" : "Visitantes Anónimos x $anonymousCount",
-                    style: TextStyle(
-                      fontStyle: FontStyle.italic,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // D. FOOTER
-          if (totalCount > 1)
-             PopupMenuItem(
-              enabled: false,
-              height: 36,
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: Text(
-                    "¡Gracias por visitar!",
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: 11,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5),
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+        ]
       ],
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Pulse(
-              infinite: true,
-              duration: const Duration(seconds: 2),
-              child: Container(
-                width: 8, height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.greenAccent,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: Colors.green, blurRadius: 4, spreadRadius: 1)
-                  ]
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              labelText,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: child,
     );
   }
 }
 
-// --- HELPER: Avatar Unificado & Blindado ---
-class _UserAvatar extends StatelessWidget {
-  final ConnectedUser user;
-  final double radius;
-  final double iconSize;
+// --- WIDGETS AUXILIARES ---
 
-  const _UserAvatar({
-    required this.user, 
-    required this.radius,
-    required this.iconSize,
-  });
+class _UserRow extends StatelessWidget {
+  final ConnectedUser user;
+  final bool isMe;
+
+  const _UserRow({required this.user, required this.isMe});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    // Validar URL
-    final bool hasValidUrl = user.photoUrl != null && user.photoUrl!.isNotEmpty;
+    final name = user.name ?? 'Anónimo';
+    final isAnon = name.startsWith('anon-') || user.name == null;
 
-    if (hasValidUrl) {
+    return Row(
+      children: [
+        _SmartAvatar(url: user.photoUrl, name: name, isMe: isMe),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                isMe ? "$name (Tú)" : name,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (isMe && isAnon)
+                Text(
+                  "Inicia sesión para tu foto",
+                  style: theme.textTheme.labelSmall?.copyWith(fontSize: 9, color: theme.colorScheme.primary),
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
+        ),
+        if (isMe) 
+          Icon(Icons.check_circle, size: 14, color: theme.colorScheme.primary)
+      ],
+    );
+  }
+}
+
+class _SmartAvatar extends StatelessWidget {
+  final String? url;
+  final String name;
+  final bool isMe;
+
+  const _SmartAvatar({required this.url, required this.name, required this.isMe});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasUrl = url != null && url!.isNotEmpty;
+
+    if (hasUrl) {
       return Container(
-        width: radius * 2,
-        height: radius * 2,
+        width: 32, height: 32,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: theme.colorScheme.surfaceContainerHighest,
+          border: isMe ? Border.all(color: colorScheme.primary, width: 1.5) : null,
         ),
         child: ClipOval(
           child: Image.network(
-            user.photoUrl!,
+            url!,
             fit: BoxFit.cover,
-            // Error: Fallback a Icono
-            errorBuilder: (_, __, ___) => Center(
-               child: Icon(
-                 Icons.person_outline, 
-                 size: iconSize, 
-                 color: theme.colorScheme.onSurface.withOpacity(0.5)
-               ),
-            ),
-            // Loading: Shimmer
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
+            errorBuilder: (_,__,___) => _FallbackAvatar(name: name),
+            loadingBuilder: (ctx, child, progress) {
+              if (progress == null) return child;
               return Shimmer.fromColors(
-                 baseColor: theme.colorScheme.onSurface.withOpacity(0.05),
-                 highlightColor: theme.colorScheme.onSurface.withOpacity(0.1),
-                 child: Container(color: Colors.white),
+                baseColor: colorScheme.surfaceContainerHighest,
+                highlightColor: colorScheme.surface,
+                child: Container(color: Colors.white),
               );
             },
           ),
         ),
       );
     }
+    return _FallbackAvatar(name: name, isMe: isMe);
+  }
+}
 
-    // Caso base: Sin URL
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: theme.colorScheme.onSurface.withOpacity(0.08),
-      child: Icon(
-        user.name != null ? Icons.person : Icons.person_outline,
-        size: iconSize, 
-        color: theme.colorScheme.onSurface.withOpacity(0.7),
+class _FallbackAvatar extends StatelessWidget {
+  final String name;
+  final bool isMe;
+  const _FallbackAvatar({required this.name, this.isMe = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    
+    return Container(
+      width: 32, height: 32,
+      decoration: BoxDecoration(
+        color: isMe ? theme.colorScheme.primaryContainer : theme.colorScheme.surfaceContainerHighest,
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isMe ? theme.colorScheme.onPrimaryContainer : theme.colorScheme.onSurfaceVariant,
+            fontSize: 14,
+          ),
+        ),
       ),
     );
   }

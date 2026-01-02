@@ -1,5 +1,6 @@
 // Archivo: lib/features/services/presentation/views/services_view.dart
 import 'package:animate_do/animate_do.dart';
+import 'package:apex/features/estimator/presentation/widgets/estimator_calculator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -169,7 +170,7 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
                 ],
               ),
             ),
-            
+            const SizedBox(height: 60), const EstimatorCalculator(),
             const SizedBox(height: 60),
             const Footer(),
           ],

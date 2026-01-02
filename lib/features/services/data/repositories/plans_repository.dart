@@ -20,33 +20,32 @@ class PlansRepository {
       caseStudies: [
         CaseStudy(
           name: 'Simon Mindset',
-          logoAsset: 'assets/icons/simon_logo.png', // Mantiene imagen
+          logoAsset: 'assets/icons/simon_logo.png',
           url: 'https://simonmindset.com',
           brandColor: Color(0xFF8B0000),
           logoBgColor: Colors.black, 
         ),
         CaseStudy(
           name: 'Pérez Yeregui',
-          // SIN logoAsset
-          logoLetter: 'P', // <--- NUEVO: Letra P
+          logoLetter: 'P',
           url: 'https://perez-yeregui2.vercel.app',
           brandColor: Color(0xFF5B5663),
-          logoBgColor: Color(0xFF5B5663), // Fondo Gris
+          logoBgColor: Color(0xFF5B5663),
         ),
         CaseStudy(
           name: 'Metal Wailers',
-          // SIN logoAsset
-          logoLetter: 'M', // <--- NUEVO: Letra M
+          logoLetter: 'M',
           url: 'https://metalwailers.com',
           brandColor: Color(0xFF263238), 
-          logoBgColor: Colors.black, // Fondo Negro
+          logoBgColor: Colors.black,
         ),
       ],
       features: [
         'Diseño a Medida (Sin plantillas)',
         'Información optimizada para vender',
         'Carga ultrarrápida (Flutter Web)',
-        'Hosting incluido', 
+        'Hosting incluido',
+        'Mantenimiento incluido (3 meses)', // <--- NUEVO
       ],
     ),
     ServicePlan(
@@ -70,6 +69,7 @@ class PlansRepository {
         'Backend conectado (Supabase)',
         'Formularios con auto-respuesta (Email)',
         'Galería Multimedia / Videos',
+        'Mantenimiento incluido (3 meses)', // <--- NUEVO
       ],
     ),
     ServicePlan(
@@ -99,7 +99,7 @@ class PlansRepository {
         'App de Escritorio (Admin Dashboard)',
         'Panel de Métricas y Reportes', 
         'Gestión de Stock y Usuarios (Roles)', 
-        'Soporte prioritario',
+        'Mantenimiento incluido (3 meses)', // <--- NUEVO
       ],
     ),
   ];
@@ -119,7 +119,7 @@ class PlansRepository {
         'Funcionalidades Core (Lo vital)',
         'Autenticación Segura',
         'Publicación en Tiendas',
-        'Pago Único (Sin mensualidades)'
+        'Mantenimiento incluido (3 meses)', // <--- NUEVO
       ],
     ),
     ServicePlan(
@@ -134,7 +134,7 @@ class PlansRepository {
         'Todo lo del plan MVP',
         'Panel Admin (Web o Escritorio)', 
         'Notificaciones Push & Pagos',
-        'Soporte Post-Lanzamiento (3 meses)',
+        'Mantenimiento incluido (3 meses)', // <--- NUEVO
         'Financiación: 3 cuotas de \$900.000'
       ],
     ),
@@ -151,7 +151,7 @@ class PlansRepository {
         'Arquitectura de Microservicios',
         'Múltiples Apps (Cliente/Chofer/Admin)',
         'Infraestructura Escalable (AWS)',
-        'Modelo de Retainer Mensual'
+        'Mantenimiento Continuo (Partner)', // <--- DIFERENTE AQUÍ
       ],
     ),
   ];

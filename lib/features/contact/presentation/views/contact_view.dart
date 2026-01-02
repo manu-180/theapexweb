@@ -6,13 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart'; 
 import 'package:shimmer/shimmer.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:lottie/lottie.dart';
 import 'package:apex/features/comments/presentation/providers/comments_provider.dart';
 import 'package:apex/features/comments/presentation/widgets/comment_card.dart';
 import 'package:apex/features/comments/presentation/widgets/comment_input_area.dart';
 import 'package:apex/features/comments/presentation/widgets/rating_summary.dart';
 import 'package:apex/features/shared/widgets/footer.dart';
+// IMPORTACIÓN NUEVA: Repositorio de contacto
+import 'package:apex/features/contact/data/repositories/contact_repository.dart';
 
 class ContactView extends StatelessWidget {
   const ContactView({super.key});
@@ -159,13 +160,11 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
     setState(() => _isLoading = true);
     
     try {
-      await Supabase.instance.client.functions.invoke(
-        'send-contact-email',
-        body: { 
-          'name': _nameController.text.trim(), 
-          'email': _emailController.text.trim(), 
-          'message': _messageController.text.trim() 
-        },
+      // REFACTORIZACIÓN APLICADA: Usamos el repositorio en lugar de Supabase directo
+      await ref.read(contactRepositoryProvider).sendContactMessage(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        message: _messageController.text.trim(),
       );
       
       if (mounted) {
@@ -217,7 +216,8 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
 
     return InspectorGadget(
       name: "Formulario Serverless",
-      techSpecs: "Validación Reactiva (Riverpod) • Trigger de Edge Function (Deno) • SMTP Relay",
+      // Actualizamos los specs técnicos para reflejar la realidad
+      techSpecs: "Repository Pattern • Trigger de Edge Function • Validación Reactiva",
       icon: FontAwesomeIcons.envelopeOpenText,
       child: Container(
         padding: const EdgeInsets.all(32), 

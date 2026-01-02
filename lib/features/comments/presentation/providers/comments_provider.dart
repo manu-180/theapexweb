@@ -1,158 +1,48 @@
 // Archivo: lib/features/comments/presentation/providers/comments_provider.dart
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:apex/core/providers/supabase_providers.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
+import 'package:apex/features/comments/domain/models/comment_model.dart';
+import 'package:apex/features/comments/data/repositories/comments_repository.dart';
+// Exportamos el modelo para que los archivos viejos no se rompan si importaban solo este archivo
+export 'package:apex/features/comments/domain/models/comment_model.dart';
 
 part 'comments_provider.g.dart';
 
-class Comment {
-  final int id;
-  final String content;
-  final String userName;
-  final String? avatarUrl;
-  final DateTime createdAt;
-  final int likesCount;
-  final bool isLikedByMe;
-  final int? parentId;
-  final String userId;
-  final int? rating;
-  final List<Comment> replies;
-
-  Comment({
-    required this.id,
-    required this.content,
-    required this.userName,
-    this.avatarUrl,
-    required this.createdAt,
-    required this.likesCount,
-    required this.isLikedByMe,
-    this.parentId,
-    required this.userId,
-    this.rating,
-    this.replies = const [],
-  });
-
-  factory Comment.fromJson(Map<String, dynamic> json) {
-    return Comment(
-      id: json['id'],
-      content: json['content'],
-      createdAt: DateTime.parse(json['created_at']),
-      userName: json['user_name'] ?? 'Usuario Anónimo',
-      avatarUrl: json['avatar_url'],
-      likesCount: json['likes_count'] ?? 0,
-      isLikedByMe: json['is_liked_by_me'] ?? false,
-      parentId: json['parent_id'],
-      userId: json['user_id'],
-      rating: json['rating'],
-    );
-  }
-  
-  Comment copyWith({
-    int? likesCount,
-    bool? isLikedByMe,
-    List<Comment>? replies,
-    int? rating,
-  }) {
-    return Comment(
-      id: id,
-      content: content,
-      userName: userName,
-      avatarUrl: avatarUrl,
-      createdAt: createdAt,
-      likesCount: likesCount ?? this.likesCount,
-      isLikedByMe: isLikedByMe ?? this.isLikedByMe,
-      parentId: parentId,
-      userId: userId,
-      rating: rating ?? this.rating,
-      replies: replies ?? this.replies,
-    );
-  }
-}
-
 @riverpod
 class CommentsNotifier extends _$CommentsNotifier {
-  late SupabaseClient _supabase;
-  final List<RealtimeChannel> _subscriptions = [];
-
+  
   @override
   Future<List<Comment>> build() async {
-    _supabase = ref.watch(supabaseClientProvider);
+    final repository = ref.watch(commentsRepositoryProvider);
     
-    // Limpieza preventiva
-    for (var sub in _subscriptions) { await sub.unsubscribe(); }
-    _subscriptions.clear();
-
-    ref.onDispose(() {
-      for (var sub in _subscriptions) { sub.unsubscribe(); }
+    // Escucha pasiva de cambios en tiempo real desde el repositorio
+    // Usamos 'listen' en lugar de watch para evitar reconstrucciones innecesarias del repositorio
+    final sub = repository.onDataChanged.listen((_) {
+      // Cuando el repositorio avisa que hubo cambios, invalidamos este provider
+      // para que vuelva a ejecutar build() y traiga la data fresca.
+      ref.invalidateSelf();
     });
+    
+    ref.onDispose(() => sub.cancel());
 
-    _startRealtimeSubscription();
-
-    return _fetchComments();
-  }
-
-  void _startRealtimeSubscription() {
-    final subComments = _supabase.channel('public:comments').onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'comments',
-      callback: (payload) { ref.invalidateSelf(); },
-    ).subscribe();
-
-    final subLikes = _supabase.channel('public:comment_likes').onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'comment_likes',
-      callback: (payload) { ref.invalidateSelf(); },
-    ).subscribe();
-
-    _subscriptions.addAll([subComments, subLikes]);
-  }
-
-  Future<List<Comment>> _fetchComments() async {
-    // CORRECCIÓN PERFORMANCE: Límite de seguridad para evitar cuellos de botella
-    final response = await _supabase
-        .from('comments_with_metadata') 
-        .select()
-        .order('likes_count', ascending: false)
-        .order('created_at', ascending: false)
-        .limit(50); // <--- LÍMITE AGREGADO
-
-    final flatList = (response as List).map((json) => Comment.fromJson(json)).toList();
-
-    final List<Comment> parents = [];
-    final Map<int, List<Comment>> childrenMap = {};
-
-    for (var c in flatList) {
-      if (c.parentId == null) {
-        parents.add(c);
-      } else {
-        childrenMap.putIfAbsent(c.parentId!, () => []).add(c);
-      }
-    }
-
-    return parents.map((p) {
-      final replies = childrenMap[p.id] ?? [];
-      replies.sort((a, b) => a.createdAt.compareTo(b.createdAt)); 
-      return p.copyWith(replies: replies);
-    }).toList();
+    return repository.fetchComments();
   }
 
   Future<void> postComment(String content, {int? parentId, int? rating}) async {
-    final session = _supabase.auth.currentSession;
-    if (session == null || session.isExpired) {
+    final user = ref.read(currentUserProvider);
+    if (user == null) {
       throw const AuthException('Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
     }
     
-    final user = session.user; 
-
+    final repository = ref.read(commentsRepositoryProvider);
     final previousState = state;
     final currentList = state.valueOrNull ?? [];
 
-    final tempId = -DateTime.now().millisecondsSinceEpoch;
+    // --- ACTUALIZACIÓN OPTIMISTA ---
+    final tempId = -DateTime.now().millisecondsSinceEpoch; // ID temporal negativo
     final newComment = Comment(
       id: tempId,
       content: content,
@@ -178,30 +68,34 @@ class CommentsNotifier extends _$CommentsNotifier {
       }).toList();
       state = AsyncData(updatedList);
     }
+    // -------------------------------
 
     try {
-      await _supabase.from('comments').insert({
-        'user_id': user.id,
-        'content': content,
-        'parent_id': parentId, 
-        'rating': rating,
-      });
+      await repository.postComment(
+        userId: user.id,
+        content: content,
+        parentId: parentId,
+        rating: rating,
+      );
+      // No necesitamos hacer nada si tiene éxito, el Realtime disparará la actualización real
     } catch (e) {
+      // Si falla, revertimos al estado anterior
       state = previousState; 
       rethrow;
     }
   }
 
   Future<void> toggleLike(int commentId) async {
-    final session = _supabase.auth.currentSession;
-    if (session == null || session.isExpired) {
+    final user = ref.read(currentUserProvider);
+    if (user == null) {
        throw const AuthException('Debes iniciar sesión para dar like.');
     }
-    final user = session.user;
 
+    final repository = ref.read(commentsRepositoryProvider);
     final previousState = state;
     final currentList = state.valueOrNull ?? [];
 
+    // --- ACTUALIZACIÓN OPTIMISTA ---
     List<Comment> updateList(List<Comment> list) {
       return list.map((c) {
         if (c.id == commentId) {
@@ -211,6 +105,7 @@ class CommentsNotifier extends _$CommentsNotifier {
             likesCount: newStatus ? c.likesCount + 1 : c.likesCount - 1,
           );
         }
+        // Buscamos también en las respuestas
         if (c.replies.any((r) => r.id == commentId)) {
           final newReplies = c.replies.map((r) {
              if (r.id == commentId) {
@@ -227,22 +122,11 @@ class CommentsNotifier extends _$CommentsNotifier {
         return c;
       }).toList();
     }
-
     state = AsyncData(updateList(currentList));
+    // -------------------------------
 
     try {
-       final maybeLike = await _supabase
-           .from('comment_likes')
-           .select()
-           .eq('user_id', user.id)
-           .eq('comment_id', commentId)
-           .maybeSingle();
-
-       if (maybeLike != null) {
-         await _supabase.from('comment_likes').delete().eq('user_id', user.id).eq('comment_id', commentId);
-       } else {
-         await _supabase.from('comment_likes').insert({'user_id': user.id, 'comment_id': commentId});
-       }
+       await repository.toggleLike(user.id, commentId);
     } catch (e) {
       state = previousState; 
       rethrow;
