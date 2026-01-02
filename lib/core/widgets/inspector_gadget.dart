@@ -9,7 +9,7 @@ class InspectorGadget extends ConsumerWidget {
   final String name;      
   final String techSpecs; 
   final IconData icon;
-  // Ya no necesitamos preferBelow porque ahora es una etiqueta fija
+  final bool preferBelow; // Para controlar si el cartel sale arriba o abajo
 
   const InspectorGadget({
     super.key,
@@ -17,6 +17,7 @@ class InspectorGadget extends ConsumerWidget {
     required this.name,
     required this.techSpecs,
     this.icon = FontAwesomeIcons.code,
+    this.preferBelow = false, 
   });
 
   @override
@@ -24,109 +25,89 @@ class InspectorGadget extends ConsumerWidget {
     final isInspectorOn = ref.watch(inspectorModeProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // 1. Si está apagado, devolvemos el hijo limpio
+    // 1. Si el modo inspector está APAGADO, devolvemos el widget limpio.
     if (!isInspectorOn) return child;
 
-    // --- PALETA DE COLORES ADAPTATIVA ---
+    // --- CONFIGURACIÓN DE COLORES ---
+    final bgColor = isDark 
+        ? const Color(0xFF0F172A).withOpacity(0.95) 
+        : Colors.white.withOpacity(0.98); 
+        
     final accentColor = isDark 
         ? const Color(0xFF38BDF8)  // Cyan claro
         : const Color(0xFF0284C7); // Azul técnico
 
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
-    final bgColor = isDark 
-        ? const Color(0xFF0F172A).withOpacity(0.90) 
-        : Colors.white.withOpacity(0.95);
+    final iconContentColor = isDark ? Colors.black : Colors.white;
 
-    return Stack(
-      children: [
-        // A. EL WIDGET ORIGINAL
-        // Lo envolvemos en un Container con borde para marcar el área
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: accentColor.withOpacity(0.5), 
-              width: 1.5,
-            ),
-            color: accentColor.withOpacity(0.05), // Tinte suave fondo
-            borderRadius: BorderRadius.circular(12),
+    // 2. USAMOS TOOLTIP: El cartel solo aparece al pasar el mouse (Hover)
+    return Tooltip(
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: accentColor, width: 1.5), 
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withOpacity(isDark ? 0.2 : 0.1), 
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          child: child,
-        ),
-        
-        // B. LA ETIQUETA TÉCNICA (HUD)
-        // Usamos Positioned para pegarlo abajo del widget.
-        // Usamos IgnorePointer para que si la etiqueta tapa un botón, 
-        // ¡todavía puedas hacer clic en el botón a través del texto!
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: IgnorePointer( 
+        ],
+      ),
+      padding: const EdgeInsets.all(12),
+      textStyle: TextStyle(color: textColor, fontFamily: 'monospace', fontSize: 12),
+      richMessage: TextSpan(
+        children: [
+          TextSpan(
+            text: "$name\n", 
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: accentColor)
+          ),
+          TextSpan(text: techSpecs),
+        ],
+      ),
+      preferBelow: preferBelow, // Respetamos si pediste que salga abajo
+      verticalOffset: 20, 
+      waitDuration: const Duration(milliseconds: 100), // Aparece rápido
+      
+      // EL WIDGET VISIBLE (Borde + Contenido)
+      child: Stack(
+        children: [
+          // A. BORDE VISUAL (Siempre visible si Inspector está ON)
+          Positioned.fill(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: bgColor,
-                border: Border(
-                  top: BorderSide(color: accentColor, width: 1.5), // Línea separadora
+                borderRadius: BorderRadius.circular(12), 
+                border: Border.all(
+                  color: accentColor.withOpacity(0.5), 
+                  width: 1.5,
+                  style: BorderStyle.solid,
                 ),
+                color: accentColor.withOpacity(0.05), // Tinte suave
+              ),
+            ),
+          ),
+          
+          // B. EL CONTENIDO ORIGINAL
+          child, 
+          
+          // C. EL ICONO BADGE (Esquina superior derecha)
+          Positioned(
+            top: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: accentColor,
                 borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(10), // Ajuste -2px del borde padre
-                  bottomRight: Radius.circular(10),
+                  bottomLeft: Radius.circular(8), 
+                  topRight: Radius.circular(10) // Ajuste para coincidir con el borde
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Título con Icono
-                  Row(
-                    children: [
-                      Icon(icon, size: 10, color: accentColor),
-                      const SizedBox(width: 6),
-                      Text(
-                        name.toUpperCase(), 
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900, 
-                          fontSize: 10, 
-                          color: accentColor,
-                          letterSpacing: 1.0,
-                        )
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  // Specs
-                  Text(
-                    techSpecs,
-                    style: TextStyle(
-                      color: textColor, 
-                      fontFamily: 'monospace', 
-                      fontSize: 10,
-                      height: 1.2
-                    ),
-                  ),
-                ],
-              ),
+              child: Icon(icon, size: 12, color: iconContentColor),
             ),
           ),
-        ),
-
-        // C. INDICADOR DE ESQUINA (Opcional, decorativo)
-        Positioned(
-          top: 0,
-          right: 0,
-          child: Container(
-            width: 10, 
-            height: 10,
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: accentColor, width: 2),
-                right: BorderSide(color: accentColor, width: 2),
-              ),
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
