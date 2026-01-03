@@ -1,17 +1,18 @@
 // Archivo: lib/features/contact/presentation/providers/appointment_provider.dart
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:apex/features/contact/data/repositories/appointment_repository.dart';
+import 'package:apex/features/contact/data/repositories/whatsapp_repository.dart'; // <--- IMPORTANTE
 import 'package:apex/features/contact/domain/models/appointment_model.dart';
 
 part 'appointment_provider.g.dart';
 
-// --- ESTADO DE LA UI ---
+// ... (BookingState queda igual) ...
 class BookingState {
   final DateTime selectedDate;
-  final List<int> availableHours; // Las horas que SI se pueden elegir
-  final int? selectedHour;        // La hora que el usuario tocó (si tocó alguna)
+  final List<int> availableHours; 
+  final int? selectedHour;        
   final bool isLoading;
-  final bool isSuccess;           // Para mostrar el check verde final
+  final bool isSuccess;           
 
   BookingState({
     required this.selectedDate,
@@ -42,39 +43,30 @@ class BookingState {
 class BookingNotifier extends _$BookingNotifier {
   @override
   BookingState build() {
-    // Iniciamos hoy, pero reseteamos horas
     final now = DateTime.now();
     return BookingState(selectedDate: now);
   }
 
-  /// Lógica principal: El usuario toca un día en el calendario
   Future<void> selectDate(DateTime date) async {
-    // 1. Reset visual inmediato (optimista)
     state = state.copyWith(
       selectedDate: date,
-      selectedHour: null, // Reseteamos la hora seleccionada anterior
+      selectedHour: null, 
       isLoading: true,
       isSuccess: false,
     );
 
-    // 2. Regla de Negocio: DOMINGOS CERRADO
     if (date.weekday == DateTime.sunday) {
       state = state.copyWith(availableHours: [], isLoading: false);
       return;
     }
 
     try {
-      // 3. Consultamos qué está ocupado en la BD
       final repo = ref.read(appointmentRepositoryProvider);
       final bookedHours = await repo.getBookedHours(date);
 
-      // 4. Calculamos libres (Regla: 9 a 19hs)
-      final List<int> allSlots = List.generate(11, (index) => 9 + index); // [9, 10 ... 19]
-      
-      // Filtramos: Sacamos las ocupadas
+      final List<int> allSlots = List.generate(11, (index) => 9 + index); 
       final freeSlots = allSlots.where((h) => !bookedHours.contains(h)).toList();
 
-      // Filtro extra: Si es HOY, no mostrar horas que ya pasaron
       final now = DateTime.now();
       final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
       
@@ -82,12 +74,8 @@ class BookingNotifier extends _$BookingNotifier {
         freeSlots.removeWhere((h) => h <= now.hour);
       }
 
-      state = state.copyWith(
-        availableHours: freeSlots,
-        isLoading: false,
-      );
+      state = state.copyWith(availableHours: freeSlots, isLoading: false);
     } catch (e) {
-      // Si falla, dejamos lista vacía para seguridad
       state = state.copyWith(availableHours: [], isLoading: false);
     }
   }
@@ -96,6 +84,7 @@ class BookingNotifier extends _$BookingNotifier {
     state = state.copyWith(selectedHour: hour);
   }
 
+  // --- CONFIRMACIÓN CON NOTIFICACIONES AUTOMÁTICAS ---
   Future<void> confirmBooking({
     required String contactInfo,
     required String contactType, // 'whatsapp' o 'email'
@@ -106,8 +95,9 @@ class BookingNotifier extends _$BookingNotifier {
     state = state.copyWith(isLoading: true);
 
     try {
-      final repo = ref.read(appointmentRepositoryProvider);
+      final appRepo = ref.read(appointmentRepositoryProvider);
       
+      // 1. Crear Reserva en BD
       final appointment = Appointment(
         dateSlot: state.selectedDate,
         hourSlot: state.selectedHour!,
@@ -116,14 +106,42 @@ class BookingNotifier extends _$BookingNotifier {
         clientName: name,
       );
 
-      await repo.createAppointment(appointment);
+      await appRepo.createAppointment(appointment);
       
-      // Éxito total
+      // 2. DISPARAR NOTIFICACIONES (Fire and Forget)
+      // No usamos 'await' bloqueante para que el usuario vea el éxito rápido
+      _sendNotification(contactType, contactInfo, name ?? 'Cliente');
+
+      // 3. Éxito
       state = state.copyWith(isLoading: false, isSuccess: true);
       
     } catch (e) {
       state = state.copyWith(isLoading: false);
-      rethrow; // La UI manejará el error (Toast/SnackBar)
+      rethrow; 
+    }
+  }
+
+  Future<void> _sendNotification(String type, String contact, String name) async {
+    try {
+      if (type == 'whatsapp') {
+        final wppRepo = ref.read(whatsappRepositoryProvider);
+        await wppRepo.sendBookingConfirmation(
+          phone: contact, 
+          date: state.selectedDate, 
+          hour: state.selectedHour!
+        );
+      } else if (type == 'email') {
+        final appRepo = ref.read(appointmentRepositoryProvider);
+        await appRepo.sendBookingEmail(
+          email: contact,
+          name: name,
+          date: state.selectedDate,
+          hour: state.selectedHour!,
+        );
+      }
+    } catch (e) {
+      // Loguear error silencioso (analytics)
+      print("Error enviando notificación automática: $e");
     }
   }
   

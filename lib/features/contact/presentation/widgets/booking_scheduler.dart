@@ -1,4 +1,5 @@
 // Archivo: lib/features/contact/presentation/widgets/booking_scheduler.dart
+import 'dart:ui'; 
 import 'package:animate_do/animate_do.dart';
 import 'package:apex/features/contact/presentation/providers/appointment_provider.dart';
 import 'package:flutter/material.dart';
@@ -17,13 +18,14 @@ class BookingScheduler extends ConsumerStatefulWidget {
 class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
   final _contactController = TextEditingController();
   final _nameController = TextEditingController();
-  String _contactType = 'whatsapp'; // whatsapp | email
+  final _scrollController = ScrollController(); 
+  
+  String _contactType = 'whatsapp'; 
   final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
-    // Iniciamos cargando la disponibilidad de hoy
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(bookingNotifierProvider.notifier).selectDate(DateTime.now());
     });
@@ -33,6 +35,7 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
   void dispose() {
     _contactController.dispose();
     _nameController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -46,13 +49,27 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
     );
   }
 
+  void _scrollList(double offset) {
+    if (!_scrollController.hasClients) return;
+    final currentPos = _scrollController.offset;
+    final targetPos = (currentPos + offset).clamp(
+      0.0, 
+      _scrollController.position.maxScrollExtent
+    ); 
+    
+    _scrollController.animateTo(
+      targetPos, 
+      duration: const Duration(milliseconds: 300), 
+      curve: Curves.easeOut,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(bookingNotifierProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // --- ESTADO DE ÉXITO (ANIMACIÓN FINAL) ---
     if (state.isSuccess) {
       return FadeIn(
         child: Container(
@@ -113,95 +130,139 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
         ),
         const SizedBox(height: 24),
 
-        // 1. SELECTOR DE FECHAS BLINDADO (Deterministic Layout)
-        // Fijamos una altura generosa en el padre (130px)
+        // --- 1. CARRUSEL DE FECHAS MEJORADO ---
         SizedBox(
-          height: 130, 
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 30, // Próximos 30 días
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-            itemBuilder: (context, index) {
-              final date = DateTime.now().add(Duration(days: index));
-              final isSelected = _isSameDay(date, state.selectedDate);
-              final isSunday = date.weekday == DateTime.sunday;
-              
-              return GestureDetector(
-                onTap: () => ref.read(bookingNotifierProvider.notifier).selectDate(date),
-                child: Container(
-                  // Margen externo (no afecta el tamaño interno de la caja)
-                  margin: const EdgeInsets.only(right: 12),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    // --- RESTRICCIÓN DETERMINISTA ---
-                    // Fijamos dimensiones explícitas. 90px < 130px (Safety Buffer ok)
-                    width: 75,
-                    height: 90,
-                    alignment: Alignment.center, // Alineación central desacoplada
-                    decoration: BoxDecoration(
-                      color: isSelected 
-                          ? colorScheme.primary 
-                          : (isSunday ? colorScheme.surfaceContainerHighest.withOpacity(0.3) : colorScheme.surfaceContainerHighest),
-                      borderRadius: BorderRadius.circular(16),
-                      border: isSelected 
-                          ? Border.all(color: colorScheme.primary, width: 2)
-                          : Border.all(color: Colors.transparent),
-                      boxShadow: isSelected 
-                          ? [BoxShadow(color: colorScheme.primary.withOpacity(0.4), blurRadius: 8, offset: const Offset(0,4))] 
-                          : null,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min, // Intrinsic sizing mínimo
-                      children: [
-                        // FittedBox asegura que el texto nunca desborde si la fuente cambia
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            DateFormat('EEE', 'es').format(date).toUpperCase().replaceAll('.', ''),
-                            style: TextStyle(
-                              fontSize: 12, 
-                              fontWeight: FontWeight.bold,
-                              height: 1.0, // Normalización de métrica de fuente
-                              color: isSelected ? colorScheme.onPrimary : (isSunday ? colorScheme.outline : colorScheme.onSurfaceVariant)
+          height: 100, 
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () => _scrollList(-300),
+                icon: const Icon(Icons.chevron_left_rounded),
+                style: IconButton.styleFrom(
+                  backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              Expanded(
+                child: ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
+                  ),
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    itemCount: 60,
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                    itemBuilder: (context, index) {
+                      final date = DateTime.now().add(Duration(days: index));
+                      final isSelected = _isSameDay(date, state.selectedDate);
+                      final isSunday = date.weekday == DateTime.sunday;
+                      final isToday = index == 0; // El índice 0 siempre es hoy en nuestra lógica
+                      
+                      // LOGICA VISUAL "HOY"
+                      // Si es hoy, usamos el color primario suave aunque NO esté seleccionado.
+                      final bgColor = isSelected
+                          ? colorScheme.primary
+                          : (isToday 
+                              ? colorScheme.primary.withOpacity(0.15) // Hoy (no seleccionado)
+                              : (isSunday ? colorScheme.surfaceContainerHighest.withOpacity(0.3) : colorScheme.surfaceContainerHighest));
+
+                      final borderColor = isSelected
+                          ? colorScheme.primary
+                          : (isToday ? colorScheme.primary.withOpacity(0.5) : Colors.transparent);
+
+                      final textColor = isSelected
+                          ? colorScheme.onPrimary
+                          : (isToday 
+                              ? colorScheme.primary // Texto de "HOY" en color primario
+                              : (isSunday ? colorScheme.outline : colorScheme.onSurfaceVariant));
+
+                      // Etiqueta superior
+                      final topLabel = isToday 
+                          ? "HOY" 
+                          : DateFormat('EEE', 'es').format(date).toUpperCase().replaceAll('.', '');
+
+                      return GestureDetector(
+                        onTap: () => ref.read(bookingNotifierProvider.notifier).selectDate(date),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 12),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 75,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: bgColor,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: borderColor, width: isToday && !isSelected ? 1.5 : 2),
+                              boxShadow: isSelected 
+                                  ? [BoxShadow(color: colorScheme.primary.withOpacity(0.4), blurRadius: 8, offset: const Offset(0,4))] 
+                                  : null,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    topLabel,
+                                    style: TextStyle(
+                                      fontSize: 12, 
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.0, 
+                                      color: textColor,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    date.day.toString(),
+                                    style: TextStyle(
+                                      fontSize: 22, 
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.0, 
+                                      color: isSelected ? colorScheme.onPrimary : (isSunday ? colorScheme.outline : colorScheme.onSurface)
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            date.day.toString(),
-                            style: TextStyle(
-                              fontSize: 22, 
-                              fontWeight: FontWeight.bold,
-                              height: 1.0, // Normalización de métrica de fuente
-                              color: isSelected ? colorScheme.onPrimary : (isSunday ? colorScheme.outline : colorScheme.onSurface)
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 ),
-              );
-            },
+              ),
+
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => _scrollList(300),
+                icon: const Icon(Icons.chevron_right_rounded),
+                style: IconButton.styleFrom(
+                  backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                ),
+              ),
+            ],
           ),
         ),
 
         const SizedBox(height: 32),
 
-        // 2. GRILLA DE HORARIOS
+        // --- 2. GRILLA DE HORARIOS (CON ESTADOS) ---
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: state.isLoading 
               ? _buildShimmerGrid(context)
-              : state.availableHours.isEmpty
-                  ? _buildEmptyState(context, isSunday: state.selectedDate.weekday == DateTime.sunday)
+              : (state.availableHours.isEmpty && state.selectedDate.weekday == DateTime.sunday) // Solo mostramos empty state si es Domingo cerrado
+                  ? _buildEmptyState(context, isSunday: true)
                   : _buildHoursGrid(context, state),
         ),
 
-        // 3. FORMULARIO DE CONTACTO (Solo si hay hora seleccionada)
+        // 3. FORMULARIO
         AnimatedSize(
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeOutExpo,
@@ -217,29 +278,51 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // Rango fijo de horas laborales (9 a 19) para mantener la grilla estable
+    final allHours = List.generate(11, (i) => 9 + i);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-         Text(
-          "Horarios Disponibles (${state.availableHours.length})",
-          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
+         Row(
+           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+           children: [
+             Text(
+              "Horarios",
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+            ),
+             // Referencia visual pequeña
+             if (allHours.any((h) => !state.availableHours.contains(h)))
+               Text(
+                "Tachado = No disponible",
+                style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline, fontSize: 10),
+              ),
+           ],
+         ),
         const SizedBox(height: 16),
         Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: state.availableHours.map((hour) {
+          children: allHours.map((hour) {
+            // Lógica de estado
+            final isAvailable = state.availableHours.contains(hour);
             final isSelected = state.selectedHour == hour;
+
             return GestureDetector(
-              onTap: () => ref.read(bookingNotifierProvider.notifier).selectHour(hour),
+              // Solo permitimos tap si está disponible
+              onTap: isAvailable ? () => ref.read(bookingNotifierProvider.notifier).selectHour(hour) : null,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
-                  color: isSelected ? colorScheme.primary : colorScheme.surface,
+                  color: isSelected 
+                      ? colorScheme.primary 
+                      : (isAvailable ? colorScheme.surface : colorScheme.surfaceContainerHighest.withOpacity(0.3)), // Fondo atenuado si no disp.
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isSelected ? colorScheme.primary : colorScheme.outline.withOpacity(0.3)
+                    color: isSelected 
+                        ? colorScheme.primary 
+                        : (isAvailable ? colorScheme.outline.withOpacity(0.3) : Colors.transparent)
                   ),
                   boxShadow: isSelected 
                       ? [BoxShadow(color: colorScheme.primary.withOpacity(0.3), blurRadius: 8)] 
@@ -249,7 +332,12 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
                   "$hour:00",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+                    // Tachado si no está disponible
+                    decoration: isAvailable ? null : TextDecoration.lineThrough,
+                    decorationColor: colorScheme.outline,
+                    color: isSelected 
+                        ? colorScheme.onPrimary 
+                        : (isAvailable ? colorScheme.onSurface : colorScheme.outline), // Color gris si no disp.
                   ),
                 ),
               ),
@@ -264,7 +352,6 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
-    // Formateamos la fecha seleccionada para mostrarla bonita
     final dateStr = DateFormat('EEEE d \'de\' MMMM', 'es').format(state.selectedDate);
     final hourStr = "${state.selectedHour}:00 hs";
 
@@ -300,7 +387,6 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
               ),
               const Divider(height: 32),
               
-              // Selector Tipo Contacto
               Row(
                 children: [
                   _ContactTypeChip(
@@ -369,6 +455,10 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
   }
 
   Widget _buildEmptyState(BuildContext context, {required bool isSunday}) {
+    final message = isSunday 
+        ? "Domingos cerrados por descanso 🔋" 
+        : "Agenda llena para este día";
+
     return Container(
       padding: const EdgeInsets.all(32),
       alignment: Alignment.center,
@@ -385,7 +475,7 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
           ),
           const SizedBox(height: 12),
           Text(
-            isSunday ? "Los domingos descanso 😴" : "Agenda llena para este día",
+            message,
             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           if (!isSunday)

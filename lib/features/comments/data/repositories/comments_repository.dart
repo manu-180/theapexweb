@@ -50,46 +50,56 @@ class CommentsRepository {
   }
 
   Future<List<Comment>> fetchComments() async {
-    // 1. Fetch crudo ordenado por FECHA (más reciente primero)
-    final response = await _supabase
-        .from('comments_with_metadata') 
-        .select()
-        .order('created_at', ascending: false) // <--- CAMBIO: Orden cronológico inverso
-        .limit(50);
+    try {
+      // 1. Fetch SOLO PADRES (Roots) ordenados por fecha descendente
+      final rootsResponse = await _supabase
+          .from('comments_with_metadata') 
+          .select()
+          .filter('parent_id', 'is', null) // <--- CORRECCIÓN ROBUSTA: Usamos .filter explícito
+          .order('created_at', ascending: false)
+          .limit(50);
 
-    final flatList = (response as List).map((json) => Comment.fromJson(json)).toList();
+      final roots = (rootsResponse as List).map((json) => Comment.fromJson(json)).toList();
 
-    // 2. Reconstrucción del Árbol
-    final List<Comment> parents = [];
-    final Map<int, List<Comment>> childrenMap = {};
+      if (roots.isEmpty) return []; 
 
-    for (var c in flatList) {
-      if (c.parentId == null) {
-        parents.add(c);
-      } else {
-        childrenMap.putIfAbsent(c.parentId!, () => []).add(c);
+      // 2. Fetch RESPUESTAS (Hijos) correspondientes a estos padres
+      final rootIds = roots.map((c) => c.id).toList();
+
+      final repliesResponse = await _supabase
+          .from('comments_with_metadata')
+          .select()
+          .filter('parent_id', 'in', rootIds) // <--- CORRECCIÓN ROBUSTA: Usamos .filter explícito
+          .order('created_at', ascending: true); 
+
+      final replies = (repliesResponse as List).map((json) => Comment.fromJson(json)).toList();
+
+      // 3. Reconstrucción del Árbol (Mapping)
+      final Map<int, List<Comment>> childrenMap = {};
+      for (var r in replies) {
+        childrenMap.putIfAbsent(r.parentId!, () => []).add(r);
       }
+
+      // 4. Asignación y Lógica de Admin (Pinning)
+      final processedParents = roots.map((p) {
+        return p.copyWith(replies: childrenMap[p.id] ?? []);
+      }).toList();
+
+      // Buscamos si existe un comentario tuyo (Admin) para anclarlo
+      final adminIndex = processedParents.indexWhere((c) => c.userId == _kOwnerUuid);
+      
+      if (adminIndex > 0) {
+        final adminComment = processedParents.removeAt(adminIndex);
+        processedParents.insert(0, adminComment);
+      }
+
+      return processedParents;
+      
+    } catch (e) {
+      // Log de error para depuración
+      print("Error crítico fetching comments: $e");
+      return []; // Retornamos lista vacía para no romper la UI
     }
-
-    // 3. Procesamiento final (Asignar hijos y Ordenar Admin)
-    final processedParents = parents.map((p) {
-      final replies = childrenMap[p.id] ?? [];
-      // Las respuestas se suelen leer cronológicamente (antiguas arriba)
-      replies.sort((a, b) => a.createdAt.compareTo(b.createdAt)); 
-      return p.copyWith(replies: replies);
-    }).toList();
-
-    // 4. LÓGICA DE ANCLAJE (PINNED COMMENT)
-    // Buscamos si existe un comentario tuyo (Admin)
-    final adminIndex = processedParents.indexWhere((c) => c.userId == _kOwnerUuid);
-    
-    if (adminIndex > 0) {
-      // Si existe y no está primero, lo sacamos y lo ponemos al inicio
-      final adminComment = processedParents.removeAt(adminIndex);
-      processedParents.insert(0, adminComment);
-    }
-
-    return processedParents;
   }
 
   Future<void> postComment({
