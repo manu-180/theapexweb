@@ -6,7 +6,7 @@ part of 'estimator_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$estimatorNotifierHash() => r'fad519cb2e9ad04b39690a46ea93dca1fb4ce4b2';
+String _$estimatorNotifierHash() => r'9d96a353663a1605c70d7c7d36f48eca0ba641db';
 
 /// See also [EstimatorNotifier].
 @ProviderFor(EstimatorNotifier)

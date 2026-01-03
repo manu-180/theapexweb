@@ -42,7 +42,7 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
     }
   }
 
- @override
+@override
   Widget build(BuildContext context) {
     final plansRepo = ref.watch(plansRepositoryProvider);
     final currentPlans = _selectedIndex == 0 ? plansRepo.webPlans : plansRepo.appPlans;
@@ -86,6 +86,7 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
                     name: "Renderizado Condicional",
                     techSpecs: "UI Reactiva. Al cambiar el switch, solo redibujo la sección de tarjetas, manteniendo el resto de la memoria intacta para una transición suave y eficiente.",
                     icon: FontAwesomeIcons.toggleOff,
+                    borderRadius: 50, // Borde muy redondo para el switch
                     child: FadeIn(
                       child: Container(
                         padding: const EdgeInsets.all(4),
@@ -159,6 +160,7 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
                     name: "Cálculo de Luz Dinámica",
                     techSpecs: "Interacción física. Calculo el ángulo y distancia de tu cursor relativo a la tarjeta para simular un reflejo de luz realista sobre la superficie.",
                     icon: FontAwesomeIcons.shieldHalved,
+                    borderRadius: 24, // Ajustado a la tarjeta
                     child: FadeInUp(
                       delay: const Duration(milliseconds: 400),
                       child: _TrustCard(
@@ -170,7 +172,18 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
                 ],
               ),
             ),
-            const SizedBox(height: 60), const EstimatorCalculator(),
+            
+            const SizedBox(height: 60), 
+
+            // --- CALCULADORA CON RAYOS X ---
+            InspectorGadget(
+              name: "Motor Algorítmico",
+              techSpecs: "Matemática reactiva. Uso 'Sets' para evitar duplicados y recalculo el presupuesto total en tiempo real cada vez que tocas un ítem, sin latencia.",
+              icon: FontAwesomeIcons.calculator,
+              borderRadius: 24, // Ajustado a la calculadora
+              child: const EstimatorCalculator(),
+            ),
+
             const SizedBox(height: 60),
             const Footer(),
           ],

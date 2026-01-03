@@ -6,10 +6,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:apex/features/comments/domain/models/comment_model.dart';
 import 'package:apex/features/comments/data/repositories/comments_repository.dart';
-// Exportamos el modelo para que los archivos viejos no se rompan si importaban solo este archivo
+
 export 'package:apex/features/comments/domain/models/comment_model.dart';
 
 part 'comments_provider.g.dart';
+
+// Mismo UUID que en el repo para mantener consistencia
+const String _kOwnerUuid = '37dad3e9-531c-4657-8db6-ddebbdcfa878';
 
 @riverpod
 class CommentsNotifier extends _$CommentsNotifier {
@@ -18,11 +21,7 @@ class CommentsNotifier extends _$CommentsNotifier {
   Future<List<Comment>> build() async {
     final repository = ref.watch(commentsRepositoryProvider);
     
-    // Escucha pasiva de cambios en tiempo real desde el repositorio
-    // Usamos 'listen' en lugar de watch para evitar reconstrucciones innecesarias del repositorio
     final sub = repository.onDataChanged.listen((_) {
-      // Cuando el repositorio avisa que hubo cambios, invalidamos este provider
-      // para que vuelva a ejecutar build() y traiga la data fresca.
       ref.invalidateSelf();
     });
     
@@ -41,8 +40,8 @@ class CommentsNotifier extends _$CommentsNotifier {
     final previousState = state;
     final currentList = state.valueOrNull ?? [];
 
-    // --- ACTUALIZACIÓN OPTIMISTA ---
-    final tempId = -DateTime.now().millisecondsSinceEpoch; // ID temporal negativo
+    // --- ACTUALIZACIÓN OPTIMISTA INTELIGENTE ---
+    final tempId = -DateTime.now().millisecondsSinceEpoch; 
     final newComment = Comment(
       id: tempId,
       content: content,
@@ -58,8 +57,26 @@ class CommentsNotifier extends _$CommentsNotifier {
     );
 
     if (parentId == null) {
-      state = AsyncData([newComment, ...currentList]);
+      // LOGICA DE INSERCIÓN ROOT
+      final List<Comment> newList = List.from(currentList);
+      final bool isAdminPinned = newList.isNotEmpty && newList.first.userId == _kOwnerUuid;
+      final bool amIAdmin = user.id == _kOwnerUuid;
+
+      if (amIAdmin) {
+        // Si TÚ comentas, vas arriba de todo (incluso arriba de tu comentario anterior pinned si quisieras, 
+        // o simplemente al tope).
+        newList.insert(0, newComment);
+      } else if (isAdminPinned) {
+        // Si hay un admin pinned, el nuevo comentario va SEGUNDO (index 1)
+        newList.insert(1, newComment);
+      } else {
+        // Si no hay admin, va PRIMERO
+        newList.insert(0, newComment);
+      }
+      
+      state = AsyncData(newList);
     } else {
+      // LOGICA DE RESPUESTA (Sin cambios, se agrega al final de las respuestas)
       final updatedList = currentList.map((c) {
         if (c.id == parentId) {
           return c.copyWith(replies: [...c.replies, newComment]);
@@ -68,7 +85,7 @@ class CommentsNotifier extends _$CommentsNotifier {
       }).toList();
       state = AsyncData(updatedList);
     }
-    // -------------------------------
+    // -------------------------------------------
 
     try {
       await repository.postComment(
@@ -77,9 +94,7 @@ class CommentsNotifier extends _$CommentsNotifier {
         parentId: parentId,
         rating: rating,
       );
-      // No necesitamos hacer nada si tiene éxito, el Realtime disparará la actualización real
     } catch (e) {
-      // Si falla, revertimos al estado anterior
       state = previousState; 
       rethrow;
     }
@@ -95,7 +110,6 @@ class CommentsNotifier extends _$CommentsNotifier {
     final previousState = state;
     final currentList = state.valueOrNull ?? [];
 
-    // --- ACTUALIZACIÓN OPTIMISTA ---
     List<Comment> updateList(List<Comment> list) {
       return list.map((c) {
         if (c.id == commentId) {
@@ -105,7 +119,6 @@ class CommentsNotifier extends _$CommentsNotifier {
             likesCount: newStatus ? c.likesCount + 1 : c.likesCount - 1,
           );
         }
-        // Buscamos también en las respuestas
         if (c.replies.any((r) => r.id == commentId)) {
           final newReplies = c.replies.map((r) {
              if (r.id == commentId) {
@@ -123,7 +136,6 @@ class CommentsNotifier extends _$CommentsNotifier {
       }).toList();
     }
     state = AsyncData(updateList(currentList));
-    // -------------------------------
 
     try {
        await repository.toggleLike(user.id, commentId);

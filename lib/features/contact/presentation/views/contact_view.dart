@@ -1,7 +1,8 @@
 // Archivo: lib/features/contact/presentation/views/contact_view.dart
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/providers/network_status_provider.dart';
-import 'package:apex/core/widgets/inspector_gadget.dart'; 
+import 'package:apex/core/widgets/inspector_gadget.dart';
+import 'package:apex/features/contact/presentation/widgets/booking_scheduler.dart'; 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart'; 
@@ -24,35 +25,67 @@ class ContactView extends StatelessWidget {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isDesktop = constraints.maxWidth > 900;
+          
+          // Padding lateral dinámico
+          final hPadding = isDesktop ? 60.0 : 20.0;
 
           return SingleChildScrollView(
             child: Column(
               children: [
-                if (isDesktop)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 60.0, horizontal: 60.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 4, child: _ContactForm()),
-                        SizedBox(width: 60),
-                        Expanded(flex: 7, child: _CommentsSection()),
-                      ],
-                    ),
-                  )
-                else
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 30.0, horizontal: 20.0),
-                    child: Column(
-                      children: [
-                        _ContactForm(),
-                        SizedBox(height: 60),
-                        Divider(),
-                        SizedBox(height: 40),
-                        _CommentsSection(),
-                      ],
-                    ),
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40.0, horizontal: hPadding),
+                  child: Column(
+                    children: [
+                      // SECCIÓN SUPERIOR: Formulario Rápido + Comentarios
+                      if (isDesktop)
+                        const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 4, child: _ContactForm()),
+                            SizedBox(width: 60),
+                            Expanded(flex: 7, child: _CommentsSection()),
+                          ],
+                        )
+                      else
+                        const Column(
+                          children: [
+                            _ContactForm(),
+                            SizedBox(height: 60),
+                            _CommentsSection(),
+                          ],
+                        ),
+
+                      const SizedBox(height: 80),
+                      const Divider(),
+                      const SizedBox(height: 80),
+
+                      // SECCIÓN INFERIOR: AGENDAR REUNIÓN (ANCHO COMPLETO)
+                      InspectorGadget(
+                        name: "Smart Scheduler",
+                        techSpecs: "Lógica de negocio compleja. Algoritmo de disponibilidad que filtra domingos y horarios ocupados desde la DB en tiempo real. Validación anti-colisiones (Constraint SQL).",
+                        icon: FontAwesomeIcons.calendarCheck,
+                        borderRadius: 24,
+                        child: Container(
+                          constraints: const BoxConstraints(maxWidth: 900), // Ancho máximo para que no se estire infinito
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10)
+                              )
+                            ]
+                          ),
+                          child: const BookingScheduler(),
+                        ),
+                      ),
+                    ],
                   ),
+                ),
                 const Footer(),
               ],
             ),
@@ -218,6 +251,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
       name: "Backend Serverless",
       techSpecs: "Sin servidores lentos. Uso 'Edge Functions' (código en la nube) que despiertan, procesan tu email y se apagan en milisegundos. Escalable y eficiente.",
       icon: FontAwesomeIcons.envelopeOpenText,
+      borderRadius: 24, // Ajustado para que coincida con el borde del formulario
       child: Container(
         padding: const EdgeInsets.all(32), 
         decoration: BoxDecoration(
@@ -368,7 +402,6 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
         ),
       ),
     );
-  
   }
 
   Widget _buildTextField({

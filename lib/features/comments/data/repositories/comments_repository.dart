@@ -7,6 +7,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'comments_repository.g.dart';
 
+// Tu ID de administrador para anclar tus comentarios
+const String _kOwnerUuid = '37dad3e9-531c-4657-8db6-ddebbdcfa878';
+
 class CommentsRepository {
   final SupabaseClient _supabase;
   final StreamController<void> _dataChangeController = StreamController.broadcast();
@@ -47,17 +50,16 @@ class CommentsRepository {
   }
 
   Future<List<Comment>> fetchComments() async {
-    // 1. Fetch crudo con límite de seguridad
+    // 1. Fetch crudo ordenado por FECHA (más reciente primero)
     final response = await _supabase
         .from('comments_with_metadata') 
         .select()
-        .order('likes_count', ascending: false)
-        .order('created_at', ascending: false)
+        .order('created_at', ascending: false) // <--- CAMBIO: Orden cronológico inverso
         .limit(50);
 
     final flatList = (response as List).map((json) => Comment.fromJson(json)).toList();
 
-    // 2. Reconstrucción del Árbol (Lógica de Transformación)
+    // 2. Reconstrucción del Árbol
     final List<Comment> parents = [];
     final Map<int, List<Comment>> childrenMap = {};
 
@@ -69,11 +71,25 @@ class CommentsRepository {
       }
     }
 
-    return parents.map((p) {
+    // 3. Procesamiento final (Asignar hijos y Ordenar Admin)
+    final processedParents = parents.map((p) {
       final replies = childrenMap[p.id] ?? [];
+      // Las respuestas se suelen leer cronológicamente (antiguas arriba)
       replies.sort((a, b) => a.createdAt.compareTo(b.createdAt)); 
       return p.copyWith(replies: replies);
     }).toList();
+
+    // 4. LÓGICA DE ANCLAJE (PINNED COMMENT)
+    // Buscamos si existe un comentario tuyo (Admin)
+    final adminIndex = processedParents.indexWhere((c) => c.userId == _kOwnerUuid);
+    
+    if (adminIndex > 0) {
+      // Si existe y no está primero, lo sacamos y lo ponemos al inicio
+      final adminComment = processedParents.removeAt(adminIndex);
+      processedParents.insert(0, adminComment);
+    }
+
+    return processedParents;
   }
 
   Future<void> postComment({
@@ -91,7 +107,6 @@ class CommentsRepository {
   }
 
   Future<void> toggleLike(String userId, int commentId) async {
-    // Verificamos si ya existe el like
     final maybeLike = await _supabase
         .from('comment_likes')
         .select()
@@ -100,10 +115,8 @@ class CommentsRepository {
         .maybeSingle();
 
     if (maybeLike != null) {
-      // Si existe, lo borramos
       await _supabase.from('comment_likes').delete().eq('user_id', userId).eq('comment_id', commentId);
     } else {
-      // Si no existe, lo creamos
       await _supabase.from('comment_likes').insert({'user_id': userId, 'comment_id': commentId});
     }
   }
@@ -114,7 +127,6 @@ CommentsRepository commentsRepository(CommentsRepositoryRef ref) {
   final supabase = ref.watch(supabaseClientProvider);
   final repo = CommentsRepository(supabase);
   
-  // Limpieza automática al destruir el provider
   ref.onDispose(() => repo.dispose());
   
   return repo;

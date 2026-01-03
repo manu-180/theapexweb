@@ -9,7 +9,8 @@ class InspectorGadget extends ConsumerWidget {
   final String name;      
   final String techSpecs; 
   final IconData icon;
-  final bool preferBelow; // Para controlar si el cartel sale arriba o abajo
+  final bool preferBelow; 
+  final double borderRadius; 
 
   const InspectorGadget({
     super.key,
@@ -18,29 +19,125 @@ class InspectorGadget extends ConsumerWidget {
     required this.techSpecs,
     this.icon = FontAwesomeIcons.code,
     this.preferBelow = false, 
+    this.borderRadius = 12.0, 
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 1. Escuchamos el modo ingeniería
     final isInspectorOn = ref.watch(inspectorModeProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // 1. Si el modo inspector está APAGADO, devolvemos el widget limpio.
     if (!isInspectorOn) return child;
 
-    // --- CONFIGURACIÓN DE COLORES ---
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    // 2. Detección de Plataforma (Mobile vs Desktop)
+    // Usamos el breakpoint estándar de 800px que tienes en ResponsiveBuilder
+    final isMobile = MediaQuery.of(context).size.width < 800;
+
+    // --- CONFIGURACIÓN DE COLORES (Compartida) ---
     final bgColor = isDark 
         ? const Color(0xFF0F172A).withOpacity(0.95) 
         : Colors.white.withOpacity(0.98); 
         
     final accentColor = isDark 
-        ? const Color(0xFF38BDF8)  // Cyan claro
-        : const Color(0xFF0284C7); // Azul técnico
+        ? const Color(0xFF38BDF8)  
+        : const Color(0xFF0284C7); 
 
     final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
     final iconContentColor = isDark ? Colors.black : Colors.white;
 
-    // 2. USAMOS TOOLTIP: El cartel solo aparece al pasar el mouse (Hover)
+    // --- COMPONENTE VISUAL 1: EL CONTENEDOR DECORADO (Borde + Icono) ---
+    final gadgetVisuals = Stack(
+      children: [
+        // A. Borde Visual
+        Positioned.fill(
+          child: IgnorePointer( 
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(borderRadius),
+                border: Border.all(
+                  color: accentColor.withOpacity(0.5), 
+                  width: 1.5,
+                  style: BorderStyle.solid,
+                ),
+                color: accentColor.withOpacity(0.05),
+              ),
+            ),
+          ),
+        ),
+        
+        // B. Contenido Original
+        child, 
+        
+        // C. Badge Identificador
+        Positioned(
+          top: 0,
+          right: 0,
+          child: IgnorePointer(
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: accentColor,
+                borderRadius: BorderRadius.only(
+                  bottomLeft: const Radius.circular(8), 
+                  topRight: Radius.circular(borderRadius), 
+                ),
+              ),
+              child: Icon(icon, size: 12, color: iconContentColor),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    // --- LÓGICA MÓVIL: Mostrar descripción explícita e inmediata ---
+    if (isMobile) {
+      final infoBox = Container(
+        margin: EdgeInsets.only(
+          top: preferBelow ? 8 : 0,
+          bottom: preferBelow ? 0 : 8,
+        ),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: accentColor, width: 1.5), 
+          boxShadow: [
+            BoxShadow(
+              color: accentColor.withOpacity(isDark ? 0.2 : 0.1), 
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: "$name\n", 
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: accentColor, fontFamily: 'monospace')
+              ),
+              TextSpan(
+                text: techSpecs,
+                style: TextStyle(color: textColor, fontFamily: 'monospace', fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // En móvil, inyectamos la info en el layout verticalmente
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: preferBelow 
+            ? [gadgetVisuals, infoBox] 
+            : [infoBox, gadgetVisuals],
+      );
+    }
+
+    // --- LÓGICA DESKTOP: Tooltip Hover (Comportamiento original) ---
     return Tooltip(
       decoration: BoxDecoration(
         color: bgColor,
@@ -65,49 +162,11 @@ class InspectorGadget extends ConsumerWidget {
           TextSpan(text: techSpecs),
         ],
       ),
-      preferBelow: preferBelow, // Respetamos si pediste que salga abajo
+      preferBelow: preferBelow,
       verticalOffset: 20, 
-      waitDuration: const Duration(milliseconds: 100), // Aparece rápido
+      waitDuration: const Duration(milliseconds: 100),
       
-      // EL WIDGET VISIBLE (Borde + Contenido)
-      child: Stack(
-        children: [
-          // A. BORDE VISUAL (Siempre visible si Inspector está ON)
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12), 
-                border: Border.all(
-                  color: accentColor.withOpacity(0.5), 
-                  width: 1.5,
-                  style: BorderStyle.solid,
-                ),
-                color: accentColor.withOpacity(0.05), // Tinte suave
-              ),
-            ),
-          ),
-          
-          // B. EL CONTENIDO ORIGINAL
-          child, 
-          
-          // C. EL ICONO BADGE (Esquina superior derecha)
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(8), 
-                  topRight: Radius.circular(10) // Ajuste para coincidir con el borde
-                ),
-              ),
-              child: Icon(icon, size: 12, color: iconContentColor),
-            ),
-          ),
-        ],
-      ),
+      child: gadgetVisuals,
     );
   }
 }
