@@ -14,7 +14,7 @@ import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:apex/core/config/app_constants.dart';
 import 'package:apex/widgets/contactanos.dart';
 import 'package:apex/core/widgets/inspector_gadget.dart'; 
-import 'package:apex/core/providers/inspector_provider.dart'; // <--- IMPORTANTE: Provider del Inspector
+import 'package:apex/core/providers/inspector_provider.dart'; 
 
 class MainLayout extends ConsumerStatefulWidget {
   const MainLayout({required this.child, super.key});
@@ -71,12 +71,19 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       const SingleActivator(LogicalKeyboardKey.keyS): () => context.goNamed('services', extra: 0),
       const SingleActivator(LogicalKeyboardKey.keyM): () => context.goNamed('services', extra: 1),
 
-      // TEMAS
+      // TEMAS (Teclas superiores)
       const SingleActivator(LogicalKeyboardKey.digit1): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
       const SingleActivator(LogicalKeyboardKey.digit2): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.flutter),
       const SingleActivator(LogicalKeyboardKey.digit3): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.supabase),
       const SingleActivator(LogicalKeyboardKey.digit4): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.riverpod),
       const SingleActivator(LogicalKeyboardKey.digit5): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify),
+      
+      // TEMAS (Teclado Numérico / Numpad) - NUEVO
+      const SingleActivator(LogicalKeyboardKey.numpad1): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
+      const SingleActivator(LogicalKeyboardKey.numpad2): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.flutter),
+      const SingleActivator(LogicalKeyboardKey.numpad3): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.supabase),
+      const SingleActivator(LogicalKeyboardKey.numpad4): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.riverpod),
+      const SingleActivator(LogicalKeyboardKey.numpad5): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify),
       
       const SingleActivator(LogicalKeyboardKey.keyR): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
       const SingleActivator(LogicalKeyboardKey.keyT): () => ref.read(brightnessModeProvider.notifier).toggleMode(),
@@ -129,10 +136,10 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 const PresenceBadge(),
                 const SizedBox(width: 16),
                 
-                // Envuelto en InspectorGadget para presumir de sí mismo
+                // Envuelto en InspectorGadget
                 InspectorGadget(
-                  name: "Panel de Control",
-                  techSpecs: "Estado Global (Riverpod) • Atajos de Teclado (FocusNode)",
+                  name: "Cerebro de Estado (Riverpod)",
+                  techSpecs: "Gestión global. Un único 'Source of Truth' controla el tema, usuario y configuración. Si tocas algo aquí, la UI de toda la app reacciona y se redibuja instantáneamente.",
                   icon: FontAwesomeIcons.sliders,
                   child: _ToolsBar(onHelpTap: _showShortcutsDialog),
                 ),
@@ -140,8 +147,8 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 const SizedBox(width: 16),
                 
                 InspectorGadget(
-                  name: "Autenticación OAuth",
-                  techSpecs: "Stream Reactivo (User?) • Persistencia de Sesión",
+                  name: "Seguridad OAuth 2.0",
+                  techSpecs: "Login Real. Integración profunda con Supabase Auth y Google. Gestiono tokens encriptados y persistencia de sesión segura, igual que las apps bancarias.",
                   icon: FontAwesomeIcons.shieldHalved,
                   child: const _AuthButton(),
                 ),
@@ -167,7 +174,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   }
 }
 
-// --- WIDGET BARRA DE HERRAMIENTAS (TEMA + RESET + INSPECTOR + ATAJOS) ---
+// --- WIDGET BARRA DE HERRAMIENTAS ---
 class _ToolsBar extends ConsumerWidget {
   final VoidCallback onHelpTap;
   const _ToolsBar({required this.onHelpTap});
@@ -177,7 +184,6 @@ class _ToolsBar extends ConsumerWidget {
     final theme = Theme.of(context);
     final color = theme.colorScheme.primary; 
     
-    // Escuchamos el estado del inspector para pintar el ícono
     final isInspectorActive = ref.watch(inspectorModeProvider);
 
     return Container(
@@ -212,18 +218,16 @@ class _ToolsBar extends ConsumerWidget {
 
           Container(width: 1, height: 20, color: theme.colorScheme.outline.withOpacity(0.2)),
 
-          // --- INSPECTOR TOGGLE (Reintegrado) ---
+          // INSPECTOR TOGGLE
           IconButton(
             onPressed: () => ref.read(inspectorModeProvider.notifier).toggle(),
             icon: Icon(isInspectorActive ? Icons.build_circle : Icons.build_circle_outlined),
-            // Cyan si está activo para destacar
             color: isInspectorActive ? Colors.cyanAccent : color,
             tooltip: "Modo Ingeniería (I)",
             iconSize: 20,
           ),
 
           Container(width: 1, height: 20, color: theme.colorScheme.outline.withOpacity(0.2)),
-          // -------------------------------------
 
           // ATAJOS
           IconButton(
@@ -260,20 +264,26 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
         const SingleActivator(LogicalKeyboardKey.keyK): () => Navigator.pop(context),
         const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.pop(context),
 
-        // Temas y Acciones (Mantienen el diálogo abierto para probar)
+        // Temas (Dígitos y Numpad)
         const SingleActivator(LogicalKeyboardKey.digit1): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
         const SingleActivator(LogicalKeyboardKey.digit2): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.flutter),
         const SingleActivator(LogicalKeyboardKey.digit3): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.supabase),
         const SingleActivator(LogicalKeyboardKey.digit4): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.riverpod),
         const SingleActivator(LogicalKeyboardKey.digit5): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify),
+        
+        const SingleActivator(LogicalKeyboardKey.numpad1): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
+        const SingleActivator(LogicalKeyboardKey.numpad2): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.flutter),
+        const SingleActivator(LogicalKeyboardKey.numpad3): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.supabase),
+        const SingleActivator(LogicalKeyboardKey.numpad4): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.riverpod),
+        const SingleActivator(LogicalKeyboardKey.numpad5): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify),
+
         const SingleActivator(LogicalKeyboardKey.keyR): () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
         const SingleActivator(LogicalKeyboardKey.keyT): () => ref.read(brightnessModeProvider.notifier).toggleMode(),
         const SingleActivator(LogicalKeyboardKey.keyL): () => ref.read(authRepositoryProvider).signInWithGoogle(),
         const SingleActivator(LogicalKeyboardKey.keyW): onWhatsApp,
-        // Inspector también funciona con el diálogo abierto
         const SingleActivator(LogicalKeyboardKey.keyI): () => ref.read(inspectorModeProvider.notifier).toggle(),
 
-        // Navegación (Cierra el diálogo)
+        // Navegación
         const SingleActivator(LogicalKeyboardKey.keyH): () => navAndClose('home'),
         const SingleActivator(LogicalKeyboardKey.keyA): () => navAndClose('about'),
         const SingleActivator(LogicalKeyboardKey.keyC): () => navAndClose('contact'),
@@ -330,7 +340,7 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
                         title: "Acciones",
                         items: const [
                           {'key': 'T', 'desc': 'Modo Claro/Oscuro'},
-                          {'key': 'I', 'desc': 'Modo Ingeniería (Rayos X)'}, // <--- LISTADO
+                          {'key': 'I', 'desc': 'Modo Ingeniería (Rayos X)'}, 
                           {'key': '1-5', 'desc': 'Cambiar Tema'},
                           {'key': 'R', 'desc': 'Resetear Tema'},
                           {'key': 'L', 'desc': 'Login Google'},
@@ -350,10 +360,6 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
   }
 }
 
-// ... _MobileDrawer, _ShortcutSection, _DynamicSlidingNavBar, _HoverText, _BrandLogo, _AuthButton 
-// ... (Estas clases NO cambian, cópialas del archivo anterior o manténlas igual).
-
-// --- DRAWER PARA MÓVIL ---
 class _MobileDrawer extends ConsumerWidget {
   final List<Map<String, dynamic>> navItems;
   final VoidCallback onHelpTap; 

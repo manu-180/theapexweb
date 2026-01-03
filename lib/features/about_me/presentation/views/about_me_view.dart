@@ -100,8 +100,8 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
                         
                     FadeInUp(
                         child: InspectorGadget( // <--- AQUI ENVOLVEMOS LA CARD
-                          name: "Storytelling Component",
-                          techSpecs: "Responsive Layout • Glassmorphism Gradient • Custom Typography",
+                          name: "Diseño de Cristal (Glassmorphism)",
+                          techSpecs: "Capas visuales. Combino opacidad, blur y gradientes para crear profundidad, asegurando que el texto sea legible sobre cualquier fondo dinámico.",
                           icon: FontAwesomeIcons.bookOpen,
                           child: _AboutMeCard(mousePos: _mousePos),
                         ),
@@ -186,8 +186,8 @@ class _DynamicHeroImage extends StatelessWidget {
           child: Transform.scale(
             scale: 1.8, 
            child: InspectorGadget(
-              name: "Sistema de Video Hero",
-              techSpecs: "Reproducción sin cortes • Pre-carga de Assets • Capa WebM Transparente",
+              name: "Video Alpha Channel",
+              techSpecs: "Optimización gráfica. Uso formato WebM con canal alfa (transparencia) y lo precargo en RAM. El resultado: un video que parece flotar sobre la web sin bordes rectangulares.",
               icon: FontAwesomeIcons.video,
               child: _TransparentVideoPlayer(
                 key: ValueKey(videoPath), 

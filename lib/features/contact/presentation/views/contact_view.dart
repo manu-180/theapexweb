@@ -207,7 +207,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
     }
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -215,9 +215,8 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
     final isOffline = networkStatus == NetworkStatus.offline;
 
     return InspectorGadget(
-      name: "Formulario Serverless",
-      // Actualizamos los specs técnicos para reflejar la realidad
-      techSpecs: "Repository Pattern • Trigger de Edge Function • Validación Reactiva",
+      name: "Backend Serverless",
+      techSpecs: "Sin servidores lentos. Uso 'Edge Functions' (código en la nube) que despiertan, procesan tu email y se apagan en milisegundos. Escalable y eficiente.",
       icon: FontAwesomeIcons.envelopeOpenText,
       child: Container(
         padding: const EdgeInsets.all(32), 
@@ -369,6 +368,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
         ),
       ),
     );
+  
   }
 
   Widget _buildTextField({
@@ -450,8 +450,8 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
         // --- AQUÍ APLICAMOS EL INSPECTOR ---
         // Envolvemos el Resumen de Calificaciones. Es un bloque compacto y visible.
         InspectorGadget(
-          name: "Motor de Opiniones Realtime",
-          techSpecs: "Sincronización WebSocket (Supabase) • CRUD en Tiempo Real • RLS Security",
+          name: "Sincronización en Vivo",
+          techSpecs: "WebSockets activos. Escucho la base de datos en tiempo real: si alguien comenta ahora mismo, lo verás aparecer mágicamente sin tener que recargar la página.",
           icon: FontAwesomeIcons.comments,
           // preferBelow: false por defecto (sale arriba, que es lo que queremos)
           child: commentsState.when(

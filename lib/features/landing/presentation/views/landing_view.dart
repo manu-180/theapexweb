@@ -51,8 +51,8 @@ class _LandingViewState extends ConsumerState<LandingView> {
                     children: [
                       // --- SECCIÓN DE TÍTULOS CON RAYOS X ---
                       InspectorGadget(
-                        name: "Hero Header",
-                        techSpecs: "Tipografía Responsiva • AnimateDo FadeIn • Layout Constraints",
+                        name: "Hero Header Adaptativo",
+                        techSpecs: "Diseño fluido. Detecto el tamaño de tu pantalla para ajustar tipografías y márgenes matemáticamente, asegurando legibilidad perfecta en cualquier dispositivo.",
                         icon: Icons.title,
                         child: Column(
                           children: [
@@ -88,8 +88,8 @@ class _LandingViewState extends ConsumerState<LandingView> {
 
                       // --- STACK TECNOLÓGICO (Cards de arriba) CON RAYOS X ---
                       InspectorGadget(
-                        name: "Tech Stack Grid",
-                        techSpecs: "Wrap Layout (Flow) • Hover Effects • State Management Injection",
+                        name: "Efecto 'Mouse Glow'",
+                        techSpecs: "Matemática visual. Rastreo la coordenada exacta de tu mouse/dedo para pintar un gradiente de luz dinámico en los bordes. Renderizado en tiempo real a 60 FPS.",
                         icon: FontAwesomeIcons.layerGroup,
                         child: Wrap(
                           spacing: 24,     
@@ -147,8 +147,8 @@ class _LandingViewState extends ConsumerState<LandingView> {
                             const SizedBox(height: 30),
                             
                             InspectorGadget(
-                              name: "Case Study Module",
-                              techSpecs: "Navegación Modal Personalizada • Theme Override • Asset Optimization",
+                              name: "Inyección de Tema Aislado",
+                              techSpecs: "Arquitectura avanzada. Al abrir este modal, inyecto un 'ThemeData' nuevo solo para esta sección, sin afectar los colores globales del resto de la app.",
                               icon: FontAwesomeIcons.mobileScreen,
                               child: ConstrainedBox(
                                 constraints: const BoxConstraints(maxWidth: 800), 

@@ -42,7 +42,7 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
     }
   }
 
-  @override
+ @override
   Widget build(BuildContext context) {
     final plansRepo = ref.watch(plansRepositoryProvider);
     final currentPlans = _selectedIndex == 0 ? plansRepo.webPlans : plansRepo.appPlans;
@@ -83,8 +83,8 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
 
                   // --- TOGGLE SWITCH CON RAYOS X ---
                   InspectorGadget(
-                    name: "Selector de Estado",
-                    techSpecs: "StatefulWidget Reactivo • Actualización Atómica",
+                    name: "Renderizado Condicional",
+                    techSpecs: "UI Reactiva. Al cambiar el switch, solo redibujo la sección de tarjetas, manteniendo el resto de la memoria intacta para una transición suave y eficiente.",
                     icon: FontAwesomeIcons.toggleOff,
                     child: FadeIn(
                       child: Container(
@@ -110,8 +110,8 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
 
                   // --- LISTA DE PLANES CON RAYOS X ---
                   InspectorGadget(
-                    name: "Motor de Precios",
-                    techSpecs: "Clean Architecture (Repository Pattern) • Mapeo de Entidades",
+                    name: "Arquitectura Limpia",
+                    techSpecs: "Datos desacoplados. Los planes vienen de un repositorio de datos puro, separados completamente del diseño visual. Esto facilita mantenimiento y escalabilidad.",
                     icon: FontAwesomeIcons.tags,
                     child: AnimatedSwitcher(
                       duration: const Duration(milliseconds: 500),
@@ -156,8 +156,8 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
                   
                   // --- TRUST CARD CON RAYOS X ---
                   InspectorGadget(
-                    name: "Módulo de Confianza",
-                    techSpecs: "Diseño Adaptativo (Mobile/Desktop) • Renderizado Condicional",
+                    name: "Cálculo de Luz Dinámica",
+                    techSpecs: "Interacción física. Calculo el ángulo y distancia de tu cursor relativo a la tarjeta para simular un reflejo de luz realista sobre la superficie.",
                     icon: FontAwesomeIcons.shieldHalved,
                     child: FadeInUp(
                       delay: const Duration(milliseconds: 400),
