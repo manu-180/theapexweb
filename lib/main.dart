@@ -45,12 +45,11 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     if (url.isNotEmpty && key.isNotEmpty) {
       try {
         // Intentamos conectar, pero si falla, NO detenemos la app.
-        // ⬅️ REALTIME DESHABILITADO: APEX no usa Realtime, solo el bot embebido lo usa
         await Supabase.initialize(
           url: url,
           anonKey: key,
           realtimeClientOptions: const RealtimeClientOptions(
-            eventsPerSecond: 0, // ⬅️ 0 = Deshabilitar completamente Realtime
+            eventsPerSecond: 10,
           ),
         ).timeout(const Duration(seconds: 5)); // Timeout corto para no hacer esperar
       } catch (e) {

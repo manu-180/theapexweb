@@ -189,65 +189,6 @@
       font-size: 11px; 
       color: rgba(255, 255, 255, 0.7); 
     }
-
-    /* === BOTLODE CHAT ASSISTANT === */
-    #botlode-wrapper { 
-      position: fixed; 
-      bottom: 35px; 
-      right: 35px; 
-      z-index: 98000;
-    }
-    
-    #backdrop {
-      position: fixed; 
-      top: 0; 
-      left: 0; 
-      width: 100vw; 
-      height: 100vh;
-      display: none; 
-      z-index: 97999;
-    }
-
-    #botlode-iframe { 
-      position: absolute; 
-      width: 450px; 
-      height: 750px; 
-      max-height: 85vh; 
-      bottom: -40px; 
-      right: -40px; 
-      border: none; 
-      transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1); 
-      pointer-events: none; 
-    }
-
-    #interaction-proxy { 
-      position: absolute; 
-      bottom: 0; 
-      right: 0; 
-      width: 72px; 
-      height: 72px; 
-      border-radius: 50%; 
-      cursor: pointer; 
-      background: rgba(255, 255, 255, 0.01); 
-      pointer-events: auto; 
-    }
-    
-    #botlode-wrapper.expanded #botlode-iframe { 
-      width: 400px; 
-      bottom: 0; 
-      right: 0; 
-      pointer-events: auto;
-      border-radius: 28px; 
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5); 
-    }
-    
-    #botlode-wrapper.expanded #interaction-proxy { 
-      display: none; 
-    }
-    
-    body.chat-open #backdrop { 
-      display: block; 
-    }
   </style>
 </head>
 <body>
@@ -284,19 +225,6 @@
     </div>
   </div>
 
-  <!-- BotLode Chat Assistant -->
-  <div id="backdrop"></div>
-  <div id="botlode-wrapper">
-    <iframe 
-      id="botlode-iframe" 
-      src="https://botlode-player.vercel.app/" 
-      allow="microphone; clipboard-write"
-      allowtransparency="true"
-      style="background-color: transparent;"
-    ></iframe>
-    <div id="interaction-proxy"></div>
-  </div>
-
   <script>
     // Connectivity detection
     let wentOfflineOnce = false;
@@ -326,59 +254,26 @@
     }
   </script>
 
-  <script>
-    // BotLode Chat Assistant
-    const wrapper = document.getElementById('botlode-wrapper');
-    const iframe = document.getElementById('botlode-iframe');
-    const proxy = document.getElementById('interaction-proxy');
-    const backdrop = document.getElementById('backdrop');
-
-    // 1. RASTREO DE MOUSE
-    document.addEventListener('mousemove', (e) => {
-      iframe.contentWindow.postMessage(`MOUSE_MOVE:${e.clientX},${e.clientY},${window.innerWidth},${window.innerHeight}`, '*');
-    });
-
-    // 2. ESCUCHA DE EVENTOS (LA MAGIA)
-    window.addEventListener('message', (event) => {
-      const cmd = event.data;
-      
-      if (cmd === 'CMD_CLOSE') closeChat();
-      if (cmd === 'CMD_OPEN') openChat();
-
-      // --- SEMÁFORO DE INTERACTIVIDAD ---
-      // Si Flutter dice "Entraste a la burbuja", activamos el Iframe para que reciba el click
-      if (cmd === 'HOVER_ENTER') {
-        if (!wrapper.classList.contains('expanded')) {
-          iframe.style.pointerEvents = 'auto';
-        }
-      }
-      // Si sales, lo volvemos fantasma para poder clickear la web de abajo
-      if (cmd === 'HOVER_EXIT') {
-        if (!wrapper.classList.contains('expanded')) {
-          iframe.style.pointerEvents = 'none';
-        }
-      }
-    });
-
-    function openChat() {
-      wrapper.classList.add('expanded');
-      document.body.classList.add('chat-open');
-      setTimeout(() => { iframe.contentWindow.postMessage('CMD_OPEN', '*'); }, 100);
-    }
-    
-    // El proxy sigue sirviendo de respaldo
-    proxy.addEventListener('click', openChat);
-
-    function closeChat() {
-      wrapper.classList.remove('expanded');
-      document.body.classList.remove('chat-open');
-      iframe.contentWindow.postMessage('CMD_CLOSE', '*');
-      // Al cerrar, vuelve a fantasma
-      iframe.style.pointerEvents = 'none';
-    }
-    
-    backdrop.addEventListener('click', closeChat);
-  </script>
+  <!-- BotLode Player Widget -->
+  <iframe 
+    id="botlode-player"
+    src="https://botlode-player.vercel.app" 
+    style="
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 100%;
+      max-width: 450px;
+      height: 100vh;
+      max-height: 700px;
+      border: none;
+      z-index: 9999;
+      pointer-events: auto;
+      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.2);
+    "
+    allow="clipboard-write"
+    loading="lazy">
+  </iframe>
 
   <script src="flutter_bootstrap.js" async></script>
 </body>
