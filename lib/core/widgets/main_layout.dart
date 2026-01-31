@@ -12,6 +12,7 @@ import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/config/theme/brightness_provider.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:apex/core/config/app_constants.dart';
+import 'package:apex/widgets/contactanos.dart';
 import 'package:apex/core/widgets/inspector_gadget.dart'; 
 import 'package:apex/core/providers/inspector_provider.dart'; 
 
@@ -226,6 +227,7 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             ],
           ],
         ),
+        floatingActionButton: const Contactanos(),
         body: widget.child,
       ),
     );
@@ -307,6 +309,11 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    void navAndClose(String routeName, {Object? extra}) {
+      Navigator.pop(context);
+      context.goNamed(routeName, extra: extra);
+    }
 
     // Aquí dentro SI usamos CallbackShortcuts porque es un contexto modal local
     // y no hay inputs de texto que interfieran.
