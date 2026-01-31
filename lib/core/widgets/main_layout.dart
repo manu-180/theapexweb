@@ -12,7 +12,6 @@ import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/config/theme/brightness_provider.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:apex/core/config/app_constants.dart';
-import 'package:apex/widgets/contactanos.dart';
 import 'package:apex/core/widgets/inspector_gadget.dart'; 
 import 'package:apex/core/providers/inspector_provider.dart'; 
 
@@ -227,7 +226,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             ],
           ],
         ),
-        floatingActionButton: const Contactanos(),
         body: widget.child,
       ),
     );
