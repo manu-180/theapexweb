@@ -262,57 +262,39 @@
       position: fixed;
       bottom: 0;
       right: 0;
-      width: 100%;
-      max-width: 450px;
-      height: 100vh;
-      max-height: 700px;
+      width: 200px;
+      height: 200px;
       border: none;
       z-index: 9999;
-      pointer-events: none;
+      pointer-events: auto;
       background: transparent;
+      transition: width 0.3s ease, height 0.3s ease;
     "
     allow="clipboard-write"
     loading="lazy">
   </iframe>
 
   <script>
-    // Control dinámico del iframe según estado del chat
+    // Ajustar tamaño del iframe según estado del chat
     (function() {
       const iframe = document.getElementById('botlode-player');
       if (!iframe) return;
 
       // Escuchar mensajes del botlode_player
       window.addEventListener('message', function(event) {
-        try {
-          const data = event.data;
-          
-          // Cuando el chat se abre, habilitar interacción
-          if (data === 'CMD_OPEN') {
-            iframe.style.pointerEvents = 'auto';
-            iframe.style.boxShadow = '-4px 0 24px rgba(0, 0, 0, 0.2)';
-          } 
-          // Cuando el chat se cierra, solo permitir hover en el bot
-          else if (data === 'CMD_CLOSE') {
-            iframe.style.pointerEvents = 'auto';
-            iframe.style.boxShadow = 'none';
-          }
-          // Cuando el mouse entra en el bot flotante
-          else if (data === 'HOVER_ENTER') {
-            iframe.style.pointerEvents = 'auto';
-          }
-          // Cuando el mouse sale del bot flotante (y el chat está cerrado)
-          else if (data === 'HOVER_EXIT') {
-            // Mantener auto para poder hacer click en el bot
-            iframe.style.pointerEvents = 'auto';
-          }
-        } catch (e) {
-          // Ignorar errores de parsing
+        const data = event.data;
+        
+        // Chat se abrió - expandir iframe
+        if (data === 'CMD_OPEN') {
+          iframe.style.width = '450px';
+          iframe.style.height = '100vh';
+        } 
+        // Chat se cerró - minimizar iframe al tamaño del bot flotante
+        else if (data === 'CMD_CLOSE') {
+          iframe.style.width = '200px';
+          iframe.style.height = '200px';
         }
       });
-
-      // Estado inicial: permitir hover/click en el bot flotante
-      iframe.style.pointerEvents = 'auto';
-      iframe.style.boxShadow = 'none';
     })();
   </script>
 

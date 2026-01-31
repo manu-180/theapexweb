@@ -260,61 +260,18 @@
     src="https://botlode-player.vercel.app" 
     style="
       position: fixed;
-      bottom: 0;
-      right: 0;
-      width: 100%;
-      max-width: 450px;
+      top: 0;
+      left: 0;
+      width: 100vw;
       height: 100vh;
-      max-height: 700px;
       border: none;
       z-index: 9999;
-      pointer-events: none;
+      pointer-events: auto;
       background: transparent;
     "
     allow="clipboard-write"
     loading="lazy">
   </iframe>
-
-  <script>
-    // Control dinámico del iframe según estado del chat
-    (function() {
-      const iframe = document.getElementById('botlode-player');
-      if (!iframe) return;
-
-      // Escuchar mensajes del botlode_player
-      window.addEventListener('message', function(event) {
-        try {
-          const data = event.data;
-          
-          // Cuando el chat se abre, habilitar interacción
-          if (data === 'CMD_OPEN') {
-            iframe.style.pointerEvents = 'auto';
-            iframe.style.boxShadow = '-4px 0 24px rgba(0, 0, 0, 0.2)';
-          } 
-          // Cuando el chat se cierra, solo permitir hover en el bot
-          else if (data === 'CMD_CLOSE') {
-            iframe.style.pointerEvents = 'auto';
-            iframe.style.boxShadow = 'none';
-          }
-          // Cuando el mouse entra en el bot flotante
-          else if (data === 'HOVER_ENTER') {
-            iframe.style.pointerEvents = 'auto';
-          }
-          // Cuando el mouse sale del bot flotante (y el chat está cerrado)
-          else if (data === 'HOVER_EXIT') {
-            // Mantener auto para poder hacer click en el bot
-            iframe.style.pointerEvents = 'auto';
-          }
-        } catch (e) {
-          // Ignorar errores de parsing
-        }
-      });
-
-      // Estado inicial: permitir hover/click en el bot flotante
-      iframe.style.pointerEvents = 'auto';
-      iframe.style.boxShadow = 'none';
-    })();
-  </script>
 
   <script src="flutter_bootstrap.js" async></script>
 </body>
