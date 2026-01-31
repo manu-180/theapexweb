@@ -260,10 +260,10 @@
     src="https://botlode-player.vercel.app" 
     style="
       position: fixed;
-      bottom: 0;
-      right: 0;
-      width: 200px;
-      height: 200px;
+      bottom: 16px;
+      right: 16px;
+      width: 220px;
+      height: 260px;
       border: none;
       z-index: 9999;
       pointer-events: auto;
@@ -284,15 +284,15 @@
       window.addEventListener('message', function(event) {
         const data = event.data;
         
-        // Chat se abrió - expandir iframe
+        // Chat se abrió - expandir iframe (respetando el padding de 16px)
         if (data === 'CMD_OPEN') {
           iframe.style.width = '450px';
-          iframe.style.height = '100vh';
+          iframe.style.height = 'calc(100vh - 32px)';
         } 
         // Chat se cerró - minimizar iframe al tamaño del bot flotante
         else if (data === 'CMD_CLOSE') {
-          iframe.style.width = '200px';
-          iframe.style.height = '200px';
+          iframe.style.width = '220px';
+          iframe.style.height = '260px';
         }
       });
     })();
