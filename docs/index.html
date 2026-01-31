@@ -38,9 +38,222 @@
       -ms-user-select: none !important;     /* Internet Explorer/Edge Antiguo */
       user-select: none !important;         /* Propiedad estándar */
     }
+
+    /* === CONNECTIVITY SNACKBARS === */
+    #offline-overlay {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 100000;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0 16px 24px 16px;
+      pointer-events: none;
+    }
+    #offline-overlay .offline-snackbar {
+      pointer-events: auto;
+      max-width: 520px;
+      width: 100%;
+      padding: 14px 20px 16px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(40, 0, 0, 0.95), rgba(10, 0, 0, 0.98));
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      transform: translateY(120%);
+      opacity: 0;
+      transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease-out;
+    }
+    body.offline #offline-overlay .offline-snackbar {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    #offline-text { 
+      font-size: 13px; 
+      line-height: 1.4; 
+      color: rgba(255, 255, 255, 0.8); 
+      margin: 8px 0;
+    }
+    #offline-chip {
+      display: inline-flex; 
+      align-items: center; 
+      gap: 10px;
+      padding: 6px 12px; 
+      border-radius: 999px;
+      border: 1px solid rgba(255, 60, 60, 0.35);
+      background: rgba(0, 0, 0, 0.6);
+      margin-bottom: 10px;
+    }
+    #offline-wifi-icon {
+      width: 22px; 
+      height: 22px;
+      color: #ff3c3c;
+      stroke-width: 2.2;
+      filter: drop-shadow(0 0 4px rgba(255, 60, 60, 0.5));
+      flex-shrink: 0;
+    }
+    #offline-dot {
+      width: 10px; 
+      height: 10px; 
+      border-radius: 50%;
+      background: #ff1744;
+      flex-shrink: 0;
+      animation: offline-dot-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes offline-dot-pulse {
+      0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+        box-shadow: 0 0 12px rgba(255, 23, 68, 0.9), 0 0 20px rgba(255, 23, 68, 0.5); 
+      }
+      50% { 
+        opacity: 0.3; 
+        transform: scale(0.85);
+        box-shadow: 0 0 4px rgba(255, 23, 68, 0.4); 
+      }
+    }
+    #offline-chip span {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.95);
+      white-space: nowrap;
+    }
+    #offline-footer {
+      margin-top: 10px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.65);
+    }
+    #offline-footer strong {
+      color: rgba(255, 60, 60, 0.9);
+      font-weight: 700;
+    }
+
+    /* === RESTORED OVERLAY === */
+    #restored-overlay {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 99999;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0 16px 24px 16px;
+      pointer-events: none;
+    }
+    #restored-overlay .restored-snackbar {
+      pointer-events: auto;
+      max-width: 520px;
+      width: 100%;
+      padding: 14px 20px 16px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(0, 80, 45, 0.96), rgba(0, 55, 30, 0.98));
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      transform: translateY(120%);
+      opacity: 0;
+      transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease-out;
+    }
+    #restored-overlay.show .restored-snackbar {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    #restored-chip {
+      display: inline-flex; 
+      align-items: center; 
+      gap: 10px;
+      padding: 6px 12px; 
+      border-radius: 999px;
+      border: 1px solid rgba(0, 255, 148, 0.35);
+      background: rgba(0, 0, 0, 0.25);
+      margin-bottom: 10px;
+    }
+    #restored-check-icon {
+      width: 22px; 
+      height: 22px;
+      color: #00ff94;
+      stroke-width: 2.5;
+      filter: drop-shadow(0 0 4px rgba(0, 255, 148, 0.5));
+      flex-shrink: 0;
+    }
+    #restored-chip span {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.95);
+      white-space: nowrap;
+    }
+    #restored-text { 
+      font-size: 13px; 
+      line-height: 1.45; 
+      color: rgba(255, 255, 255, 0.95); 
+      font-weight: 500; 
+      margin: 8px 0; 
+    }
+    #restored-footer { 
+      margin-top: 10px; 
+      font-size: 11px; 
+      color: rgba(255, 255, 255, 0.7); 
+    }
   </style>
 </head>
 <body>
+  <!-- Connectivity Overlays -->
+  <div id="offline-overlay">
+    <div class="offline-snackbar" id="offline-panel">
+      <div id="offline-chip">
+        <svg id="offline-wifi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
+          <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+          <circle cx="12" cy="20" r="1"/>
+          <line x1="2" y1="2" x2="22" y2="22"/>
+        </svg>
+        <div id="offline-dot"></div>
+        <span>Sin conexión a internet</span>
+      </div>
+      <p id="offline-text">Se ha perdido la conexión a internet. Cuando la señal esté disponible, podés seguir navegando con normalidad.</p>
+      <div id="offline-footer"><span>Estado: <strong>red no disponible</strong></span></div>
+    </div>
+  </div>
+  
+  <div id="restored-overlay">
+    <div class="restored-snackbar">
+      <div id="restored-chip">
+        <svg id="restored-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M8 12l3 3 5-6"/>
+        </svg>
+        <span>Conexión restablecida</span>
+      </div>
+      <p id="restored-text">La conexión a internet se ha restablecido correctamente. Podés seguir navegando con normalidad.</p>
+      <div id="restored-footer">Estado: conectado</div>
+    </div>
+  </div>
+
+  <script>
+    // Connectivity detection
+    let wentOfflineOnce = false;
+    const restoredOverlay = document.getElementById('restored-overlay');
+
+    window.addEventListener('online', function() {
+      document.body.classList.remove('offline');
+      if (wentOfflineOnce) {
+        wentOfflineOnce = false;
+        if (restoredOverlay) {
+          restoredOverlay.classList.add('show');
+          setTimeout(function() {
+            restoredOverlay.classList.remove('show');
+          }, 4000);
+        }
+      }
+    });
+
+    window.addEventListener('offline', function() {
+      wentOfflineOnce = true;
+      document.body.classList.add('offline');
+    });
+
+    // Check initial state
+    if (!navigator.onLine) {
+      document.body.classList.add('offline');
+    }
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
