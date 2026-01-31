@@ -5,14 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:apex/features/presence/presentation/widgets/presence_badge.dart';
 import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/config/theme/brightness_provider.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
-import 'package:apex/core/config/app_constants.dart';
-import 'package:apex/widgets/contactanos.dart';
 import 'package:apex/core/widgets/inspector_gadget.dart'; 
 import 'package:apex/core/providers/inspector_provider.dart'; 
 
@@ -34,30 +31,10 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     {'label': 'Contacto', 'path': '/contact', 'name': 'contact'},
   ];
 
-  Future<void> _triggerWhatsApp() async {
-    const phoneNumber = AppConstants.whatsappNumber;
-    const message = 'Hola, vengo desde los atajos de teclado 🚀';
-    final uri = Uri.parse('https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
-    
-    try {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        throw 'No se pudo abrir';
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text('No se pudo abrir WhatsApp (Error de navegador)')),
-        );
-      }
-    }
-  }
-
   void _showShortcutsDialog() {
     showDialog(
       context: context,
-      builder: (context) => _ShortcutsHelpDialog(
-        onWhatsApp: _triggerWhatsApp,
-      ),
+      builder: (context) => const _ShortcutsHelpDialog(),
     );
   }
 
@@ -142,10 +119,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       ref.read(brightnessModeProvider.notifier).toggleMode();
       return KeyEventResult.handled;
     }
-    if (key == LogicalKeyboardKey.keyW) {
-      _triggerWhatsApp();
-      return KeyEventResult.handled;
-    }
     if (key == LogicalKeyboardKey.keyL) {
       ref.read(authRepositoryProvider).signInWithGoogle();
       return KeyEventResult.handled;
@@ -227,7 +200,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
             ],
           ],
         ),
-        floatingActionButton: const Contactanos(),
         body: widget.child,
       ),
     );
@@ -301,9 +273,7 @@ class _ToolsBar extends ConsumerWidget {
 
 // --- DIÁLOGO DE AYUDA (Sin cambios lógicos, solo se mantiene para que compile) ---
 class _ShortcutsHelpDialog extends ConsumerWidget {
-  final VoidCallback onWhatsApp;
-  
-  const _ShortcutsHelpDialog({required this.onWhatsApp});
+  const _ShortcutsHelpDialog();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -377,7 +347,6 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
                           {'key': '1-5', 'desc': 'Cambiar Tema'},
                           {'key': 'R', 'desc': 'Resetear Tema'},
                           {'key': 'L', 'desc': 'Login Google'},
-                          {'key': 'W', 'desc': 'Abrir WhatsApp'},
                           {'key': 'K', 'desc': 'Cerrar este menú'},
                         ],
                       ),
