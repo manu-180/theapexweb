@@ -258,22 +258,35 @@
   <iframe 
     id="botlode-player"
     src="https://botlode-player.vercel.app" 
+    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation"
     style="
       position: fixed;
-      bottom: 0;
-      right: 0;
+      bottom: 20px;
+      right: 20px;
       width: 100%;
-      max-width: 450px;
-      height: 100vh;
-      max-height: 700px;
+      max-width: 400px;
+      height: 600px;
       border: none;
-      z-index: 9999;
+      z-index: 999999;
       pointer-events: auto;
-      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border-radius: 16px;
+      background: transparent;
     "
     allow="clipboard-write"
-    loading="lazy">
+    loading="lazy"
+    title="BotLode Chat Assistant">
   </iframe>
+  
+  <script>
+    // Error handler for iframe
+    const botlodeIframe = document.getElementById('botlode-player');
+    if (botlodeIframe) {
+      botlodeIframe.addEventListener('error', function(e) {
+        console.warn('BotLode Player iframe error:', e);
+      });
+    }
+  </script>
 
   <script src="flutter_bootstrap.js" async></script>
 </body>
