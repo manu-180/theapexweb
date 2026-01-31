@@ -308,11 +308,6 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    void navAndClose(String routeName, {Object? extra}) {
-      Navigator.pop(context);
-      context.goNamed(routeName, extra: extra);
-    }
-
     // Aquí dentro SI usamos CallbackShortcuts porque es un contexto modal local
     // y no hay inputs de texto que interfieran.
     return CallbackShortcuts(
