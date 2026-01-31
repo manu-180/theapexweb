@@ -260,18 +260,43 @@
     src="https://botlode-player.vercel.app" 
     style="
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
+      bottom: 0;
+      right: 0;
+      width: 200px;
+      height: 200px;
       border: none;
       z-index: 9999;
       pointer-events: auto;
       background: transparent;
+      transition: width 0.3s ease, height 0.3s ease;
     "
     allow="clipboard-write"
     loading="lazy">
   </iframe>
+
+  <script>
+    // Ajustar tamaño del iframe según estado del chat
+    (function() {
+      const iframe = document.getElementById('botlode-player');
+      if (!iframe) return;
+
+      // Escuchar mensajes del botlode_player
+      window.addEventListener('message', function(event) {
+        const data = event.data;
+        
+        // Chat se abrió - expandir iframe
+        if (data === 'CMD_OPEN') {
+          iframe.style.width = '450px';
+          iframe.style.height = '100vh';
+        } 
+        // Chat se cerró - minimizar iframe al tamaño del bot flotante
+        else if (data === 'CMD_CLOSE') {
+          iframe.style.width = '200px';
+          iframe.style.height = '200px';
+        }
+      });
+    })();
+  </script>
 
   <script src="flutter_bootstrap.js" async></script>
 </body>
