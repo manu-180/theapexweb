@@ -18,6 +18,55 @@
   <link rel="manifest" href="manifest.json">
 
   <style>
+    /* === BODY BASE === */
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #0A0A0A; /* Fondo oscuro consistente */
+      overflow: hidden;
+      font-family: 'Roboto', 'Arial', sans-serif;
+    }
+
+    /* === LOADING SPLASH === */
+    #loading-splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%);
+      z-index: 999999;
+      opacity: 1;
+      transition: opacity 0.3s ease-out;
+    }
+
+    #loading-splash.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #00E676;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #loading-text {
+      margin-top: 24px;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
     /* Oculta los controles de video nativos de Chromium (Edge/Chrome) */
     video::-webkit-media-controls {
       display: none !important;
@@ -189,9 +238,28 @@
       font-size: 11px; 
       color: rgba(255, 255, 255, 0.7); 
     }
+
+    /* === BOTLODE PLAYER === */
+    #botlode-player {
+      transition: width 0.3s ease, height 0.3s ease, opacity 0.4s ease !important;
+      background: transparent !important;
+      color-scheme: dark;
+    }
+    
+    /* Forzar transparencia en el contenedor del iframe */
+    #botlode-player::before,
+    #botlode-player::after {
+      content: none !important;
+    }
   </style>
 </head>
 <body>
+  <!-- Loading Splash Screen -->
+  <div id="loading-splash">
+    <div class="spinner"></div>
+    <div id="loading-text">Cargando...</div>
+  </div>
+
   <!-- Connectivity Overlays -->
   <div id="offline-overlay">
     <div class="offline-snackbar" id="offline-panel">
@@ -258,6 +326,9 @@
   <iframe 
     id="botlode-player"
     src="https://botlode-player.vercel.app" 
+    frameborder="0"
+    allowtransparency="true"
+    scrolling="no"
     style="
       position: fixed;
       bottom: 16px;
@@ -265,13 +336,19 @@
       width: 350px;
       height: 300px;
       border: none;
+      outline: none;
+      box-shadow: none;
       z-index: 9999;
       pointer-events: auto;
-      background: transparent;
+      background-color: transparent !important;
+      background: transparent !important;
       transition: width 0.3s ease, height 0.3s ease;
+      opacity: 0;
+      color-scheme: dark;
     "
-    allow="clipboard-write"
-    loading="lazy">
+    allow="clipboard-write; autoplay"
+    loading="eager"
+    onload="this.style.opacity='1'; console.log('BotLode iframe loaded');">
   </iframe>
 
   <script>
@@ -299,5 +376,25 @@
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+    // Ocultar splash screen cuando Flutter esté listo
+    window.addEventListener('flutter-first-frame', function() {
+      const splash = document.getElementById('loading-splash');
+      if (splash) {
+        splash.classList.add('fade-out');
+        setTimeout(() => splash.remove(), 300);
+      }
+    });
+
+    // Fallback: ocultar después de 3 segundos si el evento no se dispara
+    setTimeout(function() {
+      const splash = document.getElementById('loading-splash');
+      if (splash && !splash.classList.contains('fade-out')) {
+        splash.classList.add('fade-out');
+        setTimeout(() => splash.remove(), 300);
+      }
+    }, 3000);
+  </script>
 </body>
 </html>

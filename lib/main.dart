@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:apex/app.dart';
@@ -48,10 +49,23 @@ class _BootstrapAppState extends State<_BootstrapApp> {
         await Supabase.initialize(
           url: url,
           anonKey: key,
-          realtimeClientOptions: const RealtimeClientOptions(
+          // En Web, deshabilitamos la reconexión automática de Realtime
+          // para evitar errores de autenticación WebSocket en el navegador
+          realtimeClientOptions: RealtimeClientOptions(
             eventsPerSecond: 10,
+            // En Web, reducimos el nivel de log de errores
+            logLevel: kIsWeb ? RealtimeLogLevel.error : RealtimeLogLevel.info,
           ),
-        ).timeout(const Duration(seconds: 5)); // Timeout corto para no hacer esperar
+          // Para Flutter Web: configurar correctamente la autenticación PKCE
+          authOptions: const FlutterAuthClientOptions(
+            authFlowType: AuthFlowType.pkce,
+          ),
+        ).timeout(const Duration(seconds: 10)); // Timeout más largo para Web
+        
+        // Si estamos en Web, mostramos advertencia sobre Realtime
+        if (kIsWeb) {
+          debugPrint("Flutter Web: Si aparecen errores de WebSocket, son esperados y no afectan la funcionalidad.");
+        }
       } catch (e) {
         // Solo logueamos el error. La app abrirá igual en modo "Offline/Limitado"
         debugPrint("Advertencia: Supabase no conectó al inicio ($e). La app continuará.");

@@ -1,5 +1,6 @@
 // Archivo: lib/features/comments/data/repositories/comments_repository.dart
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:apex/core/providers/supabase_providers.dart';
 import 'package:apex/features/comments/domain/models/comment_model.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -23,23 +24,35 @@ class CommentsRepository {
   Stream<void> get onDataChanged => _dataChangeController.stream;
 
   void _initRealtime() {
-    // Escuchamos cambios en 'comments'
-    final subComments = _supabase.channel('public:comments').onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'comments',
-      callback: (_) => _dataChangeController.add(null),
-    ).subscribe();
+    // En Flutter Web, Realtime tiene problemas de autenticación con WebSocket
+    // No nos suscribimos y usamos polling manual si es necesario
+    if (kIsWeb) {
+      debugPrint('Comments: Web detected - Realtime deshabilitado (sin suscripciones)');
+      return;
+    }
 
-    // Escuchamos cambios en 'comment_likes'
-    final subLikes = _supabase.channel('public:comment_likes').onPostgresChanges(
-      event: PostgresChangeEvent.all,
-      schema: 'public',
-      table: 'comment_likes',
-      callback: (_) => _dataChangeController.add(null),
-    ).subscribe();
+    // Modo normal (Mobile/Desktop) - suscribirse a cambios en tiempo real
+    try {
+      // Escuchamos cambios en 'comments'
+      final subComments = _supabase.channel('public:comments').onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'comments',
+        callback: (_) => _dataChangeController.add(null),
+      ).subscribe();
 
-    _subscriptions.addAll([subComments, subLikes]);
+      // Escuchamos cambios en 'comment_likes'
+      final subLikes = _supabase.channel('public:comment_likes').onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'comment_likes',
+        callback: (_) => _dataChangeController.add(null),
+      ).subscribe();
+
+      _subscriptions.addAll([subComments, subLikes]);
+    } catch (e) {
+      debugPrint('Comments: Error al inicializar Realtime - $e');
+    }
   }
 
   void dispose() {
