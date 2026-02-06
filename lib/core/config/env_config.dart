@@ -5,6 +5,10 @@ class EnvConfig {
   const EnvConfig._();
 
   static Future<void> load() async {
+    // En Web no cargamos .env: evita 404 a assets/.env en producción.
+    // Usar --dart-define=SUPABASE_URL=... y SUPABASE_ANON_KEY=... en el build.
+    if (kIsWeb) return;
+
     try {
       await dotenv.load(fileName: ".env");
     } catch (e) {
