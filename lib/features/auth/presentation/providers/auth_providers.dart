@@ -26,9 +26,11 @@ Stream<User?> authStateStream(AuthStateStreamRef ref) {
   return authRepository.authStateChanges;
 }
 
-/// Provider que expone el USUARIO ACTUAL (sincrónicamente).
+/// Provider que expone el USUARIO ACTUAL.
+/// Depende del stream de auth para actualizarse tras OAuth (p. ej. Google)
+/// y que presencia y avatar muestren nombre/foto correctos.
 @riverpod
 User? currentUser(CurrentUserRef ref) {
-  final authRepository = ref.watch(authRepositoryProvider);
-  return authRepository.currentUser;
+  ref.watch(authStateStreamProvider);
+  return ref.read(authRepositoryProvider).currentUser;
 }
