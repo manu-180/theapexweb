@@ -144,12 +144,25 @@ class _BootstrapAppState extends State<_BootstrapApp> {
             // En Web, reducimos el nivel de log de errores
             logLevel: kIsWeb ? RealtimeLogLevel.error : RealtimeLogLevel.info,
           ),
-          // Para Flutter Web: configurar correctamente la autenticación PKCE
+          // Para Flutter Web: PKCE y detección de sesión en la URL (OAuth callback)
           authOptions: const FlutterAuthClientOptions(
             authFlowType: AuthFlowType.pkce,
+            detectSessionInUri: true,
           ),
         ).timeout(const Duration(seconds: 10)); // Timeout más largo para Web
-        
+
+        // En Web: si la URL trae ?code=... (vuelta de Google OAuth), intercambiamos
+        // el code por sesión aquí para que la foto y el usuario estén listos al pintar la UI.
+        if (kIsWeb && Uri.base.queryParameters.containsKey('code')) {
+          try {
+            await Supabase.instance.client.auth.getSessionFromUrl(Uri.base);
+            if (kDebugMode) debugPrint('OAuth: sesión obtenida desde URL correctamente.');
+          } catch (e, stack) {
+            if (kDebugMode) debugPrint('OAuth getSessionFromUrl: $e');
+            if (kDebugMode) debugPrint('$stack');
+          }
+        }
+
         // Si estamos en Web, mostramos advertencia sobre Realtime
         if (kIsWeb) {
           debugPrint("Flutter Web: Si aparecen errores de WebSocket, son esperados y no afectan la funcionalidad.");
