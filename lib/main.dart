@@ -7,6 +7,7 @@ import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/config/env_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:web/web.dart' as web;
 
 // Provider global para la URL
 final supabaseUrlProvider = Provider<String>((ref) => EnvConfig.supabaseUrl);
@@ -88,6 +89,22 @@ class _InMemorySharedPreferences implements SharedPreferences {
   }
 }
 
+/// Limpia el ?code= de la URL del navegador tras el callback OAuth.
+/// Esto evita que al refrescar la página se intente reusar un código ya consumido.
+void _cleanOAuthCodeFromUrl() {
+  if (!kIsWeb) return;
+  try {
+    final uri = Uri.base;
+    // Reconstruimos la URL sin el parámetro 'code'
+    final cleanParams = Map<String, String>.from(uri.queryParameters)..remove('code');
+    final cleanUri = uri.replace(queryParameters: cleanParams.isEmpty ? null : cleanParams);
+    web.window.history.replaceState(null, '', cleanUri.toString());
+    debugPrint('OAuth: URL limpiada correctamente.');
+  } catch (e) {
+    debugPrint('OAuth: No se pudo limpiar la URL: $e');
+  }
+}
+
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const _BootstrapApp());
@@ -132,43 +149,67 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     final key = EnvConfig.supabaseAnonKey;
 
     if (url.isNotEmpty && key.isNotEmpty) {
+      // Detectamos si venimos de un callback OAuth ANTES de inicializar Supabase
+      final hasOAuthCode = kIsWeb && Uri.base.queryParameters.containsKey('code');
+      
       try {
-        // Intentamos conectar, pero si falla, NO detenemos la app.
         await Supabase.initialize(
           url: url,
           anonKey: key,
-          // En Web, deshabilitamos la reconexión automática de Realtime
-          // para evitar errores de autenticación WebSocket en el navegador
           realtimeClientOptions: RealtimeClientOptions(
             eventsPerSecond: 10,
-            // En Web, reducimos el nivel de log de errores
             logLevel: kIsWeb ? RealtimeLogLevel.error : RealtimeLogLevel.info,
           ),
-          // Para Flutter Web: PKCE y detección de sesión en la URL (OAuth callback)
+          // CORRECCIÓN CRÍTICA: detectSessionInUri = false
+          // Deshabilitamos la detección automática para evitar doble intercambio PKCE
+          // que generaba dos 401 consecutivos y dejaba al usuario sin sesión.
+          // Lo manejamos manualmente abajo con exchangeCodeForSession.
           authOptions: const FlutterAuthClientOptions(
             authFlowType: AuthFlowType.pkce,
-            detectSessionInUri: true,
+            detectSessionInUri: false,
           ),
-        ).timeout(const Duration(seconds: 10)); // Timeout más largo para Web
+        ).timeout(const Duration(seconds: 15));
 
-        // En Web: si la URL trae ?code=... (vuelta de Google OAuth), intercambiamos
-        // el code por sesión aquí para que la foto y el usuario estén listos al pintar la UI.
-        if (kIsWeb && Uri.base.queryParameters.containsKey('code')) {
+        // OAuth callback manual: intercambiamos el ?code= por sesión UNA SOLA VEZ
+        if (hasOAuthCode) {
+          final code = Uri.base.queryParameters['code']!;
+          debugPrint('OAuth: código detectado en URL, intercambiando por sesión...');
           try {
-            await Supabase.instance.client.auth.getSessionFromUrl(Uri.base);
-            if (kDebugMode) debugPrint('OAuth: sesión obtenida desde URL correctamente.');
+            final response = await Supabase.instance.client.auth
+                .exchangeCodeForSession(code);
+            debugPrint('OAuth: ✅ Sesión establecida correctamente.');
+            final user = response.session.user;
+            debugPrint('OAuth: Usuario: ${user.email ?? "sin email"}');
+            debugPrint('OAuth: Nombre: ${user.userMetadata?['full_name'] ?? "sin nombre"}');
+            debugPrint('OAuth: Avatar: ${user.userMetadata?['avatar_url'] != null ? "presente" : "ausente"}');
+            
+            // Limpiamos la URL para evitar reusar el código al refrescar
+            _cleanOAuthCodeFromUrl();
           } catch (e, stack) {
-            if (kDebugMode) debugPrint('OAuth getSessionFromUrl: $e');
+            debugPrint('OAuth: ❌ Error al intercambiar código: $e');
             if (kDebugMode) debugPrint('$stack');
+            
+            // Diagnóstico adicional
+            final currentUser = Supabase.instance.client.auth.currentUser;
+            if (currentUser != null) {
+              debugPrint('OAuth: Aunque falló el intercambio, HAY sesión activa: ${currentUser.email}');
+            } else {
+              debugPrint('OAuth: No hay sesión activa. El usuario aparecerá como anónimo.');
+              debugPrint('OAuth: Posibles causas:');
+              debugPrint('  1. El código ya fue consumido (recarga de página)');
+              debugPrint('  2. El code_verifier no se encontró en localStorage');
+              debugPrint('  3. La Redirect URL no coincide en el dashboard de Supabase');
+            }
+            
+            // Limpiamos la URL incluso si falló para evitar 401 en cada recarga
+            _cleanOAuthCodeFromUrl();
           }
         }
 
-        // Si estamos en Web, mostramos advertencia sobre Realtime
         if (kIsWeb) {
           debugPrint("Flutter Web: Si aparecen errores de WebSocket, son esperados y no afectan la funcionalidad.");
         }
       } catch (e) {
-        // Solo logueamos el error. La app abrirá igual en modo "Offline/Limitado"
         debugPrint("Advertencia: Supabase no conectó al inicio ($e). La app continuará.");
       }
     } else {

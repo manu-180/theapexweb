@@ -788,36 +788,40 @@ class _AuthButton extends ConsumerWidget {
   const _AuthButton({this.fullWidth = false});
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authStateStreamProvider);
-    return authState.when(
-      loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
-      error: (_, __) => const Icon(Icons.error),
-      data: (user) {
-        if (user == null) {
-          return FilledButton.icon(
-            onPressed: () => ref.read(authRepositoryProvider).signInWithGoogle(),
-            icon: const Icon(FontAwesomeIcons.google, size: 14),
-            label: const Text('Login'),
-          );
-        }
-        if (fullWidth) {
-          return OutlinedButton.icon(
-            onPressed: () => ref.read(authRepositoryProvider).signOut(),
-            icon: const Icon(Icons.logout),
-            label: const Text("Cerrar Sesión"),
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-          );
-        }
-        return PopupMenuButton<String>(
-          onSelected: (v) => ref.read(authRepositoryProvider).signOut(),
-          itemBuilder: (context) => [const PopupMenuItem(value: 'logout', child: Text('Cerrar Sesión'))],
-          child: CircleAvatar(
-            radius: 18,
-            backgroundImage: user.userMetadata?['avatar_url'] != null ? NetworkImage(user.userMetadata!['avatar_url']) : null,
-            child: user.userMetadata?['avatar_url'] == null ? Text(user.email?[0].toUpperCase() ?? 'U') : null,
-          ),
-        );
-      },
+    // CORRECCIÓN: Usamos currentUserProvider en vez de authStateStreamProvider
+    // directamente. currentUserProvider lee la sesión de forma SINCRÓNICA
+    // (Supabase.instance.client.auth.currentUser) y ADEMÁS escucha el stream
+    // de cambios de auth para actualizarse reactivamente.
+    //
+    // Esto resuelve el problema de timing donde la sesión se establece en
+    // main.dart (durante _initializeApp) ANTES de que el ProviderScope exista.
+    // Con authStateStreamProvider directo, el evento 'signedIn' se perdía
+    // porque nadie estaba escuchando el broadcast stream aún.
+    final user = ref.watch(currentUserProvider);
+
+    if (user == null) {
+      return FilledButton.icon(
+        onPressed: () => ref.read(authRepositoryProvider).signInWithGoogle(),
+        icon: const Icon(FontAwesomeIcons.google, size: 14),
+        label: const Text('Login'),
+      );
+    }
+    if (fullWidth) {
+      return OutlinedButton.icon(
+        onPressed: () => ref.read(authRepositoryProvider).signOut(),
+        icon: const Icon(Icons.logout),
+        label: const Text("Cerrar Sesión"),
+        style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+      );
+    }
+    return PopupMenuButton<String>(
+      onSelected: (v) => ref.read(authRepositoryProvider).signOut(),
+      itemBuilder: (context) => [const PopupMenuItem(value: 'logout', child: Text('Cerrar Sesión'))],
+      child: CircleAvatar(
+        radius: 18,
+        backgroundImage: user.userMetadata?['avatar_url'] != null ? NetworkImage(user.userMetadata!['avatar_url']) : null,
+        child: user.userMetadata?['avatar_url'] == null ? Text(user.email?[0].toUpperCase() ?? 'U') : null,
+      ),
     );
   }
 }
