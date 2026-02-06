@@ -96,12 +96,25 @@ class _BootstrapAppState extends State<_BootstrapApp> {
           );
         }
 
-        // B. SI FALLÓ ALGO VITAL (SharedPreferences) - Muy raro
+        // B. SI FALLÓ ALGO VITAL (EnvConfig, SharedPreferences o Supabase en init)
         if (snapshot.hasError || snapshot.data == null) {
-           // Fallback de emergencia si SharedPreferences muere (casi imposible)
-           // Retornamos una app básica para no crashear
+           if (kDebugMode) debugPrint('Bootstrap error: ${snapshot.error}');
+           if (kDebugMode && snapshot.stackTrace != null) debugPrint('${snapshot.stackTrace}');
            return MaterialApp(
-             home: Scaffold(body: Center(child: Text("Error crítico de memoria: ${snapshot.error}"))),
+             debugShowCheckedModeBanner: false,
+             home: Scaffold(
+               backgroundColor: const Color(0xFF0A0A0A),
+               body: Center(
+                 child: Padding(
+                   padding: const EdgeInsets.all(24.0),
+                   child: Text(
+                     'Error al iniciar la app: ${snapshot.error}',
+                     style: const TextStyle(color: Colors.white70, fontSize: 14),
+                     textAlign: TextAlign.center,
+                   ),
+                 ),
+               ),
+             ),
            );
         }
 
