@@ -7,7 +7,7 @@ part of 'presence_repository.dart';
 // **************************************************************************
 
 String _$presenceRepositoryHash() =>
-    r'05826547cbcbb7d241350df1b9011bbe122b6ce0';
+    r'3164249c11b158d0643861f46cccb8fc054fbe7d';
 
 /// See also [presenceRepository].
 @ProviderFor(presenceRepository)

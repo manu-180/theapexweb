@@ -242,14 +242,16 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                           mainAxisSize: MainAxisSize.min,
                           children: List.generate(5, (index) {
                             final starIndex = index + 1;
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _rating = starIndex;
-                                  _showRatingError = false; 
-                                });
-                              },
-                              child: Padding(
+                            return MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _rating = starIndex;
+                                    _showRatingError = false; 
+                                  });
+                                },
+                                child: Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: AnimatedScale(
                                   scale: _rating == starIndex ? 1.2 : 1.0,
@@ -263,6 +265,7 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
                                   ),
                                 ),
                               ),
+                            ),
                             );
                           }),
                         ),

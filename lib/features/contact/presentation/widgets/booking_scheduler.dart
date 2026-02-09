@@ -183,11 +183,13 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
                           ? "HOY" 
                           : DateFormat('EEE', 'es').format(date).toUpperCase().replaceAll('.', '');
 
-                      return GestureDetector(
-                        onTap: () => ref.read(bookingNotifierProvider.notifier).selectDate(date),
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 12),
-                          child: AnimatedContainer(
+                      return MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () => ref.read(bookingNotifierProvider.notifier).selectDate(date),
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 12),
+                            child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
                             width: 75,
                             alignment: Alignment.center,
@@ -232,6 +234,7 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
                             ),
                           ),
                         ),
+                      ),
                       );
                     },
                   ),
@@ -308,11 +311,12 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
             final isAvailable = state.availableHours.contains(hour);
             final isSelected = state.selectedHour == hour;
 
-            return GestureDetector(
-              // Solo permitimos tap si está disponible
-              onTap: isAvailable ? () => ref.read(bookingNotifierProvider.notifier).selectHour(hour) : null,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
+            return MouseRegion(
+              cursor: isAvailable ? SystemMouseCursors.click : SystemMouseCursors.basic,
+              child: GestureDetector(
+                onTap: isAvailable ? () => ref.read(bookingNotifierProvider.notifier).selectHour(hour) : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected 
@@ -332,15 +336,15 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
                   "$hour:00",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    // Tachado si no está disponible
                     decoration: isAvailable ? null : TextDecoration.lineThrough,
                     decorationColor: colorScheme.outline,
                     color: isSelected 
                         ? colorScheme.onPrimary 
-                        : (isAvailable ? colorScheme.onSurface : colorScheme.outline), // Color gris si no disp.
+                        : (isAvailable ? colorScheme.onSurface : colorScheme.outline),
                   ),
                 ),
               ),
+            ),
             );
           }).toList(),
         ),
@@ -528,22 +532,24 @@ class _ContactTypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? color : Theme.of(context).dividerColor,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withOpacity(0.15) : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isSelected ? color : Theme.of(context).dividerColor,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: isSelected ? color : Theme.of(context).iconTheme.color),
-            const SizedBox(width: 8),
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: isSelected ? color : Theme.of(context).iconTheme.color),
+              const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
@@ -552,6 +558,7 @@ class _ContactTypeChip extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );

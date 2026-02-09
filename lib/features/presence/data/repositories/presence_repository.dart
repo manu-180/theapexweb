@@ -8,17 +8,29 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'presence_repository.g.dart';
 
-class PresenceRepository {
+/// Contrato del repositorio de presencia (permite implementación no-op cuando no hay Supabase).
+abstract class PresenceRepository {
+  Stream<List<ConnectedUser>> get onlineUsers;
+  void connectAndTrack({
+    required String myId,
+    required String? myName,
+    required String? myPhotoUrl,
+  });
+  void disconnect();
+  void dispose();
+}
+
+class _SupabasePresenceRepository extends PresenceRepository {
   final SupabaseClient _supabase;
   RealtimeChannel? _channel;
-  
-  // Stream para emitir la lista actualizada de usuarios
   final _usersController = StreamController<List<ConnectedUser>>.broadcast();
 
-  PresenceRepository(this._supabase);
+  _SupabasePresenceRepository(this._supabase);
 
+  @override
   Stream<List<ConnectedUser>> get onlineUsers => _usersController.stream;
 
+  @override
   void connectAndTrack({
     required String myId,
     required String? myName,
@@ -100,13 +112,49 @@ class PresenceRepository {
     }
   }
 
+  @override
   void disconnect() {
     _channel?.unsubscribe();
     _channel = null;
   }
 
+  @override
   void dispose() {
     disconnect();
+    _usersController.close();
+  }
+}
+
+/// Repositorio sin operaciones cuando Supabase no está inicializado (p. ej. web sin credenciales).
+/// Evita que el AppBar de presencia lance y muestre "Algo salió mal visualmente".
+class _NoOpPresenceRepository extends PresenceRepository {
+  final _usersController = StreamController<List<ConnectedUser>>.broadcast();
+
+  @override
+  Stream<List<ConnectedUser>> get onlineUsers => _usersController.stream;
+
+  @override
+  void connectAndTrack({
+    required String myId,
+    required String? myName,
+    required String? myPhotoUrl,
+  }) {
+    // Sin Supabase mostramos al menos "tú" como online para que no se quede en "Conectando..."
+    _usersController.add([
+      ConnectedUser(
+        id: myId,
+        name: myName ?? 'anon-${myId.length > 12 ? myId.substring(0, 12) : myId}',
+        photoUrl: myPhotoUrl,
+        isMe: true,
+      ),
+    ]);
+  }
+
+  @override
+  void disconnect() {}
+
+  @override
+  void dispose() {
     _usersController.close();
   }
 }
@@ -114,7 +162,12 @@ class PresenceRepository {
 @riverpod
 PresenceRepository presenceRepository(PresenceRepositoryRef ref) {
   final supabase = ref.watch(supabaseClientProvider);
-  final repo = PresenceRepository(supabase);
+  if (supabase == null) {
+    final repo = _NoOpPresenceRepository();
+    ref.onDispose(() => repo.dispose());
+    return repo;
+  }
+  final repo = _SupabasePresenceRepository(supabase);
   ref.onDispose(() => repo.dispose());
   return repo;
 }

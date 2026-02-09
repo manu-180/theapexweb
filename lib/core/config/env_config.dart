@@ -20,7 +20,8 @@ class EnvConfig {
     // CORRECCIÓN: Usamos String.fromEnvironment con el literal directo y const
     const fromDefine = String.fromEnvironment('SUPABASE_URL');
     if (fromDefine.isNotEmpty) return fromDefine;
-    
+    // En Web no cargamos .env: acceder a dotenv.env sin load() lanza NotInitializedError
+    if (kIsWeb) return '';
     return dotenv.env['SUPABASE_URL'] ?? '';
   }
 
@@ -28,7 +29,8 @@ class EnvConfig {
     // CORRECCIÓN: Usamos String.fromEnvironment con el literal directo y const
     const fromDefine = String.fromEnvironment('SUPABASE_ANON_KEY');
     if (fromDefine.isNotEmpty) return fromDefine;
-
+    // En Web no cargamos .env: acceder a dotenv.env sin load() lanza NotInitializedError
+    if (kIsWeb) return '';
     return dotenv.env['SUPABASE_ANON_KEY'] ?? '';
   }
 }

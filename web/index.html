@@ -17,8 +17,13 @@
   <title>Manuel Navarro - Full-Stack Developer</title>
   <link rel="manifest" href="manifest.json">
 
+  <!-- Preconnect al player del bot para que cargue lo antes posible -->
+  <link rel="preconnect" href="https://botlode-player.vercel.app">
+  <link rel="dns-prefetch" href="https://botlode-player.vercel.app">
+
   <style>
     /* === BODY BASE === */
+    /* El fondo que se ve detrás de la burbuja del bot es este. Si no querés "fondo negro", cambiá background-color o quitarlo para heredar. */
     body {
       margin: 0;
       padding: 0;
@@ -67,280 +72,72 @@
       letter-spacing: 0.5px;
     }
 
-    /* Oculta los controles de video nativos de Chromium (Edge/Chrome) */
-    video::-webkit-media-controls {
-      display: none !important;
+    /* Forzar transparencia del iframe en Safari/Mac */
+    #botlode-player {
+      background: none !important;
+      background-color: transparent !important;
+      -webkit-background-color: transparent !important;
     }
-    video::-webkit-media-controls-enclosure {
-      display: none !important;
-    }
-    
-    /* Deshabilita la interacción directa con el tag de vídeo para que Edge 
-       no inyecte su botón de "Vídeo inteligente" o "Picture-in-Picture".
-    */
+    /* Desactivar controles flotantes de video en Edge/Chrome */
     video {
-      pointer-events: none !important;
+      -webkit-media-controls: none !important;
+      -moz-media-controls: none !important;
+      -o-media-controls: none !important;
+      -ms-media-controls: none !important;
+    }
+    video::-webkit-media-controls { display: none !important; }
+    video::-webkit-media-controls-panel { display: none !important; }
+    video::-webkit-media-controls-play-button { display: none !important; }
+    video::-webkit-media-controls-timeline { display: none !important; }
+    video::-webkit-media-controls-current-time-display { display: none !important; }
+    video::-webkit-media-controls-time-remaining-display { display: none !important; }
+    video::-webkit-media-controls-mute-button { display: none !important; }
+    video::-webkit-media-controls-volume-slider { display: none !important; }
+    video::-webkit-media-controls-fullscreen-button { display: none !important; }
+    video::-webkit-media-controls-enclosure { display: none !important; }
+    video::-moz-media-controls { display: none !important; }
+    /* 🛡️ BLINDAJE COMPLETO DE HIT ZONES */
+    #botlode-hitzone-bot,
+    #botlode-hitzone-wpp {
+      -webkit-appearance: none !important;
+      -moz-appearance: none !important;
+      appearance: none !important;
+      background-color: transparent !important;
+      background-image: none !important;
+      border: 0 !important;
+      outline: 0 !important;
+      outline-width: 0 !important;
+      outline-style: none !important;
+      box-shadow: none !important;
+      -webkit-tap-highlight-color: transparent !important;
       -webkit-touch-callout: none !important;
-      
-      -webkit-user-select: none !important; /* Safari/Chrome/Edge */
-      -moz-user-select: none !important;    /* Firefox */
-      -ms-user-select: none !important;     /* Internet Explorer/Edge Antiguo */
-      user-select: none !important;         /* Propiedad estándar */
+      -webkit-user-select: none !important;
+      -moz-user-select: none !important;
+      -ms-user-select: none !important;
+      user-select: none !important;
+      backface-visibility: hidden !important;
+      -webkit-backface-visibility: hidden !important;
     }
-
-    /* === CONNECTIVITY SNACKBARS === */
-    #offline-overlay {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      z-index: 100000;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      padding: 0 16px 24px 16px;
-      pointer-events: none;
-    }
-    #offline-overlay .offline-snackbar {
-      pointer-events: auto;
-      max-width: 520px;
-      width: 100%;
-      padding: 14px 20px 16px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, rgba(40, 0, 0, 0.95), rgba(10, 0, 0, 0.98));
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      transform: translateY(120%);
-      opacity: 0;
-      transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease-out;
-    }
-    body.offline #offline-overlay .offline-snackbar {
-      transform: translateY(0);
-      opacity: 1;
-    }
-    #offline-text { 
-      font-size: 13px; 
-      line-height: 1.4; 
-      color: rgba(255, 255, 255, 0.8); 
-      margin: 8px 0;
-    }
-    #offline-chip {
-      display: inline-flex; 
-      align-items: center; 
-      gap: 10px;
-      padding: 6px 12px; 
-      border-radius: 999px;
-      border: 1px solid rgba(255, 60, 60, 0.35);
-      background: rgba(0, 0, 0, 0.6);
-      margin-bottom: 10px;
-    }
-    #offline-wifi-icon {
-      width: 22px; 
-      height: 22px;
-      color: #ff3c3c;
-      stroke-width: 2.2;
-      filter: drop-shadow(0 0 4px rgba(255, 60, 60, 0.5));
-      flex-shrink: 0;
-    }
-    #offline-dot {
-      width: 10px; 
-      height: 10px; 
-      border-radius: 50%;
-      background: #ff1744;
-      flex-shrink: 0;
-      animation: offline-dot-pulse 1.8s ease-in-out infinite;
-    }
-    @keyframes offline-dot-pulse {
-      0%, 100% { 
-        opacity: 1; 
-        transform: scale(1);
-        box-shadow: 0 0 12px rgba(255, 23, 68, 0.9), 0 0 20px rgba(255, 23, 68, 0.5); 
-      }
-      50% { 
-        opacity: 0.3; 
-        transform: scale(0.85);
-        box-shadow: 0 0 4px rgba(255, 23, 68, 0.4); 
-      }
-    }
-    #offline-chip span {
-      font-size: 13px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.95);
-      white-space: nowrap;
-    }
-    #offline-footer {
-      margin-top: 10px;
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.65);
-    }
-    #offline-footer strong {
-      color: rgba(255, 60, 60, 0.9);
-      font-weight: 700;
-    }
-
-    /* === RESTORED OVERLAY === */
-    #restored-overlay {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      z-index: 99999;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      padding: 0 16px 24px 16px;
-      pointer-events: none;
-    }
-    #restored-overlay .restored-snackbar {
-      pointer-events: auto;
-      max-width: 520px;
-      width: 100%;
-      padding: 14px 20px 16px;
-      border-radius: 20px;
-      background: linear-gradient(135deg, rgba(0, 80, 45, 0.96), rgba(0, 55, 30, 0.98));
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      transform: translateY(120%);
-      opacity: 0;
-      transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease-out;
-    }
-    #restored-overlay.show .restored-snackbar {
-      transform: translateY(0);
-      opacity: 1;
-    }
-    #restored-chip {
-      display: inline-flex; 
-      align-items: center; 
-      gap: 10px;
-      padding: 6px 12px; 
-      border-radius: 999px;
-      border: 1px solid rgba(0, 255, 148, 0.35);
-      background: rgba(0, 0, 0, 0.25);
-      margin-bottom: 10px;
-    }
-    #restored-check-icon {
-      width: 22px; 
-      height: 22px;
-      color: #00ff94;
-      stroke-width: 2.5;
-      filter: drop-shadow(0 0 4px rgba(0, 255, 148, 0.5));
-      flex-shrink: 0;
-    }
-    #restored-chip span {
-      font-size: 13px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.95);
-      white-space: nowrap;
-    }
-    #restored-text { 
-      font-size: 13px; 
-      line-height: 1.45; 
-      color: rgba(255, 255, 255, 0.95); 
-      font-weight: 500; 
-      margin: 8px 0; 
-    }
-    #restored-footer { 
-      margin-top: 10px; 
-      font-size: 11px; 
-      color: rgba(255, 255, 255, 0.7); 
+    #botlode-hitzone-bot:active,
+    #botlode-hitzone-wpp:active,
+    #botlode-hitzone-bot:focus,
+    #botlode-hitzone-wpp:focus,
+    #botlode-hitzone-bot:hover,
+    #botlode-hitzone-wpp:hover {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: 0 !important;
+      outline: 0 !important;
+      box-shadow: none !important;
+      transform: none !important;
     }
 
   </style>
 </head>
 <body>
-  <!-- Loading Splash Screen -->
-  <div id="loading-splash">
-    <div class="spinner"></div>
-    <div id="loading-text">Cargando...</div>
-  </div>
-
-  <!-- Connectivity Overlays -->
-  <div id="offline-overlay">
-    <div class="offline-snackbar" id="offline-panel">
-      <div id="offline-chip">
-        <svg id="offline-wifi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M5 12.55a11 11 0 0 1 14.08 0"/>
-          <path d="M1.42 9a16 16 0 0 1 21.16 0"/>
-          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
-          <circle cx="12" cy="20" r="1"/>
-          <line x1="2" y1="2" x2="22" y2="22"/>
-        </svg>
-        <div id="offline-dot"></div>
-        <span>Sin conexión a internet</span>
-      </div>
-      <p id="offline-text">Se ha perdido la conexión a internet. Cuando la señal esté disponible, podés seguir navegando con normalidad.</p>
-      <div id="offline-footer"><span>Estado: <strong>red no disponible</strong></span></div>
-    </div>
-  </div>
-  
-  <div id="restored-overlay">
-    <div class="restored-snackbar">
-      <div id="restored-chip">
-        <svg id="restored-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M8 12l3 3 5-6"/>
-        </svg>
-        <span>Conexión restablecida</span>
-      </div>
-      <p id="restored-text">La conexión a internet se ha restablecido correctamente. Podés seguir navegando con normalidad.</p>
-      <div id="restored-footer">Estado: conectado</div>
-    </div>
-  </div>
-
-  <script>
-    // Connectivity detection
-    let wentOfflineOnce = false;
-    const restoredOverlay = document.getElementById('restored-overlay');
-
-    window.addEventListener('online', function() {
-      document.body.classList.remove('offline');
-      if (wentOfflineOnce) {
-        wentOfflineOnce = false;
-        if (restoredOverlay) {
-          restoredOverlay.classList.add('show');
-          setTimeout(function() {
-            restoredOverlay.classList.remove('show');
-          }, 4000);
-        }
-      }
-    });
-
-    window.addEventListener('offline', function() {
-      wentOfflineOnce = true;
-      document.body.classList.add('offline');
-    });
-
-    // Check initial state
-    if (!navigator.onLine) {
-      document.body.classList.add('offline');
-    }
-  </script>
-
-  <!-- BotLode - Burbuja flotante embebida (misma lógica que botlode_web) -->
-  <!-- Pegar antes del </body> en cualquier HTML. ID del bot: 0038971a-da75-4ddc-8663-d52a6b8f2936 -->
-
-  <style>
-    #botlode-player {
-      background: none !important;
-      background-color: transparent !important;
-      -webkit-background-color: transparent !important;
-      touch-action: manipulation !important;
-      -webkit-tap-highlight-color: transparent !important;
-    }
-    #botlode-hitzone-bot,
-    #botlode-hitzone-wpp {
-      -webkit-tap-highlight-color: transparent !important;
-      -webkit-touch-callout: none !important;
-      -webkit-user-select: none !important;
-      user-select: none !important;
-      touch-action: manipulation !important;
-      background: transparent !important;
-      outline: none !important;
-      border: none !important;
-      box-shadow: none !important;
-    }
-  </style>
-
-  <link rel="preconnect" href="https://botlode-player.vercel.app">
-  <link rel="dns-prefetch" href="https://botlode-player.vercel.app">
-
+  <!-- Bot flotante: primero en el body para que empiece a cargar de inmediato -->
   <iframe
     id="botlode-player"
-    src="https://botlode-player.vercel.app?botId=0038971a-da75-4ddc-8663-d52a6b8f2936&v=2.6"
     style="
       position: fixed;
       bottom: 16px;
@@ -348,20 +145,38 @@
       width: 140px;
       height: 140px;
       border: none;
-      z-index: 100001;
+      z-index: 9998;
       pointer-events: none;
       background: transparent !important;
+      background-color: transparent !important;
+      -webkit-background-color: transparent !important;
       opacity: 0;
       overflow: hidden;
       will-change: width, height;
       transform: translateZ(0);
       backface-visibility: hidden;
-      touch-action: manipulation;
+      -webkit-backface-visibility: hidden;
     "
     allow="clipboard-write"
-    loading="eager"
+    loading="lazy"
     allowtransparency="true">
   </iframe>
+  <script>
+    window.addEventListener('flutter-first-frame', function() {
+      var player = document.getElementById('botlode-player');
+      if (player && !player.src) {
+        player.src = 'https://botlode-player.vercel.app?botId=0038971a-da75-4ddc-8663-d52a6b8f2936&v=2.5';
+        console.log('🤖 BotLode Player iframe cargado tras primer frame de Flutter');
+      }
+    });
+    setTimeout(function() {
+      var player = document.getElementById('botlode-player');
+      if (player && !player.src) {
+        player.src = 'https://botlode-player.vercel.app?botId=0038971a-da75-4ddc-8663-d52a6b8f2936&v=2.5';
+        console.log('🤖 BotLode Player iframe cargado por timeout (5s)');
+      }
+    }, 5000);
+  </script>
 
   <div id="botlode-hitzone-bot" style="
     position: fixed;
@@ -369,10 +184,19 @@
     right: 28px;
     width: 100px;
     height: 100px;
-    z-index: 100002;
+    z-index: 9999;
     pointer-events: auto;
     cursor: wait;
     border-radius: 50%;
+    background: transparent !important;
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    touch-action: manipulation !important;
   "></div>
 
   <div id="botlode-hitzone-wpp" style="
@@ -381,424 +205,581 @@
     right: 28px;
     width: 100px;
     height: 100px;
-    z-index: 100002;
+    z-index: 9999;
     pointer-events: auto;
     cursor: wait;
     border-radius: 50%;
     display: none;
+    background: transparent !important;
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+    touch-action: manipulation !important;
   "></div>
 
+  <!-- Loading Splash Screen -->
+  <div id="loading-splash">
+    <div class="spinner"></div>
+    <div id="loading-text">Cargando...</div>
+  </div>
+
+  <!-- Snackbar de conectividad: lo inyecta botlode-connectivity.js -->
+  <script src="botlode-connectivity.js"></script>
+
   <script>
-  (function() {
-    const iframe = document.getElementById('botlode-player');
-    const hitzoneBotEl = document.getElementById('botlode-hitzone-bot');
-    const hitzoneWppEl = document.getElementById('botlode-hitzone-wpp');
-    if (!iframe) return;
-
-    let isExpanded = false;
-    let isAnimatingBubble = false;
-    const BUBBLE_HEIGHT_SOLO_BOT = 140;
-    const BUBBLE_HEIGHT_WITH_WPP = 290;
-    let bubbleHeight = BUBBLE_HEIGHT_SOLO_BOT;
-
-    let iframeReady = false;
-    let pendingOpenWhenReady = false;
-    let lastClickTime = 0;
-    const CLICK_COOLDOWN_MS = 150;
-    let retryTimer = null;
-    let retryCount = 0;
-    const MAX_RETRIES = 2;
-    const RETRY_DELAY_MS = 180;
-    let touchHandled = false;
-    let mouseHandled = false;
-
-    function forwardEventToIframe(event, eventType) {
-      try {
-        if (!iframe.contentWindow) return;
-        const iframeRect = iframe.getBoundingClientRect();
-        iframe.contentWindow.postMessage({
-          type: eventType,
-          clientX: (event && event.clientX) || 0,
-          clientY: (event && event.clientY) || 0,
-          iframeX: iframeRect.left,
-          iframeY: iframeRect.top,
-        }, '*');
-      } catch (e) {}
-    }
-
-    function sendClickToIframe(source) {
-      var rect = iframe.getBoundingClientRect();
-      try {
-        iframe.contentWindow.postMessage({
-          type: 'HITZONE_CLICK_BOT',
-          clientX: rect.left + rect.width / 2,
-          clientY: rect.bottom - 70,
-          iframeX: rect.left,
-          iframeY: rect.top,
-        }, '*');
-        iframe.contentWindow.postMessage('HITZONE_CLICK_BOT', '*');
-      } catch (e) {}
-    }
-
-    function openBotChat(source) {
-      var now = Date.now();
-      try { window.focus(); } catch(e) {}
-      if (!iframeReady) {
-        pendingOpenWhenReady = true;
-        if (hitzoneBotEl) hitzoneBotEl.style.cursor = 'wait';
-        return;
+    window.addEventListener('flutter-first-frame', function() {
+      var loading = document.getElementById('loading-splash');
+      if (loading) {
+        loading.classList.add('fade-out');
+        setTimeout(function() {
+          loading.remove();
+          document.body.style.overflow = 'auto';
+        }, 500);
       }
-      if (isExpanded) return;
-      if (now - lastClickTime < CLICK_COOLDOWN_MS) return;
-      lastClickTime = now;
-      sendClickToIframe(source);
-      retryCount = 0;
-      if (retryTimer) clearTimeout(retryTimer);
-      retryTimer = setTimeout(function retryFn() {
-        if (isExpanded) return;
-        retryCount++;
-        if (retryCount <= MAX_RETRIES) {
-          sendClickToIframe('retry-' + retryCount);
-          retryTimer = setTimeout(retryFn, RETRY_DELAY_MS);
+    });
+  </script>
+
+  <script>
+    // Ajustar tamaño del iframe según estado del chat (igual que botlode_web)
+    (function() {
+      console.log('🎯 IFRAME SCRIPT v2.8 - Tap blindado: pointerdown+mousedown+retry+redundancia');
+      console.log('⏳ Esperando que iframe envíe CMD_READY...');
+      const iframe = document.getElementById('botlode-player');
+      const hitzoneBotEl = document.getElementById('botlode-hitzone-bot');
+      const hitzoneWppEl = document.getElementById('botlode-hitzone-wpp');
+      if (!iframe) return;
+
+      let isExpanded = false;
+      let isAnimatingBubble = false;
+      const BUBBLE_HEIGHT_SOLO_BOT = 140;
+      const BUBBLE_HEIGHT_WITH_WPP = 290;
+      let bubbleHeight = BUBBLE_HEIGHT_SOLO_BOT;
+
+      let lastClickTime = 0;
+      const CLICK_COOLDOWN_MS = 150;
+
+      let iframeReady = false;
+      let pendingOpenWhenReady = false;
+
+      let touchHandled = false;
+      let mouseHandled = false;
+
+      let retryTimer = null;
+      let retryCount = 0;
+      const MAX_RETRIES = 2;
+      const RETRY_DELAY_MS = 250;
+
+      let chatOpenViewportHeight = null;
+      let currentKeyboardHeight = 0;
+
+      function forwardEventToIframe(event, eventType) {
+        try {
+          if (!iframe.contentWindow) return;
+          const iframeRect = iframe.getBoundingClientRect();
+          const message = {
+            type: eventType,
+            clientX: event.clientX || 0,
+            clientY: event.clientY || 0,
+            iframeX: iframeRect.left,
+            iframeY: iframeRect.top,
+          };
+          iframe.contentWindow.postMessage(message, '*');
+        } catch (e) {
+          console.error('❌ Error al enviar mensaje al iframe:', e);
         }
-      }, RETRY_DELAY_MS);
-    }
+      }
 
-    function openWppChat(source) {
-      var now = Date.now();
-      if (!iframeReady || isExpanded) return;
-      if (now - lastClickTime < CLICK_COOLDOWN_MS) return;
-      lastClickTime = now;
-      var rect = iframe.getBoundingClientRect();
-      try {
-        iframe.contentWindow.postMessage({
-          type: 'HITZONE_CLICK_WPP',
-          clientX: rect.left + rect.width / 2,
-          clientY: rect.top + 50,
-          iframeX: rect.left,
-          iframeY: rect.top,
-        }, '*');
-      } catch (e) {}
-    }
+      function sendClickToIframe(source) {
+        var rect = iframe.getBoundingClientRect();
+        try {
+          iframe.contentWindow.postMessage({
+            type: 'HITZONE_CLICK_BOT',
+            clientX: rect.left + rect.width / 2,
+            clientY: rect.bottom - 70,
+            iframeX: rect.left,
+            iframeY: rect.top,
+          }, '*');
+          iframe.contentWindow.postMessage('HITZONE_CLICK_BOT', '*');
+        } catch (e) {
+          console.error('❌ Error enviando click al iframe (' + source + '):', e);
+        }
+      }
 
-    if (hitzoneBotEl) {
-      hitzoneBotEl.addEventListener('pointerdown', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.pointerType === 'touch') { touchHandled = true; setTimeout(function() { touchHandled = false; }, 500); }
-        else { mouseHandled = true; setTimeout(function() { mouseHandled = false; }, 500); }
-        openBotChat('pointerdown-' + e.pointerType);
-      }, { passive: false });
-      hitzoneBotEl.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (touchHandled) return;
-        touchHandled = true;
-        openBotChat('touchstart');
-        setTimeout(function() { touchHandled = false; }, 500);
-      }, { passive: false });
-      hitzoneBotEl.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (mouseHandled || touchHandled) return;
-        mouseHandled = true;
-        openBotChat('mousedown');
-        setTimeout(function() { mouseHandled = false; }, 500);
-      }, { passive: false });
-      hitzoneBotEl.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (touchHandled || mouseHandled) return;
-        openBotChat('click');
-      }, { passive: false });
-      hitzoneBotEl.addEventListener('mouseenter', function(e) {
-        if (!isExpanded) forwardEventToIframe(e, 'HITZONE_ENTER_BOT');
+      function openBotChat(source) {
+        var now = Date.now();
+        try { window.focus(); } catch(e) {}
+
+        if (!iframeReady) {
+          pendingOpenWhenReady = true;
+          console.warn('⏳ Tap recibido (' + source + ') pero iframe NO listo. Se abrirá al recibir CMD_READY.');
+          if (hitzoneBotEl) hitzoneBotEl.style.cursor = 'wait';
+          return;
+        }
+        if (isExpanded) return;
+        if (now - lastClickTime < CLICK_COOLDOWN_MS) return;
+
+        lastClickTime = now;
+        console.log('🎯✨ Bot click VÁLIDO (' + source + ') - Enviando al iframe (Map+String)');
+        sendClickToIframe(source);
+
+        retryCount = 0;
+        if (retryTimer) clearTimeout(retryTimer);
+        retryTimer = setTimeout(function retryFn() {
+          if (isExpanded) return;
+          retryCount++;
+          if (retryCount <= MAX_RETRIES) {
+            console.warn('🔄 Retry #' + retryCount + ': No se recibió CMD_OPEN. Reenviando click al iframe...');
+            sendClickToIframe('retry-' + retryCount);
+            retryTimer = setTimeout(retryFn, RETRY_DELAY_MS);
+          } else {
+            console.error('❌ Se agotaron los reintentos (' + MAX_RETRIES + '). El iframe no respondió.');
+          }
+        }, RETRY_DELAY_MS);
+      }
+
+      function openWppChat(source) {
+        var now = Date.now();
+        if (!iframeReady || isExpanded) return;
+        if (now - lastClickTime < CLICK_COOLDOWN_MS) return;
+        lastClickTime = now;
+        console.log('🎯✨ WPP click VÁLIDO (' + source + ')');
+        var rect = iframe.getBoundingClientRect();
+        try {
+          iframe.contentWindow.postMessage({
+            type: 'HITZONE_CLICK_WPP',
+            clientX: rect.left + rect.width / 2,
+            clientY: rect.top + 50,
+            iframeX: rect.left,
+            iframeY: rect.top,
+          }, '*');
+        } catch (e) {}
+      }
+
+      if (hitzoneBotEl) {
+        hitzoneBotEl.addEventListener('pointerdown', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.pointerType === 'touch') {
+            touchHandled = true;
+            setTimeout(function() { touchHandled = false; }, 500);
+            console.log('👆 pointerdown(touch) en hitzone bot');
+          } else {
+            mouseHandled = true;
+            setTimeout(function() { mouseHandled = false; }, 500);
+            console.log('🖱️ pointerdown(mouse) en hitzone bot');
+          }
+          openBotChat('pointerdown-' + e.pointerType);
+        }, { passive: false });
+
+        hitzoneBotEl.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (touchHandled) return;
+          touchHandled = true;
+          console.log('👆 touchstart en hitzone bot (fallback)');
+          openBotChat('touchstart');
+          setTimeout(function() { touchHandled = false; }, 500);
+        }, { passive: false });
+
+        hitzoneBotEl.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (mouseHandled || touchHandled) return;
+          mouseHandled = true;
+          console.log('🖱️ mousedown en hitzone bot (fallback)');
+          openBotChat('mousedown');
+          setTimeout(function() { mouseHandled = false; }, 500);
+        }, { passive: false });
+
+        hitzoneBotEl.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (touchHandled || mouseHandled) {
+            console.log('⏭️ Click ignorado (ya manejado por pointerdown/touch/mousedown)');
+            return;
+          }
+          console.log('🖱️ click en hitzone bot (último fallback)');
+          openBotChat('click');
+        }, { passive: false });
+
+        hitzoneBotEl.addEventListener('mouseenter', function(e) {
+          if (!isExpanded) forwardEventToIframe(e, 'HITZONE_ENTER_BOT');
+        });
+        hitzoneBotEl.addEventListener('mouseleave', function(e) {
+          if (!isExpanded) forwardEventToIframe(e, 'HITZONE_LEAVE_BOT');
+        });
+        hitzoneBotEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+        hitzoneBotEl.addEventListener('dragstart', function(e) { e.preventDefault(); });
+      }
+
+      if (hitzoneWppEl) {
+        hitzoneWppEl.addEventListener('pointerdown', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.pointerType === 'touch') {
+            touchHandled = true;
+            setTimeout(function() { touchHandled = false; }, 500);
+          } else {
+            mouseHandled = true;
+            setTimeout(function() { mouseHandled = false; }, 500);
+          }
+          openWppChat('pointerdown-' + e.pointerType);
+        }, { passive: false });
+
+        hitzoneWppEl.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (touchHandled) return;
+          touchHandled = true;
+          openWppChat('touchstart');
+          setTimeout(function() { touchHandled = false; }, 500);
+        }, { passive: false });
+
+        hitzoneWppEl.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (mouseHandled || touchHandled) return;
+          mouseHandled = true;
+          openWppChat('mousedown');
+          setTimeout(function() { mouseHandled = false; }, 500);
+        }, { passive: false });
+
+        hitzoneWppEl.addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (touchHandled || mouseHandled) return;
+          openWppChat('click');
+        }, { passive: false });
+
+        hitzoneWppEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+        hitzoneWppEl.addEventListener('dragstart', function(e) { e.preventDefault(); });
+      }
+
+      function updateHitzones(show) {
+        if (hitzoneBotEl) {
+          hitzoneBotEl.style.display = show ? 'block' : 'none';
+          if (show) {
+            hitzoneBotEl.style.pointerEvents = 'auto';
+            hitzoneBotEl.style.cursor = iframeReady ? 'pointer' : 'wait';
+          }
+        }
+      }
+
+      function updateWppHitzone(show) {
+        if (hitzoneWppEl) {
+          hitzoneWppEl.style.display = show ? 'block' : 'none';
+          if (show) {
+            hitzoneWppEl.style.pointerEvents = 'auto';
+            hitzoneWppEl.style.cursor = iframeReady ? 'pointer' : 'wait';
+          }
+        }
+      }
+
+      function isNarrowScreen() {
+        return window.innerWidth < 600;
+      }
+
+      function applyBubblePosition() {
+        iframe.style.left = 'auto';
+        iframe.style.top = 'auto';
+        iframe.style.right = '16px';
+        iframe.style.bottom = '16px';
+        iframe.style.width = '140px';
+        iframe.style.height = bubbleHeight + 'px';
+      }
+
+      const T = {
+        closeFadeOut: 120,
+        closeWaitChat: 380,
+        pauseBeforeEntrance: 100,
+        entranceDelay: 60,
+        entranceMain: 380,
+        entranceBounce2: 180,
+        entranceSettle: 120,
+        resetAfter: 80
+      };
+
+      function animateBubbleEntrance() {
+        isAnimatingBubble = true;
+        iframe.style.opacity = '0';
+        iframe.style.transform = 'translateZ(0) scale(0.3) rotate(-15deg)';
+        iframe.style.filter = 'blur(8px) brightness(2)';
+
+        setTimeout(function() {
+          iframe.style.transition = 'opacity ' + (T.entranceMain * 0.4) + 'ms cubic-bezier(0.34, 1.56, 0.64, 1), transform ' + T.entranceMain + 'ms cubic-bezier(0.34, 1.56, 0.64, 1), filter ' + (T.entranceMain * 0.5) + 'ms ease-out';
+          requestAnimationFrame(function() {
+            iframe.style.opacity = '1';
+            iframe.style.transform = 'translateZ(0) scale(1.1) rotate(3deg)';
+            iframe.style.filter = 'blur(0px) brightness(1.3)';
+          });
+
+          setTimeout(function() {
+            iframe.style.transition = 'transform ' + T.entranceBounce2 + 'ms cubic-bezier(0.25, 0.46, 0.45, 0.94), filter ' + T.entranceBounce2 + 'ms ease-out';
+            iframe.style.transform = 'translateZ(0) scale(0.95) rotate(-1deg)';
+            iframe.style.filter = 'blur(0px) brightness(1.1)';
+
+            setTimeout(function() {
+              iframe.style.transition = 'transform ' + T.entranceSettle + 'ms ease-out, filter ' + T.entranceSettle + 'ms ease-out';
+              iframe.style.transform = 'translateZ(0) scale(1) rotate(0deg)';
+              iframe.style.filter = 'blur(0px) brightness(1)';
+              setTimeout(function() {
+                iframe.style.transition = '';
+                iframe.style.filter = '';
+                isAnimatingBubble = false;
+                console.log('✨ Animación de burbuja completada');
+              }, T.resetAfter);
+            }, T.entranceBounce2 * 0.6);
+          }, T.entranceMain);
+        }, T.entranceDelay);
+      }
+
+      window.addEventListener('message', function(event) {
+        const data = event.data;
+
+        if (data === 'CMD_OPEN') {
+          if (!isExpanded) {
+            if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+            console.log('🚀 CMD_OPEN recibido - Expandiendo iframe');
+            isAnimatingBubble = false;
+            iframe.style.filter = '';
+            iframe.style.transform = 'translateZ(0)';
+
+            iframe.style.transition = 'none';
+            iframe.style.opacity = '0';
+
+            iframe.style.pointerEvents = 'auto';
+            try { iframe.focus(); } catch(e) {}
+            updateHitzones(false);
+            updateWppHitzone(false);
+
+            if (isNarrowScreen()) {
+              iframe.style.left = '0';
+              iframe.style.top = '0';
+              iframe.style.right = '0';
+              iframe.style.bottom = '0';
+              iframe.style.width = '100%';
+              iframe.style.height = '100%';
+              console.log('✅ Iframe expandido a 100% (móvil)');
+              if (window.visualViewport) {
+                chatOpenViewportHeight = window.visualViewport.height;
+                console.log('📱 Viewport base capturado: ' + Math.round(chatOpenViewportHeight) + 'px');
+              }
+            } else {
+              iframe.style.left = 'auto';
+              iframe.style.top = 'auto';
+              iframe.style.right = '16px';
+              iframe.style.bottom = '16px';
+              iframe.style.width = '450px';
+              iframe.style.height = 'calc(100vh - 32px)';
+              console.log('✅ Iframe expandido a 450px x 100vh (desktop)');
+            }
+
+            iframe.offsetHeight;
+
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                iframe.style.transition = 'opacity 100ms ease-out';
+                iframe.style.opacity = '1';
+                console.log('✅✨ Chat ABIERTO exitosamente - Protección de clicks reseteada');
+                setTimeout(function() {
+                  iframe.style.transition = 'none';
+                }, 150);
+              });
+            });
+
+            isExpanded = true;
+          }
+        } else if (data === 'CMD_CLOSE') {
+          if (isExpanded) {
+            console.log('🎭 CMD_CLOSE recibido - Iniciando secuencia épica de burbuja');
+            iframe.style.transition = 'opacity ' + (T.closeFadeOut / 1000) + 's ease-out';
+            iframe.style.opacity = '0';
+            iframe.style.pointerEvents = 'none';
+            chatOpenViewportHeight = null;
+            currentKeyboardHeight = 0;
+            updateHitzones(true);
+
+            setTimeout(function() {
+              iframe.style.transition = 'none';
+              if (isNarrowScreen()) {
+                applyBubblePosition();
+              } else {
+                iframe.style.width = '140px';
+                iframe.style.height = bubbleHeight + 'px';
+              }
+              iframe.offsetHeight;
+              setTimeout(function() { animateBubbleEntrance(); }, T.pauseBeforeEntrance);
+            }, T.closeWaitChat);
+
+            isExpanded = false;
+          }
+        } else if (data === 'CMD_WPP_VISIBLE') {
+          bubbleHeight = BUBBLE_HEIGHT_WITH_WPP;
+          updateWppHitzone(true);
+          if (!isExpanded) {
+            iframe.style.transition = 'height 0.25s ease-out';
+            iframe.style.width = '140px';
+            iframe.style.height = BUBBLE_HEIGHT_WITH_WPP + 'px';
+          }
+        } else if (data === 'CMD_WPP_HIDDEN') {
+          bubbleHeight = BUBBLE_HEIGHT_SOLO_BOT;
+          updateWppHitzone(false);
+          if (!isExpanded) {
+            iframe.style.transition = 'height 0.25s ease-out';
+            iframe.style.width = '140px';
+            iframe.style.height = BUBBLE_HEIGHT_SOLO_BOT + 'px';
+          }
+        } else if (data === 'CMD_HOVER_START' || data === 'CMD_HOVER_END') {
+          // Intencionalmente no cambiar width/height del iframe.
+        }
       });
-      hitzoneBotEl.addEventListener('mouseleave', function(e) {
-        if (!isExpanded) forwardEventToIframe(e, 'HITZONE_LEAVE_BOT');
+
+      function activateIframe(source) {
+        if (iframeReady) return;
+
+        console.log('✅ BotLode Player LISTO (' + source + ') - Activando hitzones interactivas');
+        iframeReady = true;
+
+        iframe.style.transition = 'opacity 0.3s ease-out';
+        iframe.style.opacity = '1';
+        setTimeout(function() { iframe.style.transition = ''; }, 350);
+
+        if (hitzoneBotEl) {
+          hitzoneBotEl.style.cursor = 'pointer';
+        }
+        if (hitzoneWppEl && hitzoneWppEl.style.display !== 'none') {
+          hitzoneWppEl.style.cursor = 'pointer';
+        }
+
+        if (pendingOpenWhenReady) {
+          pendingOpenWhenReady = false;
+          console.log('🎯🚀 Ejecutando tap PENDIENTE tras activación del iframe');
+          setTimeout(function() {
+            openBotChat('pendingOpen');
+          }, 200);
+        }
+      }
+
+      window.addEventListener('message', function(event) {
+        if (event.data === 'CMD_READY') {
+          activateIframe('CMD_READY');
+        }
       });
-      hitzoneBotEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-      hitzoneBotEl.addEventListener('dragstart', function(e) { e.preventDefault(); });
-    }
-
-    if (hitzoneWppEl) {
-      hitzoneWppEl.addEventListener('pointerdown', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (e.pointerType === 'touch') { touchHandled = true; setTimeout(function() { touchHandled = false; }, 500); }
-        else { mouseHandled = true; setTimeout(function() { mouseHandled = false; }, 500); }
-        openWppChat('pointerdown-' + e.pointerType);
-      }, { passive: false });
-      hitzoneWppEl.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (touchHandled) return;
-        touchHandled = true;
-        openWppChat('touchstart');
-        setTimeout(function() { touchHandled = false; }, 500);
-      }, { passive: false });
-      hitzoneWppEl.addEventListener('mousedown', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (mouseHandled || touchHandled) return;
-        mouseHandled = true;
-        openWppChat('mousedown');
-        setTimeout(function() { mouseHandled = false; }, 500);
-      }, { passive: false });
-      hitzoneWppEl.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (touchHandled || mouseHandled) return;
-        openWppChat('click');
-      }, { passive: false });
-      hitzoneWppEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-      hitzoneWppEl.addEventListener('dragstart', function(e) { e.preventDefault(); });
-    }
-
-    function isNarrowScreen() {
-      return window.innerWidth < 600;
-    }
-
-    function applyBubblePosition() {
-      iframe.style.left = 'auto';
-      iframe.style.top = 'auto';
-      iframe.style.right = '16px';
-      iframe.style.bottom = '16px';
-      iframe.style.width = '140px';
-      iframe.style.height = bubbleHeight + 'px';
-    }
-
-    const T = {
-      closeFadeOut: 120,
-      closeWaitChat: 380,
-      pauseBeforeEntrance: 100,
-      entranceDelay: 60,
-      entranceMain: 380,
-      entranceBounce2: 180,
-      entranceSettle: 120,
-      resetAfter: 80
-    };
-
-    function animateBubbleEntrance() {
-      isAnimatingBubble = true;
-      iframe.style.opacity = '0';
-      iframe.style.transform = 'translateZ(0) scale(0.3) rotate(-15deg)';
-      iframe.style.filter = 'blur(8px) brightness(2)';
 
       setTimeout(function() {
-        iframe.style.transition = 'opacity ' + (T.entranceMain * 0.4) + 'ms cubic-bezier(0.34, 1.56, 0.64, 1), transform ' + T.entranceMain + 'ms cubic-bezier(0.34, 1.56, 0.64, 1), filter ' + (T.entranceMain * 0.5) + 'ms ease-out';
-        requestAnimationFrame(function() {
-          iframe.style.opacity = '1';
-          iframe.style.transform = 'translateZ(0) scale(1.1) rotate(3deg)';
-          iframe.style.filter = 'blur(0px) brightness(1.3)';
-        });
-        setTimeout(function() {
-          iframe.style.transition = 'transform ' + T.entranceBounce2 + 'ms cubic-bezier(0.25, 0.46, 0.45, 0.94), filter ' + T.entranceBounce2 + 'ms ease-out';
-          iframe.style.transform = 'translateZ(0) scale(0.95) rotate(-1deg)';
-          iframe.style.filter = 'blur(0px) brightness(1.1)';
-          setTimeout(function() {
-            iframe.style.transition = 'transform ' + T.entranceSettle + 'ms ease-out, filter ' + T.entranceSettle + 'ms ease-out';
-            iframe.style.transform = 'translateZ(0) scale(1) rotate(0deg)';
-            iframe.style.filter = 'blur(0px) brightness(1)';
-            setTimeout(function() {
-              iframe.style.transition = '';
-              iframe.style.filter = '';
-              isAnimatingBubble = false;
-            }, T.resetAfter);
-          }, T.entranceBounce2 * 0.6);
-        }, T.entranceMain);
-      }, T.entranceDelay);
-    }
-
-    function activateIframe(source) {
-      if (iframeReady) return;
-      iframeReady = true;
-      iframe.style.pointerEvents = 'auto';
-      if (hitzoneBotEl) {
-        hitzoneBotEl.style.pointerEvents = 'none';
-        hitzoneBotEl.style.display = 'none';
-      }
-      if (hitzoneWppEl) {
-        hitzoneWppEl.style.pointerEvents = 'none';
-        hitzoneWppEl.style.display = 'none';
-      }
-      iframe.style.transition = 'opacity 0.3s ease-out';
-      iframe.style.opacity = '1';
-      setTimeout(function() { iframe.style.transition = ''; }, 350);
-      if (pendingOpenWhenReady) {
-        pendingOpenWhenReady = false;
-        setTimeout(function() { openBotChat('pendingOpen'); }, 200);
-      }
-    }
-
-    window.addEventListener('message', function(event) {
-      if (event.data === 'CMD_READY') {
-        activateIframe('CMD_READY');
-      }
-    });
-
-    setTimeout(function() {
-      if (!iframeReady) activateIframe('timeout 8s');
-    }, 8000);
-
-    window.addEventListener('message', function(event) {
-      const data = event.data;
-
-      if (data === 'CMD_OPEN') {
-        if (!isExpanded) {
-          if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
-          isAnimatingBubble = false;
-          iframe.style.filter = '';
-          iframe.style.transition = 'none';
-          iframe.style.opacity = '0';
-          iframe.style.pointerEvents = 'auto';
-
-          function aggressiveFocus() {
-            try { iframe.focus(); } catch(e) {}
-            try { iframe.contentWindow.focus(); } catch(e) {}
-          }
-          aggressiveFocus();
-          setTimeout(aggressiveFocus, 100);
-          setTimeout(aggressiveFocus, 300);
-          try { iframe.contentWindow.postMessage('CMD_ENSURE_FOCUS', '*'); } catch(e) {}
-          setTimeout(function() {
-            try { iframe.contentWindow.postMessage('CMD_ENSURE_FOCUS', '*'); } catch(e) {}
-          }, 200);
-
-          if (isNarrowScreen()) {
-            iframe.style.left = '0';
-            iframe.style.top = '0';
-            iframe.style.right = '0';
-            iframe.style.bottom = '0';
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-          } else {
-            iframe.style.left = 'auto';
-            iframe.style.top = 'auto';
-            iframe.style.right = '16px';
-            iframe.style.bottom = '16px';
-            iframe.style.width = '450px';
-            iframe.style.height = 'calc(100vh - 32px)';
-          }
-          iframe.offsetHeight;
-          requestAnimationFrame(function() {
-            requestAnimationFrame(function() {
-              iframe.style.transition = 'opacity 100ms ease-out';
-              iframe.style.opacity = '1';
-              setTimeout(function() { iframe.style.transition = ''; }, 150);
-            });
-          });
-          isExpanded = true;
+        if (!iframeReady) {
+          console.warn('⚠️ Timeout: iframe no envió CMD_READY en 8s. Activando hitzones de todos modos...');
+          activateIframe('timeout 8s');
         }
-      } else if (data === 'CMD_CLOSE') {
-        if (isExpanded) {
-          iframe.style.transition = 'opacity ' + (T.closeFadeOut / 1000) + 's ease-out';
-          iframe.style.opacity = '0';
-          setTimeout(function() {
-            iframe.style.transition = 'none';
-            if (isNarrowScreen()) {
-              applyBubblePosition();
-            } else {
-              iframe.style.width = '140px';
-              iframe.style.height = bubbleHeight + 'px';
+      }, 8000);
+
+      function updateHitzonePositions() {
+        const isMobile = window.innerWidth < 600;
+        const padBottom = isMobile ? 12 : 28;
+        const padRight = isMobile ? 16 : 28;
+        const hitzoneSize = isMobile ? 120 : 100;
+        const gap = 12;
+
+        if (hitzoneBotEl) {
+          hitzoneBotEl.style.width = hitzoneSize + 'px';
+          hitzoneBotEl.style.height = hitzoneSize + 'px';
+          var offsetBottom = isMobile ? 10 : 16;
+          var offsetRight = isMobile ? -2 : 4;
+          hitzoneBotEl.style.bottom = (padBottom + offsetBottom) + 'px';
+          hitzoneBotEl.style.right = (padRight + offsetRight) + 'px';
+        }
+        if (hitzoneWppEl) {
+          hitzoneWppEl.style.width = hitzoneSize + 'px';
+          hitzoneWppEl.style.height = hitzoneSize + 'px';
+          hitzoneWppEl.style.bottom = (padBottom + 16 + hitzoneSize + gap) + 'px';
+          hitzoneWppEl.style.right = (padRight + 4) + 'px';
+        }
+      }
+
+      updateHitzonePositions();
+      window.addEventListener('resize', updateHitzonePositions);
+
+      var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+      if (!isTouchDevice) {
+        var lastMouseUpdate = 0;
+        var MOUSE_THROTTLE_MS = 50;
+
+        function onMouseMove(event) {
+          var now = Date.now();
+          if (now - lastMouseUpdate < MOUSE_THROTTLE_MS) return;
+          lastMouseUpdate = now;
+
+          try {
+            if (!iframe.contentWindow) return;
+            var iframeRect = iframe.getBoundingClientRect();
+
+            iframe.contentWindow.postMessage({
+              type: 'MOUSE_MOVE',
+              x: event.clientX,
+              y: event.clientY,
+              iframeX: iframeRect.left,
+              iframeY: iframeRect.top,
+              iframeWidth: iframeRect.width,
+              iframeHeight: iframeRect.height
+            }, '*');
+          } catch (e) {}
+        }
+
+        function onMouseLeave() {
+          try {
+            if (iframe.contentWindow) {
+              iframe.contentWindow.postMessage({ type: 'MOUSE_LEAVE' }, '*');
             }
-            iframe.offsetHeight;
-            setTimeout(animateBubbleEntrance, T.pauseBeforeEntrance);
-          }, T.closeWaitChat);
-          isExpanded = false;
+          } catch (e) {}
         }
-      } else if (data === 'CMD_WPP_VISIBLE') {
-        bubbleHeight = BUBBLE_HEIGHT_WITH_WPP;
-        if (!isExpanded) {
-          iframe.style.transition = 'height 0.25s ease-out';
-          iframe.style.width = '140px';
-          iframe.style.height = BUBBLE_HEIGHT_WITH_WPP + 'px';
-        }
-      } else if (data === 'CMD_WPP_HIDDEN') {
-        bubbleHeight = BUBBLE_HEIGHT_SOLO_BOT;
-        if (!isExpanded) {
-          iframe.style.transition = 'height 0.25s ease-out';
-          iframe.style.width = '140px';
-          iframe.style.height = BUBBLE_HEIGHT_SOLO_BOT + 'px';
-        }
-      } else if (data === 'CMD_HOVER_START' || data === 'CMD_HOVER_END') {
-        /* No redimensionar iframe en hover; el player hace scale interno */
-      }
-    });
 
-    let lastMouseUpdate = 0;
-    const MOUSE_THROTTLE_MS = 16;
-    function onMouseMove(event) {
-      const now = Date.now();
-      if (now - lastMouseUpdate < MOUSE_THROTTLE_MS) return;
-      lastMouseUpdate = now;
-      try {
-        if (!iframe.contentWindow) return;
-        const iframeRect = iframe.getBoundingClientRect();
-        iframe.contentWindow.postMessage({
-          type: 'MOUSE_MOVE',
-          x: event.clientX,
-          y: event.clientY,
-          iframeX: iframeRect.left,
-          iframeY: iframeRect.top,
-          iframeWidth: iframeRect.width,
-          iframeHeight: iframeRect.height
-        }, '*');
-      } catch (e) {}
-    }
-    function onMouseLeave() {
-      try {
-        if (iframe.contentWindow) iframe.contentWindow.postMessage({ type: 'MOUSE_LEAVE' }, '*');
-      } catch (e) {}
-    }
-    document.addEventListener('mousemove', onMouseMove, true);
-    document.addEventListener('mouseleave', onMouseLeave, true);
-    document.documentElement.addEventListener('mouseleave', onMouseLeave, true);
+        document.addEventListener('mousemove', onMouseMove, true);
+        document.addEventListener('mouseleave', onMouseLeave, true);
+        document.documentElement.addEventListener('mouseleave', onMouseLeave, true);
 
-    function updateHitzonePositions() {
-      var isMobile = window.innerWidth < 600;
-      var padBottom = isMobile ? 12 : 28;
-      var padRight = isMobile ? 16 : 28;
-      var hitzoneSize = isMobile ? 120 : 100;
-      var gap = 12;
-      if (hitzoneBotEl) {
-        hitzoneBotEl.style.width = hitzoneSize + 'px';
-        hitzoneBotEl.style.height = hitzoneSize + 'px';
-        hitzoneBotEl.style.bottom = (padBottom + 16) + 'px';
-        hitzoneBotEl.style.right = (padRight + 4) + 'px';
+        console.log('🖱️ Mouse tracking para RIV activado (capture phase, 20fps)');
+      } else {
+        console.log('📱 Mouse tracking desactivado (dispositivo táctil)');
       }
-      if (hitzoneWppEl) {
-        hitzoneWppEl.style.width = hitzoneSize + 'px';
-        hitzoneWppEl.style.height = hitzoneSize + 'px';
-        hitzoneWppEl.style.bottom = (padBottom + 16 + hitzoneSize + gap) + 'px';
-        hitzoneWppEl.style.right = (padRight + 4) + 'px';
+
+      if (window.visualViewport) {
+        function handleKeyboardViewport() {
+          if (!isExpanded || !isNarrowScreen()) return;
+          if (!chatOpenViewportHeight) return;
+
+          var vv = window.visualViewport;
+          var diff = chatOpenViewportHeight - vv.height;
+
+          if (diff > 80) {
+            if (currentKeyboardHeight === 0) {
+              console.log('⌨️ Teclado detectado (' + Math.round(diff) + 'px) - Ajustando iframe');
+            }
+            currentKeyboardHeight = diff;
+            iframe.style.height = Math.round(vv.height) + 'px';
+            iframe.style.top = Math.round(vv.offsetTop) + 'px';
+            iframe.style.bottom = 'auto';
+          } else if (currentKeyboardHeight > 0) {
+            console.log('⌨️ Teclado cerrado - Restaurando iframe a 100%');
+            currentKeyboardHeight = 0;
+            chatOpenViewportHeight = vv.height;
+            iframe.style.height = '100%';
+            iframe.style.top = '0';
+            iframe.style.bottom = '0';
+          }
+        }
+
+        window.visualViewport.addEventListener('resize', handleKeyboardViewport);
+        window.visualViewport.addEventListener('scroll', handleKeyboardViewport);
+        console.log('📱 Detección de teclado (VisualViewport API) activada para iframe');
       }
-    }
-    updateHitzonePositions();
-    window.addEventListener('resize', updateHitzonePositions);
-  })();
+    })();
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
-
-  <script>
-    // Ocultar splash screen cuando Flutter esté listo
-    window.addEventListener('flutter-first-frame', function() {
-      const splash = document.getElementById('loading-splash');
-      if (splash) {
-        splash.classList.add('fade-out');
-        setTimeout(() => splash.remove(), 300);
-      }
-    });
-
-    // Fallback: ocultar después de 3 segundos si el evento no se dispara
-    setTimeout(function() {
-      const splash = document.getElementById('loading-splash');
-      if (splash && !splash.classList.contains('fade-out')) {
-        splash.classList.add('fade-out');
-        setTimeout(() => splash.remove(), 300);
-      }
-    }, 3000);
-  </script>
 </body>
 </html>

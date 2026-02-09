@@ -646,12 +646,14 @@ class _DynamicSlidingNavBarState extends State<_DynamicSlidingNavBar> {
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: InkWell(
-                  onTap: () => widget.onTap(index),
-                  hoverColor: Colors.transparent,
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  child: Center(
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: InkWell(
+                    onTap: () => widget.onTap(index),
+                    hoverColor: Colors.transparent,
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    child: Center(
                     child: Container(
                       key: _keys[index],
                       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -661,6 +663,7 @@ class _DynamicSlidingNavBarState extends State<_DynamicSlidingNavBar> {
                       ),
                     ),
                   ),
+                ),
                 ),
               );
             }).toList(),

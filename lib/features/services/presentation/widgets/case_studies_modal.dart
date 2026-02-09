@@ -79,10 +79,12 @@ class CaseStudiesModal extends StatelessWidget {
               itemBuilder: (context, index) {
                 final project = caseStudies[index];
                 
-                return InkWell(
-                  onTap: () => _launchURL(project.url),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
+                return MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: InkWell(
+                    onTap: () => _launchURL(project.url),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
                     height: 80,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
@@ -162,6 +164,7 @@ class CaseStudiesModal extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
                   ),
                 );
               },

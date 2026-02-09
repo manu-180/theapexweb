@@ -45,9 +45,11 @@ final authStateStreamProvider = AutoDisposeStreamProvider<User?>.internal(
 );
 
 typedef AuthStateStreamRef = AutoDisposeStreamProviderRef<User?>;
-String _$currentUserHash() => r'212db705cd85b7c960e904fe5d352b2c6099e6bd';
+String _$currentUserHash() => r'b05e94083a302787aa92a0d63f03f56188a4322c';
 
-/// Provider que expone el USUARIO ACTUAL (sincrónicamente).
+/// Provider que expone el USUARIO ACTUAL.
+/// Depende del stream de auth para actualizarse tras OAuth (p. ej. Google)
+/// y que presencia y avatar muestren nombre/foto correctos.
 ///
 /// Copied from [currentUser].
 @ProviderFor(currentUser)

@@ -6,7 +6,7 @@ import 'package:apex/core/providers/supabase_providers.dart';
 part 'contact_repository.g.dart';
 
 class ContactRepository {
-  final SupabaseClient _supabase;
+  final SupabaseClient? _supabase;
 
   ContactRepository(this._supabase);
 
@@ -15,9 +15,8 @@ class ContactRepository {
     required String email,
     required String message,
   }) async {
-    // Encapsulamos la llamada a la Edge Function
-    // La UI ya no necesita saber el nombre de la función ni la estructura del body
-    await _supabase.functions.invoke(
+    if (_supabase == null) return;
+    await _supabase!.functions.invoke(
       'send-contact-email',
       body: {
         'name': name,

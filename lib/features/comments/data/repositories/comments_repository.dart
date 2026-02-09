@@ -12,7 +12,7 @@ part 'comments_repository.g.dart';
 const String _kOwnerUuid = '37dad3e9-531c-4657-8db6-ddebbdcfa878';
 
 class CommentsRepository {
-  final SupabaseClient _supabase;
+  final SupabaseClient? _supabase;
   final StreamController<void> _dataChangeController = StreamController.broadcast();
   final List<RealtimeChannel> _subscriptions = [];
 
@@ -20,21 +20,16 @@ class CommentsRepository {
     _initRealtime();
   }
 
-  // Exponemos un stream simple para notificar cambios externos
   Stream<void> get onDataChanged => _dataChangeController.stream;
 
   void _initRealtime() {
-    // En Flutter Web, Realtime tiene problemas de autenticación con WebSocket
-    // No nos suscribimos y usamos polling manual si es necesario
+    if (_supabase == null) return;
     if (kIsWeb) {
       debugPrint('Comments: Web detected - Realtime deshabilitado (sin suscripciones)');
       return;
     }
-
-    // Modo normal (Mobile/Desktop) - suscribirse a cambios en tiempo real
     try {
-      // Escuchamos cambios en 'comments'
-      final subComments = _supabase.channel('public:comments').onPostgresChanges(
+      final subComments = _supabase!.channel('public:comments').onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'comments',
@@ -42,7 +37,7 @@ class CommentsRepository {
       ).subscribe();
 
       // Escuchamos cambios en 'comment_likes'
-      final subLikes = _supabase.channel('public:comment_likes').onPostgresChanges(
+      final subLikes = _supabase!.channel('public:comment_likes').onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'comment_likes',
@@ -63,9 +58,9 @@ class CommentsRepository {
   }
 
   Future<List<Comment>> fetchComments() async {
+    if (_supabase == null) return [];
     try {
-      // 1. Fetch SOLO PADRES (Roots) ordenados por fecha descendente
-      final rootsResponse = await _supabase
+      final rootsResponse = await _supabase!
           .from('comments_with_metadata') 
           .select()
           .filter('parent_id', 'is', null) // <--- CORRECCIÓN ROBUSTA: Usamos .filter explícito
@@ -79,7 +74,7 @@ class CommentsRepository {
       // 2. Fetch RESPUESTAS (Hijos) correspondientes a estos padres
       final rootIds = roots.map((c) => c.id).toList();
 
-      final repliesResponse = await _supabase
+      final repliesResponse = await _supabase!
           .from('comments_with_metadata')
           .select()
           .filter('parent_id', 'in', rootIds) // <--- CORRECCIÓN ROBUSTA: Usamos .filter explícito
@@ -121,7 +116,8 @@ class CommentsRepository {
     int? parentId,
     int? rating,
   }) async {
-    await _supabase.from('comments').insert({
+    if (_supabase == null) return;
+    await _supabase!.from('comments').insert({
       'user_id': userId,
       'content': content,
       'parent_id': parentId, 
@@ -130,7 +126,8 @@ class CommentsRepository {
   }
 
   Future<void> toggleLike(String userId, int commentId) async {
-    final maybeLike = await _supabase
+    if (_supabase == null) return;
+    final maybeLike = await _supabase!
         .from('comment_likes')
         .select()
         .eq('user_id', userId)
@@ -138,9 +135,9 @@ class CommentsRepository {
         .maybeSingle();
 
     if (maybeLike != null) {
-      await _supabase.from('comment_likes').delete().eq('user_id', userId).eq('comment_id', commentId);
+      await _supabase!.from('comment_likes').delete().eq('user_id', userId).eq('comment_id', commentId);
     } else {
-      await _supabase.from('comment_likes').insert({'user_id': userId, 'comment_id': commentId});
+      await _supabase!.from('comment_likes').insert({'user_id': userId, 'comment_id': commentId});
     }
   }
 }

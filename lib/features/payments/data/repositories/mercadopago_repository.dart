@@ -13,23 +13,20 @@ part 'mercadopago_repository.g.dart';
 class MercadoPagoRepository {
   MercadoPagoRepository(this._supabase, this._supabaseUrl);
 
-  final SupabaseClient _supabase;
+  final SupabaseClient? _supabase;
   final String _supabaseUrl;
-  
-  /// Genera la preferencia y RETORNA la URL (String) para que la UI decida cómo abrirla.
-  /// Esto desacopla la lógica de negocio de la interfaz y evita bloqueos de popups.
+
   Future<String> createPreference({
     required ServicePlan plan,
     required String userEmail, 
     required String? userId, 
   }) async {
-    
-    // Verificación proactiva de conexión antes de llamar
+    if (_supabase == null) throw Exception('Servicio de pagos no disponible.');
     try {
-      final session = _supabase.auth.currentSession;
+      final session = _supabase!.auth.currentSession;
       final jwt = session?.accessToken;
 
-      final response = await _supabase.functions.invoke(
+      final response = await _supabase!.functions.invoke(
         'create_preference_manuel',
         headers: {
           'Content-Type': 'application/json',

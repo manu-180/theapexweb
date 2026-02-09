@@ -7,13 +7,14 @@ import 'package:apex/features/contact/domain/models/appointment_model.dart';
 part 'appointment_repository.g.dart';
 
 class AppointmentRepository {
-  final SupabaseClient _supabase;
+  final SupabaseClient? _supabase;
 
   AppointmentRepository(this._supabase);
 
   Future<List<int>> getBookedHours(DateTime date) async {
+    if (_supabase == null) return [];
     final dateString = date.toIso8601String().split('T')[0];
-    final response = await _supabase
+    final response = await _supabase!
         .from('appointments')
         .select('hour_slot')
         .eq('date_slot', dateString);
@@ -22,8 +23,9 @@ class AppointmentRepository {
   }
 
   Future<void> createAppointment(Appointment appointment) async {
+    if (_supabase == null) return;
     try {
-      await _supabase.from('appointments').insert(appointment.toJson());
+      await _supabase!.from('appointments').insert(appointment.toJson());
     } on PostgrestException catch (e) {
       if (e.code == '23505') {
         throw Exception('Lo sentimos, ese horario acaba de ser ocupado por otra persona.');
@@ -39,8 +41,8 @@ class AppointmentRepository {
     required DateTime date,
     required int hour,
   }) async {
-    // Invocamos la Edge Function 'send-booking-email'
-    await _supabase.functions.invoke(
+    if (_supabase == null) return;
+    await _supabase!.functions.invoke(
       'send-booking-email',
       body: {
         'name': name,

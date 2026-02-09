@@ -88,10 +88,6 @@ class _TechCardState extends ConsumerState<TechCard> {
           );
 
           final surfaceColor = themeData.colorScheme.surface;
-          final hoverColor = Color.alphaBlend(
-            widget.accentColor.withOpacity(0.25),
-            surfaceColor, 
-          );
 
           return AnimatedContainer(
             duration: const Duration(milliseconds: 150),
@@ -99,20 +95,20 @@ class _TechCardState extends ConsumerState<TechCard> {
             transform: _isHovering ? (Matrix4.identity()..scale(1.02)) : Matrix4.identity(),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              gradient: borderGradient, 
+              gradient: borderGradient,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 15,
+                  color: Colors.black.withOpacity(_isHovering ? 0.2 : 0.05),
+                  blurRadius: _isHovering ? 20 : 10,
                   offset: const Offset(0, 10),
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(2.5), 
+            padding: const EdgeInsets.all(2.5),
             child: Container(
               decoration: BoxDecoration(
-                color: _isHovering ? hoverColor : surfaceColor,
-                borderRadius: BorderRadius.circular(13.5), 
+                color: surfaceColor,
+                borderRadius: BorderRadius.circular(13.5),
               ),
               child: Material(
                 color: Colors.transparent,

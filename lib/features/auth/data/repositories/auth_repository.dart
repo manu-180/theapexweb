@@ -1,19 +1,21 @@
 // Archivo: lib/features/auth/data/repositories/auth_repository.dart
+import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, kDebugMode; 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthRepository {
   AuthRepository(this._supabase);
 
-  final SupabaseClient _supabase;
+  final SupabaseClient? _supabase;
 
-  Stream<User?> get authStateChanges => _supabase.auth.onAuthStateChange.map(
-        (data) => data.session?.user,
-      );
-  
-  User? get currentUser => _supabase.auth.currentUser;
+  Stream<User?> get authStateChanges => _supabase != null
+      ? _supabase.auth.onAuthStateChange.map((data) => data.session?.user)
+      : const Stream.empty();
+
+  User? get currentUser => _supabase?.auth.currentUser;
 
   Future<void> signInWithGoogle() async {
+    if (_supabase == null) return;
     try {
       String? redirectTo;
       
@@ -49,6 +51,7 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
+    if (_supabase == null) return;
     try {
       await _supabase.auth.signOut();
     } catch (e) {

@@ -195,9 +195,11 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
   Widget _buildToggleItem(String text, int index) {
     final isSelected = _selectedIndex == index;
     final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
-      child: AnimatedContainer(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedIndex = index),
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
@@ -211,6 +213,7 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
             color: isSelected ? theme.colorScheme.onPrimary : theme.colorScheme.onSurfaceVariant,
           ),
         ),
+      ),
       ),
     );
   }

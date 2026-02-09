@@ -119,30 +119,15 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
   }
 }
 
+/// En Mac/iOS no se muestran los videos (WebM); se usa fallback estático.
+/// No mostramos icono circular para mantener la vista limpia — solo espacio.
 class _StaticHeroImage extends StatelessWidget {
   final AppThemeConfig themeConfig;
   const _StaticHeroImage({required this.themeConfig});
 
   @override
   Widget build(BuildContext context) {
-    final icon = themeConfig.logoIcon ?? FontAwesomeIcons.code;
-    final color = Theme.of(context).colorScheme.primary;
-
-    return SizedBox(
-      height: 250,
-      width: double.infinity,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.all(30),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color.withOpacity(0.1),
-            border: Border.all(color: color.withOpacity(0.3), width: 2),
-          ),
-          child: Icon(icon, size: 80, color: color),
-        ),
-      ),
-    );
+    return const SizedBox(height: 80);
   }
 }
 

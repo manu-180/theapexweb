@@ -2,7 +2,6 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:apex/features/services/domain/models/plan_model.dart';
 import 'package:apex/features/services/presentation/widgets/case_studies_modal.dart';
 import 'package:apex/features/services/presentation/widgets/contact_modal.dart';
@@ -70,15 +69,6 @@ class _PlanCardState extends ConsumerState<PlanCard> {
     final colorScheme = theme.colorScheme;
     final primaryColor = colorScheme.primary;
 
-    final currencyFormatter = NumberFormat.currency(
-      locale: 'es_AR',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
-
-    final hasDiscount = widget.plan.originalPrice != null && 
-                        widget.plan.originalPrice! > widget.plan.price;
-
     final hasCases = widget.plan.caseStudies != null && widget.plan.caseStudies!.isNotEmpty;
 
     return MouseRegion(
@@ -109,10 +99,6 @@ class _PlanCardState extends ConsumerState<PlanCard> {
           );
 
           final surfaceColor = colorScheme.surface;
-          final hoverColor = Color.alphaBlend(
-            primaryColor.withOpacity(0.15),
-            surfaceColor,
-          );
 
           return AnimatedContainer(
             duration: const Duration(milliseconds: 150),
@@ -132,7 +118,7 @@ class _PlanCardState extends ConsumerState<PlanCard> {
             padding: const EdgeInsets.all(2.5),
             child: Container(
               decoration: BoxDecoration(
-                color: _isHovering ? hoverColor : surfaceColor,
+                color: surfaceColor,
                 borderRadius: BorderRadius.circular(13.5),
               ),
               child: Material(
@@ -183,90 +169,8 @@ class _PlanCardState extends ConsumerState<PlanCard> {
                                       ),
                                     ),
                                   ),
-                                const SizedBox(height: 12), // Reduje espacio
+                                const SizedBox(height: 16),
 
-                                // --- PRECIO ---
-                                FadeIn(
-                                  delay: const Duration(milliseconds: 100),
-                                  child: Container(
-                                    // Reduje la altura mínima de 110 a 90 para hacerla menos alta
-                                    constraints: const BoxConstraints(minHeight: 90),
-                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                                    decoration: BoxDecoration(
-                                      color: primaryColor.withOpacity(0.08), 
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: primaryColor.withOpacity(0.2), 
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: widget.plan.isCustom
-                                        ? // CASO A MEDIDA
-                                          Text(
-                                            "A medida", 
-                                            textAlign: TextAlign.center,
-                                            style: theme.textTheme.headlineMedium?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: theme.colorScheme.onSurface,
-                                              fontSize: 26,
-                                            ),
-                                          )
-                                        : // CASO PRECIO NUMÉRICO
-                                          Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              if (hasDiscount)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(bottom: 2.0),
-                                                  child: Row(
-                                                    mainAxisAlignment: MainAxisAlignment.center,
-                                                    children: [
-                                                      Text(
-                                                        currencyFormatter.format(widget.plan.originalPrice),
-                                                        style: TextStyle(
-                                                          decoration: TextDecoration.lineThrough,
-                                                          decorationColor: theme.colorScheme.onSurface.withOpacity(0.5),
-                                                          color: theme.colorScheme.onSurface.withOpacity(0.5),
-                                                          fontSize: 13,
-                                                          fontWeight: FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 8),
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                        decoration: BoxDecoration(
-                                                          color: primaryColor.withOpacity(0.2),
-                                                          borderRadius: BorderRadius.circular(4),
-                                                          border: Border.all(color: primaryColor.withOpacity(0.5)),
-                                                        ),
-                                                        child: Text(
-                                                          '-${widget.plan.discountPercentage}%',
-                                                          style: TextStyle(
-                                                            color: primaryColor,
-                                                            fontWeight: FontWeight.bold,
-                                                            fontSize: 11,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              Text(
-                                                currencyFormatter.format(widget.plan.price),
-                                                textAlign: TextAlign.center,
-                                                style: theme.textTheme.displaySmall?.copyWith(
-                                                  fontWeight: FontWeight.bold,
-                                                  color: theme.colorScheme.onSurface,
-                                                  fontSize: 26, // Reduje fuente del precio
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                    ),
-                                  ),
-                                ),
-                                
                                 // Casos de Éxito
                                 if (hasCases) ...[
                                   const SizedBox(height: 10),
