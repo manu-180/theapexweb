@@ -69,7 +69,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "7644c33bd0099d6d8fcff1933af42b86
 "favicons/favicon_riverpod.png": "6725cb0a7c912366c40ecdc22bd2fc62",
 "favicons/favicon_supabase.png": "86621263c2beee234fe1d5135b8909a0",
 "flutter.js": "24bc71911b75b5f8135c949e27a2984e",
-"flutter_bootstrap.js": "102e9ca2afe954cc043772dd21d6ff6b",
+"flutter_bootstrap.js": "1af3a5317cc6a03b4e1a430c5c23a892",
 "icons/Icon-192.png": "60ed491803bfd2a163b92db45a9e2f64",
 "icons/Icon-512.png": "f0a96202bd8495d5ebf56de07231ce4a",
 "icons/Icon-maskable-192.png": "60ed491803bfd2a163b92db45a9e2f64",
