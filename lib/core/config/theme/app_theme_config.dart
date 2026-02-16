@@ -26,6 +26,7 @@ class AppThemeConfig {
 const _flutterColor = Color(0xFF0175C2);
 const _supabaseColor = Color(0xFF3ECF8E);
 const _riverpodColor = Color(0xFF6E56F8);
+const _botlodeColor = Color(0xFFFFC000);
 const _assistifyColor = Color(0xFF00A8E8);
 const _neutralColor = Color(0xFF64748B);
 
@@ -116,6 +117,14 @@ final Map<AppTheme, AppThemeConfig> appThemeConfigMap = {
     lottieAsset: 'assets/animations/riverpod_lottie.json',
     lightTheme: _createTheme(seedColor: _riverpodColor, brightness: Brightness.light, fontFamily: _fontFamily),
     darkTheme: _createTheme(seedColor: _riverpodColor, brightness: Brightness.dark, fontFamily: _fontFamily),
+  ),
+
+  // --- BOTLODE ---
+  AppTheme.botlode: AppThemeConfig(
+    themeName: 'BotLode',
+    logoAsset: 'assets/icons/logo_botlode.png',
+    lightTheme: _createTheme(seedColor: _botlodeColor, brightness: Brightness.light, fontFamily: _fontFamily),
+    darkTheme: _createTheme(seedColor: _botlodeColor, brightness: Brightness.dark, fontFamily: _fontFamily),
   ),
 
   // --- ASSISTIFY ---

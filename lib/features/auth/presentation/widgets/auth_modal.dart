@@ -40,8 +40,8 @@ class _AuthRequiredModalState extends ConsumerState<AuthRequiredModal> with Sing
         return 'assets/animations/password_riverpod.json';
       case AppTheme.assistify:
         return 'assets/animations/password_assistify.json';
+      case AppTheme.botlode:
       case AppTheme.neutral:
-      default:
         return 'assets/animations/password_neutral.json';
     }
   }

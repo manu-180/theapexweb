@@ -8,11 +8,14 @@ enum AppTheme {
   flutter,
   supabase,
   riverpod,
+  botlode,
   assistify;
 
   // 1. Getter para el Asset de imagen (Si el tema usa una imagen personalizada)
   String? get logoAsset {
     switch (this) {
+      case AppTheme.botlode:
+        return 'assets/icons/logo_botlode.png';
       case AppTheme.assistify:
         return 'assets/icons/logo_assistify.png'; // Asegúrate que este path sea correcto
       default:
@@ -29,6 +32,8 @@ enum AppTheme {
         return FontAwesomeIcons.bolt;
       case AppTheme.riverpod:
         return FontAwesomeIcons.water;
+      case AppTheme.botlode:
+        return null; // Usa logoAsset (logo_botlode.png)
       default:
         return null;
     }
@@ -42,6 +47,7 @@ enum AppTheme {
       AppTheme.flutter => const Color(0xFF0175C2),
       AppTheme.supabase => const Color(0xFF3ECF8E),
       AppTheme.riverpod => const Color(0xFF6E56F8),
+      AppTheme.botlode => const Color(0xFFFFC000),
       AppTheme.assistify => const Color(0xFF00A8E8),
     };
 

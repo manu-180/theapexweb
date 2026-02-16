@@ -7,6 +7,7 @@ import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/widgets/inspector_gadget.dart'; // <--- IMPORTACIÓN RAYOS X
 import 'package:apex/features/landing/presentation/widgets/assistify_case_study_modal.dart';
+import 'package:apex/features/landing/presentation/widgets/botlode_case_study_modal.dart';
 import 'package:apex/features/landing/presentation/widgets/tech_card.dart';
 import 'package:apex/features/shared/widgets/footer.dart'; 
 
@@ -150,9 +151,20 @@ class _LandingViewState extends ConsumerState<LandingView> {
                               name: "Inyección de Tema Aislado",
                               techSpecs: "Arquitectura avanzada. Al abrir este modal, inyecto un 'ThemeData' nuevo solo para esta sección, sin afectar los colores globales del resto de la app.",
                               icon: FontAwesomeIcons.mobileScreen,
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 800), 
-                                child: _AssistifyCard(_mousePosNotifier),
+                              child: Wrap(
+                                spacing: 24,
+                                runSpacing: 24,
+                                alignment: WrapAlignment.center,
+                                children: [
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 800),
+                                    child: _BotLodeCard(_mousePosNotifier),
+                                  ),
+                                  ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 800),
+                                    child: _AssistifyCard(_mousePosNotifier),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -242,6 +254,62 @@ class _RiverpodCard extends StatelessWidget {
         'Estabilidad Total: Minimiza errores y cierres inesperados de la app.',
         'Calidad Asegurada: Código preparado para detectar fallos antes de salir.', 
         'Datos 100% Confiables: Tus usuarios nunca verán información errónea o vieja.',
+      ],
+    );
+  }
+}
+
+const _botlodeGold = Color(0xFFFFC000);
+
+class _BotLodeCard extends ConsumerWidget {
+  final ValueNotifier<Offset> mousePos;
+  const _BotLodeCard(this.mousePos);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return TechCard(
+      mousePos: mousePos,
+      theme: AppTheme.botlode,
+      title: 'BotLode: Ecosistema de Bots IA',
+      onTapOverride: () {
+        ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.botlode);
+        showGeneralDialog(
+          context: context,
+          barrierDismissible: true,
+          barrierLabel: 'Cerrar',
+          barrierColor: Colors.black.withOpacity(0.6),
+          transitionDuration: const Duration(milliseconds: 500),
+          pageBuilder: (context, animation, secondaryAnimation) {
+            return const BotlodeCaseStudyModal();
+          },
+          transitionBuilder: (context, animation, secondaryAnimation, child) {
+            final curvedValue = Curves.easeOutCubic.transform(animation.value);
+            return Transform.scale(
+              scale: 0.95 + (0.05 * curvedValue),
+              child: Opacity(
+                opacity: curvedValue,
+                child: child,
+              ),
+            );
+          },
+        );
+      },
+      icon: Image.asset(
+        'assets/icons/logo_botlode.png',
+        height: 28,
+        width: 28,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        isAntiAlias: true,
+        errorBuilder: (context, error, stackTrace) => const Icon(FontAwesomeIcons.robot, size: 28, color: _botlodeGold),
+      ),
+      accentColor: _botlodeGold,
+      bullets: const [
+        'Fábrica de bots: crea muchos de tus bots sin código, listos para trabajar 24/7.',
+        'Bot con 6 modos: Feliz, Enojado, Técnico, Confundido, Neutro y Vendedor.',
+        'Historial y datos: recopilación en modo vendedor, todo visible en el Command Center.',
+        'Alertas por email y agendado de reuniones desde el historial en un calendario.',
+        'Producto listo para comercializar: genera ingresos con IA sin inversión inicial.',
       ],
     );
   }

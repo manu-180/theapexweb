@@ -106,6 +106,7 @@ String _getThemeColorHex(AppTheme theme) {
     case AppTheme.flutter: return "#0175C2";
     case AppTheme.supabase: return "#3ECF8E";
     case AppTheme.riverpod: return "#6E56F8";
+    case AppTheme.botlode: return "#FFC000";
     case AppTheme.assistify: return "#00A8E8";
     default: return "#64748B"; // Neutral
   }

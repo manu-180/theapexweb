@@ -153,6 +153,10 @@ class _DynamicHeroImage extends StatelessWidget {
         'assets/videos/yoriverpod.webm', 
         isDark ? 'assets/images/yoriverpod_placeholder.png' : 'assets/images/yoriverpod_placeholder_light.png'
       ),
+      AppTheme.botlode   => (
+        'assets/videos/yoapex.webm', 
+        isDark ? 'assets/images/yoapex_placeholder.png' : 'assets/images/yoapex_placeholder_light.png'
+      ),
       AppTheme.assistify => (
         'assets/videos/yoassistify.webm', 
         isDark ? 'assets/images/yoassistify_placeholder.png' : 'assets/images/yoassistify_placeholder_light.png'

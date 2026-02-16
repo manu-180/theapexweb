@@ -128,6 +128,10 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.digit5 || key == LogicalKeyboardKey.numpad5) {
+      ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.botlode);
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.digit6 || key == LogicalKeyboardKey.numpad6) {
       ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify);
       return KeyEventResult.handled;
     }
@@ -383,7 +387,7 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
                         items: const [
                           {'key': 'T', 'desc': 'Modo Claro/Oscuro'},
                           {'key': 'I', 'desc': 'Modo Ingeniería (Rayos X)'}, 
-                          {'key': '1-5', 'desc': 'Cambiar Tema'},
+                          {'key': '1-6', 'desc': 'Cambiar Tema'},
                           {'key': 'R', 'desc': 'Resetear Tema'},
                           {'key': 'L', 'desc': 'Login Google'},
                           {'key': 'W', 'desc': 'Abrir WhatsApp'},
@@ -431,8 +435,11 @@ class _MobileDrawer extends ConsumerWidget {
     } else if (themeConfig.logoAsset != null) {
       logoWidget = Image.asset(
         themeConfig.logoAsset!,
-        height: 32, 
+        key: ValueKey(themeConfig.logoAsset),
+        height: 32,
+        width: 32,
         fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
         errorBuilder: (context, error, stackTrace) => apexIcon,
       );
     } else {
@@ -769,8 +776,11 @@ class _BrandLogo extends ConsumerWidget {
             else if (themeConfig.logoAsset != null)
               Image.asset(
                 themeConfig.logoAsset!,
+                key: ValueKey(themeConfig.logoAsset),
                 height: 28,
+                width: 28,
                 fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
                 errorBuilder: (context, error, stackTrace) => apexIcon,
               )
             else

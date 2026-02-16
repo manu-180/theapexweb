@@ -27,18 +27,24 @@
   <link rel="preconnect" href="https://botlode-player.vercel.app">
   <link rel="dns-prefetch" href="https://botlode-player.vercel.app">
 
+  <!-- Fuente Oxanium (igual que la app APEX) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600;700;800;900&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600;700;800;900&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600;700;800;900&display=swap"></noscript>
+
   <style>
     /* === BODY BASE === */
-    /* El fondo que se ve detrás de la burbuja del bot es este. Si no querés "fondo negro", cambiá background-color o quitarlo para heredar. */
     body {
       margin: 0;
       padding: 0;
-      background-color: #0A0A0A; /* Fondo oscuro consistente */
+      background-color: #0A0A0A;
       overflow: hidden;
-      font-family: 'Roboto', 'Arial', sans-serif;
+      font-family: 'Oxanium', 'Roboto', sans-serif;
     }
 
-    /* === LOADING SPLASH === */
+    /* === INTRO PREMIUM APEX === */
     #loading-splash {
       position: fixed;
       inset: 0;
@@ -46,10 +52,10 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%);
+      background: linear-gradient(160deg, #050508 0%, #0A0A0F 40%, #0D1117 100%);
       z-index: 999999;
       opacity: 1;
-      transition: opacity 0.3s ease-out;
+      transition: opacity 0.5s ease-out;
     }
 
     #loading-splash.fade-out {
@@ -57,25 +63,136 @@
       pointer-events: none;
     }
 
-    .spinner {
-      width: 60px;
-      height: 60px;
-      border: 3px solid rgba(255, 255, 255, 0.1);
-      border-top-color: #00E676;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+    /* Glow de fondo (verde/cyan APEX) */
+    .apex-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(0, 230, 118, 0.12) 0%, rgba(0, 184, 212, 0.06) 40%, transparent 70%);
+      animation: apex-glow-pulse 3s ease-in-out infinite;
+      pointer-events: none;
     }
 
-    @keyframes spin {
+    @keyframes apex-glow-pulse {
+      0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+    }
+
+    .apex-logo-wrap {
+      position: relative;
+      margin-bottom: 36px;
+      z-index: 1;
+    }
+
+    /* Logo APEX: entrada con impacto */
+    .apex-logo-text {
+      font-family: 'Oxanium', sans-serif;
+      font-size: clamp(48px, 12vw, 72px);
+      font-weight: 900;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, #00E676 0%, #69F0AE 35%, #00B8D4 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: apex-text-shine 4s ease-in-out infinite, apex-logo-pop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      text-shadow: 0 0 40px rgba(0, 230, 118, 0.25);
+      opacity: 0;
+      transform: scale(0.85);
+    }
+
+    @keyframes apex-logo-pop {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes apex-text-shine {
+      0%, 100% { background-position: 0% center; }
+      50% { background-position: 100% center; }
+    }
+
+    .apex-subtitle {
+      font-family: 'Oxanium', sans-serif;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.45);
+      margin-top: 10px;
+      font-weight: 600;
+      animation: apex-subtitle-in 0.6s ease-out 0.4s forwards;
+      opacity: 0;
+    }
+
+    @keyframes apex-subtitle-in {
+      to { opacity: 1; }
+    }
+
+    /* Spinner moderno */
+    .apex-spinner {
+      width: 56px;
+      height: 56px;
+      border: 3px solid rgba(0, 230, 118, 0.12);
+      border-top-color: #00E676;
+      border-radius: 50%;
+      animation: apex-spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+      box-shadow: 0 0 24px rgba(0, 230, 118, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes apex-spin {
       to { transform: rotate(360deg); }
     }
 
-    #loading-text {
-      margin-top: 24px;
-      color: rgba(255, 255, 255, 0.7);
-      font-size: 14px;
-      font-weight: 500;
-      letter-spacing: 0.5px;
+    /* Barra de progreso */
+    .apex-progress-wrap {
+      width: 220px;
+      height: 3px;
+      background: rgba(0, 230, 118, 0.1);
+      border-radius: 10px;
+      margin-top: 28px;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+
+    .apex-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00E676 0%, #00B8D4 100%);
+      border-radius: 10px;
+      animation: apex-progress 2s ease-in-out infinite;
+      box-shadow: 0 0 12px rgba(0, 230, 118, 0.5);
+    }
+
+    @keyframes apex-progress {
+      0% { width: 0%; }
+      50% { width: 70%; }
+      100% { width: 100%; }
+    }
+
+    .apex-loading-text {
+      margin-top: 20px;
+      font-family: 'Oxanium', sans-serif;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.4);
+      font-weight: 600;
+      animation: apex-fade-inout 2s ease-in-out infinite;
+      position: relative;
+      z-index: 1;
+    }
+
+    @keyframes apex-fade-inout {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
     }
 
     /* Forzar transparencia del iframe en Safari/Mac */
@@ -227,10 +344,18 @@
     touch-action: manipulation !important;
   "></div>
 
-  <!-- Loading Splash Screen -->
+  <!-- Intro premium APEX -->
   <div id="loading-splash">
-    <div class="spinner"></div>
-    <div id="loading-text">Cargando...</div>
+    <div class="apex-glow"></div>
+    <div class="apex-logo-wrap">
+      <div class="apex-logo-text">APEX</div>
+      <div class="apex-subtitle">Web &amp; Mobile</div>
+    </div>
+    <div class="apex-spinner"></div>
+    <div class="apex-progress-wrap">
+      <div class="apex-progress-bar"></div>
+    </div>
+    <div class="apex-loading-text">Iniciando experiencia...</div>
   </div>
 
   <!-- Snackbar de conectividad: lo inyecta botlode-connectivity.js -->
