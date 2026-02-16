@@ -249,7 +249,7 @@ class _ContactModalState extends ConsumerState<ContactModal> {
                         ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.primary))
                         : Icon(Icons.credit_card, size: 20, color: colorScheme.primary),
                       label: Text(
-                        _isLoadingPayment ? "Generando link..." : "Pagar ahora (${widget.plan.price ~/ 1000}k)",
+                        _isLoadingPayment ? "Generando link..." : "Pagar ahora",
                         style: TextStyle(color: colorScheme.primary),
                       ),
                     ),

@@ -146,7 +146,18 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.keyL) {
-      ref.read(authRepositoryProvider).signInWithGoogle();
+      ref.read(authRepositoryProvider).signInWithGoogle().then((started) {
+        if (!started && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Login con Google no está configurado. Ejecutá la app con credenciales de Supabase (ver README).',
+              ),
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      });
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.keyI) {
@@ -804,7 +815,19 @@ class _AuthButton extends ConsumerWidget {
 
     if (user == null) {
       return FilledButton.icon(
-        onPressed: () => ref.read(authRepositoryProvider).signInWithGoogle(),
+        onPressed: () async {
+          final started = await ref.read(authRepositoryProvider).signInWithGoogle();
+          if (!started && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Login con Google no está configurado. Ejecutá la app con credenciales de Supabase (ver README).',
+                ),
+                duration: Duration(seconds: 5),
+              ),
+            );
+          }
+        },
         icon: const Icon(FontAwesomeIcons.google, size: 14),
         label: const Text('Login'),
       );

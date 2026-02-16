@@ -14,8 +14,12 @@ class AuthRepository {
 
   User? get currentUser => _supabase?.auth.currentUser;
 
-  Future<void> signInWithGoogle() async {
-    if (_supabase == null) return;
+  /// Retorna true si se inició el flujo OAuth, false si no hay cliente (ej. faltan credenciales).
+  Future<bool> signInWithGoogle() async {
+    if (_supabase == null) {
+      debugPrint('Login con Google: no disponible (faltan credenciales de Supabase).');
+      return false;
+    }
     try {
       String? redirectTo;
       
@@ -44,6 +48,7 @@ class AuthRepository {
         OAuthProvider.google, 
         redirectTo: redirectTo,
       );
+      return true;
     } catch (e) {
       debugPrint('Error en signInWithGoogle: $e');
       rethrow;

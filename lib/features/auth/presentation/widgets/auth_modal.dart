@@ -130,9 +130,19 @@ class _AuthRequiredModalState extends ConsumerState<AuthRequiredModal> with Sing
                         const SizedBox(width: 12),
                         Expanded(
                           child: FilledButton.icon(
-                            onPressed: () {
-                              Navigator.pop(context); 
-                              ref.read(authRepositoryProvider).signInWithGoogle(); 
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              final started = await ref.read(authRepositoryProvider).signInWithGoogle();
+                              if (!started && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Login con Google no está configurado. Ejecutá la app con credenciales de Supabase (ver README).',
+                                    ),
+                                    duration: Duration(seconds: 5),
+                                  ),
+                                );
+                              }
                             },
                             icon: const Icon(Icons.g_mobiledata_rounded, size: 26),
                             label: const Text(

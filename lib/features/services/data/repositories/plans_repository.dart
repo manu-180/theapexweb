@@ -134,8 +134,7 @@ class PlansRepository {
         'Todo lo del plan MVP',
         'Panel Admin (Web o Escritorio)', 
         'Notificaciones Push & Pagos',
-        'Mantenimiento incluido (3 meses)', // <--- NUEVO
-        'Financiación: 3 cuotas de \$900.000'
+        'Mantenimiento incluido (3 meses)',
       ],
     ),
     ServicePlan(

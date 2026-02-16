@@ -5,7 +5,13 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Manuel Navarro - Full-Stack Developer Portfolio.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="APEX - Desarrollo web, aplicaciones móviles y software a medida. Creación de páginas web, landing pages, e-commerce y apps iOS/Android. Desarrollador Full-Stack en Argentina.">
+  <meta name="keywords" content="desarrollo web, crear página web, programador web, desarrollador Full-Stack, aplicaciones móviles, apps a medida, sitios web profesionales, desarrollo de software, diseño web, landing page, e-commerce, aplicación web, React Flutter, páginas web Argentina, freelance developer, desarrollo custom, software a medida, apps iOS Android, portfolio developer">
+  <meta name="author" content="Manuel Navarro - APEX">
+  <meta name="robots" content="index, follow">
+
+  <link rel="canonical" href="https://www.theapexweb.com/">
 
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -228,6 +234,7 @@
   </div>
 
   <!-- Snackbar de conectividad: lo inyecta botlode-connectivity.js -->
+  <!-- Opcional: para Login con Google en web, pasá credenciales con --dart-define al ejecutar/compilar (ver README). -->
   <script src="botlode-connectivity.js"></script>
 
   <script>
@@ -778,6 +785,28 @@
         console.log('📱 Detección de teclado (VisualViewport API) activada para iframe');
       }
     })();
+  </script>
+
+  <script>
+    const path = window.location.pathname;
+    const head = document.getElementsByTagName('head')[0];
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      head.appendChild(canonical);
+    }
+    if (path === '/' || path === '') {
+      canonical.setAttribute('href', 'https://www.theapexweb.com/');
+    } else if (path.startsWith('/services')) {
+      canonical.setAttribute('href', 'https://www.theapexweb.com/services');
+    } else if (path.startsWith('/about')) {
+      canonical.setAttribute('href', 'https://www.theapexweb.com/about');
+    } else if (path.startsWith('/contact')) {
+      canonical.setAttribute('href', 'https://www.theapexweb.com/contact');
+    } else {
+      canonical.setAttribute('href', 'https://www.theapexweb.com/');
+    }
   </script>
 
   <script src="flutter_bootstrap.js" async></script>

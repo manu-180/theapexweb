@@ -30,7 +30,7 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _precacheAllAssets());
   }
 
-  void _precacheAllAssets() {
+  Future<void> _precacheAllAssets() async {
     // Lista completa de tus assets (5 temas x 2 modos)
     final assets = [
       'assets/images/yoflutter_placeholder.png',
@@ -46,10 +46,11 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
     ];
 
     for (final path in assets) {
-      // Usamos try-catch silencioso por si falta algún archivo, para no ensuciar la consola
       try {
-        precacheImage(AssetImage(path), context);
-      } catch (_) {}
+        await precacheImage(AssetImage(path), context);
+      } catch (_) {
+        // Asset puede no existir o tener otra extensión (.jpeg); no romper la app
+      }
     }
   }
 
