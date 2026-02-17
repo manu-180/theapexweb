@@ -39,6 +39,13 @@ class PlansRepository {
           brandColor: Color(0xFF263238), 
           logoBgColor: Colors.black,
         ),
+        CaseStudy(
+          name: 'Poncho Spanish',
+          logoAsset: 'assets/icons/ponchospanish_logo.png',
+          url: 'https://ponchospanish.com',
+          brandColor: Color(0xFFD4A84B), // naranja-dorado/ocre de la marca
+          logoBgColor: Colors.black,
+        ),
       ],
       features: [
         'Diseño a Medida (Sin plantillas)',
@@ -62,6 +69,20 @@ class PlansRepository {
           logoAsset: 'assets/icons/logo_assistify.png',
           url: 'https://assistify.lat',
           brandColor: Color(0xFF00A8E8),
+        ),
+        CaseStudy(
+          name: 'Botrive',
+          logoAsset: 'assets/icons/logo_botlode.png',
+          url: 'https://botrive.com',
+          brandColor: Color(0xFFFFC000),
+          logoBgColor: Colors.black,
+        ),
+        CaseStudy(
+          name: 'Botlode',
+          logoAsset: 'assets/icons/logo_botlode.png',
+          url: 'https://botlode.com',
+          brandColor: Color(0xFFFFC000),
+          logoBgColor: Colors.black,
         ),
       ],
       features: [

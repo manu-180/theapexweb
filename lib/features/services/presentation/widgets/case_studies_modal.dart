@@ -85,7 +85,7 @@ class CaseStudiesModal extends StatelessWidget {
                     onTap: () => _launchURL(project.url),
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
-                    height: 80,
+                    height: 72,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       gradient: LinearGradient(
@@ -101,13 +101,13 @@ class CaseStudiesModal extends StatelessWidget {
                         width: 1,
                       ),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: Row(
                       children: [
-                        // --- Logo Circular Blindado ---
+                        // --- Logo Circular (más chico y sin tanto padding para que no se corte) ---
                         Container(
-                          width: 56,
-                          height: 56,
+                          width: 48,
+                          height: 48,
                           decoration: BoxDecoration(
                             color: project.logoBgColor ?? Colors.white,
                             shape: BoxShape.circle,
@@ -119,11 +119,13 @@ class CaseStudiesModal extends StatelessWidget {
                               )
                             ],
                           ),
-                          child: Center(
-                            child: _SafeLogo(project: project, theme: theme),
+                          child: ClipOval(
+                            child: Center(
+                              child: _SafeLogo(project: project, theme: theme),
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         
                         // --- Nombre y URL ---
                         Expanded(
@@ -200,14 +202,14 @@ class _SafeLogo extends StatelessWidget {
       );
     }
 
-    // 2. Fallback: Imagen (Si existe path)
+    // 2. Fallback: Imagen (Si existe path) — poco padding para que no se corte, alta nitidez
     if (project.logoAsset != null && project.logoAsset!.isNotEmpty) {
       return Padding(
-        padding: const EdgeInsets.all(6.0),
+        padding: const EdgeInsets.all(2.0),
         child: Image.asset(
           project.logoAsset!,
           fit: BoxFit.contain,
-          // Blindaje contra errores de carga (404 asset not found)
+          filterQuality: FilterQuality.high,
           errorBuilder: (context, error, stackTrace) => Icon(
             Icons.broken_image_rounded,
             color: theme.colorScheme.onSurface,

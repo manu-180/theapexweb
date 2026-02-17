@@ -16,7 +16,7 @@
 
   var CSS = [
     '#' + CONTAINER_ID + '{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:2147483646;display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:none}',
-    '.botlode-snackbar{position:relative;display:flex;align-items:center;gap:14px;padding:14px 22px;min-width:280px;max-width:90vw;border-radius:14px;font-family:\'Oxanium\',-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;font-size:14px;font-weight:600;letter-spacing:.5px;box-sizing:border-box;pointer-events:auto;opacity:0;transform:translateY(20px) scale(.96);transition:opacity .4s cubic-bezier(.34,1.56,.64,1),transform .4s cubic-bezier(.34,1.56,.64,1),box-shadow .3s ease;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}',
+    '.botlode-snackbar{position:relative;display:flex;align-items:center;gap:14px;padding:14px 22px;min-width:280px;max-width:90vw;border-radius:14px;font-family:\'Oxanium\',-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;font-size:14px;font-weight:600;letter-spacing:.5px;box-sizing:border-box;pointer-events:none;opacity:0;transform:translateY(20px) scale(.96);transition:opacity .4s cubic-bezier(.34,1.56,.64,1),transform .4s cubic-bezier(.34,1.56,.64,1),box-shadow .3s ease;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}',
     '.botlode-snackbar.show{opacity:1;transform:translateY(0) scale(1)}',
     '.botlode-snackbar.hide{opacity:0;transform:translateY(-12px) scale(.96);transition-duration:.3s}',
     '.botlode-snackbar-offline{background:rgba(20,12,8,.75);border:1px solid rgba(255,140,60,.5);color:#ffb380;box-shadow:0 0 24px rgba(255,120,40,.15),inset 0 1px 0 rgba(255,192,0,.08)}',
