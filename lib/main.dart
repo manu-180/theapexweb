@@ -224,14 +224,24 @@ class _BootstrapAppState extends State<_BootstrapApp> {
     return FutureBuilder<SharedPreferences>(
       future: _initFuture,
       builder: (context, snapshot) {
-        // A. PANTALLA DE CARGA (Logo simple)
+        // A. PANTALLA DE CARGA: mismo AppBar (altura y espacio lateral) que MainLayout
+        // para evitar salto lateral de la barra/flechita al terminar de cargar.
         if (snapshot.connectionState != ConnectionState.done) {
-          return const MaterialApp(
+          return MaterialApp(
             debugShowCheckedModeBanner: false,
             home: Scaffold(
               backgroundColor: Color(0xFF0A0A0A),
+              appBar: PreferredSize(
+                preferredSize: Size.fromHeight(kToolbarHeight),
+                child: AppBar(
+                  backgroundColor: const Color(0xFF0A0A0A),
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                  leadingWidth: 56,
+                  toolbarHeight: kToolbarHeight,
+                ),
+              ),
               body: Center(
-                // Un loader simple para que sepas que está pensando
                 child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
               ),
             ),

@@ -277,76 +277,103 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
     );
   }
 
+  static const int _minHour = 9;
+  static const int _maxHour = 19;
+
   Widget _buildHoursGrid(BuildContext context, BookingState state) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final allHours = List.generate(11, (i) => _minHour + i);
 
-    // Rango fijo de horas laborales (9 a 19) para mantener la grilla estable
-    final allHours = List.generate(11, (i) => 9 + i);
+    // Hora seleccionada: si no hay, usar la primera disponible o la primera del rango
+    final current = state.selectedHour ?? (state.availableHours.isNotEmpty ? state.availableHours.first : _minHour);
+    final hourPrev = current > _minHour ? current - 1 : null;
+    final hourNext = current < _maxHour ? current + 1 : null;
+
+    Widget buildHourRow(int? hour, bool isSelected) {
+      if (hour == null) return const SizedBox(height: 48);
+      final isAvailable = state.availableHours.contains(hour);
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isAvailable ? () => ref.read(bookingNotifierProvider.notifier).selectHour(hour) : null,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: Text(
+                "$hour:00",
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected
+                      ? colorScheme.onSurface
+                      : colorScheme.onSurface.withOpacity(0.45),
+                  decoration: isAvailable ? null : TextDecoration.lineThrough,
+                  decorationColor: colorScheme.outline,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-         Row(
-           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-           children: [
-             Text(
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
               "Horarios",
               style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
-             // Referencia visual pequeña
-             if (allHours.any((h) => !state.availableHours.contains(h)))
-               Text(
+            if (allHours.any((h) => !state.availableHours.contains(h)))
+              Text(
                 "Tachado = No disponible",
                 style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline, fontSize: 10),
               ),
-           ],
-         ),
+          ],
+        ),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: allHours.map((hour) {
-            // Lógica de estado
-            final isAvailable = state.availableHours.contains(hour);
-            final isSelected = state.selectedHour == hour;
-
-            return MouseRegion(
-              cursor: isAvailable ? SystemMouseCursors.click : SystemMouseCursors.basic,
-              child: GestureDetector(
-                onTap: isAvailable ? () => ref.read(bookingNotifierProvider.notifier).selectHour(hour) : null,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isSelected 
-                      ? colorScheme.primary 
-                      : (isAvailable ? colorScheme.surface : colorScheme.surfaceContainerHighest.withOpacity(0.3)), // Fondo atenuado si no disp.
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected 
-                        ? colorScheme.primary 
-                        : (isAvailable ? colorScheme.outline.withOpacity(0.3) : Colors.transparent)
-                  ),
-                  boxShadow: isSelected 
-                      ? [BoxShadow(color: colorScheme.primary.withOpacity(0.3), blurRadius: 8)] 
-                      : null
-                ),
-                child: Text(
-                  "$hour:00",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    decoration: isAvailable ? null : TextDecoration.lineThrough,
-                    decorationColor: colorScheme.outline,
-                    color: isSelected 
-                        ? colorScheme.onPrimary 
-                        : (isAvailable ? colorScheme.onSurface : colorScheme.outline),
-                  ),
+        // Solo 3 filas visibles: anterior (gris), seleccionada (negrita), siguiente (gris)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    buildHourRow(hourPrev, false),
+                    buildHourRow(current, true),
+                    buildHourRow(hourNext, false),
+                  ],
                 ),
               ),
-            ),
-            );
-          }).toList(),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: hourPrev != null && state.availableHours.contains(hourPrev)
+                        ? () => ref.read(bookingNotifierProvider.notifier).selectHour(hourPrev)
+                        : null,
+                    icon: Icon(Icons.keyboard_arrow_up, color: colorScheme.primary),
+                  ),
+                  IconButton(
+                    onPressed: hourNext != null && state.availableHours.contains(hourNext)
+                        ? () => ref.read(bookingNotifierProvider.notifier).selectHour(hourNext)
+                        : null,
+                    icon: Icon(Icons.keyboard_arrow_down, color: colorScheme.primary),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );
