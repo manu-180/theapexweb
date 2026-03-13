@@ -404,9 +404,11 @@ class _ContactEngineCard extends ConsumerWidget {
       themeBannerBelowAppBar: false,
       neutralGlassEffect: true,
       onTapOverride: () {
-        showProjectDrawer(context, content: const ContactEngineDrawerContent());
-        Future.delayed(const Duration(milliseconds: 150), () {
-          ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.contactEngine);
+        ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.contactEngine);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            showProjectDrawer(context, content: const ContactEngineDrawerContent());
+          }
         });
       },
       icon: Icon(
