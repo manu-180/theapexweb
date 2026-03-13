@@ -84,17 +84,19 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
                   constraints: const BoxConstraints(maxWidth: 900),
                   child: Column(
                     children: [
-                      FadeInDown(
-                        // Key única combinada para animar cambios drásticos si es necesario
+                      FadeIn(
                         key: ValueKey(
                           'hero-${themeConfig.theme.name}-$themeMode',
                         ),
+                        duration: const Duration(milliseconds: 420),
                         child: useStaticFallback
                             ? _StaticHeroImage(themeConfig: themeConfig)
                             : _DynamicHeroImage(themeConfig: themeConfig),
                       ),
 
-                      FadeInUp(
+                      FadeIn(
+                        duration: const Duration(milliseconds: 420),
+                        delay: const Duration(milliseconds: 80),
                         child: InspectorGadget(
                           // <--- AQUI ENVOLVEMOS LA CARD
                           name: "Diseño de Cristal (Glassmorphism)",
@@ -111,8 +113,9 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-              child: FadeInUp(
-                duration: const Duration(milliseconds: 480),
+              child: FadeIn(
+                duration: const Duration(milliseconds: 420),
+                delay: const Duration(milliseconds: 120),
                 child: _AboutCtaCard(mousePos: _mousePos),
               ),
             ),

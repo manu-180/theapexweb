@@ -1,4 +1,5 @@
 // Archivo: lib/features/landing/presentation/widgets/tech_card.dart
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -16,6 +17,7 @@ class TechCard extends ConsumerStatefulWidget {
     required this.accentColor,
     required this.mousePos,
     this.onTapOverride,
+    this.themeNoticeLabel,
   });
 
   final AppTheme theme;
@@ -25,12 +27,16 @@ class TechCard extends ConsumerStatefulWidget {
   final Color accentColor;
   final ValueNotifier<Offset> mousePos;
   final VoidCallback? onTapOverride;
+  final String? themeNoticeLabel;
 
   @override
   ConsumerState<TechCard> createState() => _TechCardState();
 }
 
 class _TechCardState extends ConsumerState<TechCard> {
+  static OverlayEntry? _activeThemeToastEntry;
+  static Timer? _activeThemeToastTimer;
+
   bool _isHovering = false;
   static const double _topBarInset = 10;
   AppTheme? _themeBeforePreview;
@@ -63,11 +69,50 @@ class _TechCardState extends ConsumerState<TechCard> {
   void _onClick() {
     if (widget.onTapOverride != null) {
       widget.onTapOverride!();
+      if ((widget.themeNoticeLabel ?? '').isNotEmpty) {
+        _showThemeAppliedBanner(widget.themeNoticeLabel!);
+      }
     } else {
       _previewApplied = false;
       _themeBeforePreview = null;
       ref.read(dynamicThemeProvider.notifier).setTheme(widget.theme);
+      if ((widget.themeNoticeLabel ?? '').isNotEmpty) {
+        _showThemeAppliedBanner(widget.themeNoticeLabel!);
+      }
     }
+  }
+
+  void _showThemeAppliedBanner(String themeName) {
+    final overlay = Overlay.maybeOf(context, rootOverlay: true);
+    if (overlay == null) return;
+    final colorScheme = Theme.of(context).colorScheme;
+    final topInset = MediaQuery.paddingOf(context).top + kToolbarHeight + 10;
+    _activeThemeToastTimer?.cancel();
+    _activeThemeToastEntry?.remove();
+    _activeThemeToastEntry = null;
+
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (context) => _ThemeToastOverlay(
+        title: 'Tema global actualizado',
+        subtitle: 'Paleta activa: $themeName',
+        accentColor: widget.accentColor,
+        surfaceColor: colorScheme.surface,
+        outlineColor: colorScheme.outline,
+        textColor: colorScheme.onSurface,
+        topInset: topInset,
+      ),
+    );
+
+    _activeThemeToastEntry = entry;
+    overlay.insert(entry);
+
+    _activeThemeToastTimer = Timer(const Duration(milliseconds: 3400), () {
+      entry.remove();
+      if (identical(_activeThemeToastEntry, entry)) {
+        _activeThemeToastEntry = null;
+      }
+    });
   }
 
   @override
@@ -269,6 +314,176 @@ class _TechCardState extends ConsumerState<TechCard> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeToastOverlay extends StatefulWidget {
+  const _ThemeToastOverlay({
+    required this.title,
+    required this.subtitle,
+    required this.accentColor,
+    required this.surfaceColor,
+    required this.outlineColor,
+    required this.textColor,
+    required this.topInset,
+  });
+
+  final String title;
+  final String subtitle;
+  final Color accentColor;
+  final Color surfaceColor;
+  final Color outlineColor;
+  final Color textColor;
+  final double topInset;
+
+  @override
+  State<_ThemeToastOverlay> createState() => _ThemeToastOverlayState();
+}
+
+class _ThemeToastOverlayState extends State<_ThemeToastOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<Offset> _slide;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    )..forward();
+
+    _slide = Tween<Offset>(
+      begin: const Offset(0, -0.22),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
+
+    return IgnorePointer(
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, widget.topInset, 16, 0),
+          child: SlideTransition(
+            position: _slide,
+            child: FadeTransition(
+              opacity: _fade,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: widget.surfaceColor.withValues(
+                      alpha: isDark ? 0.92 : 0.96,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: widget.outlineColor.withValues(
+                        alpha: isDark ? 0.28 : 0.18,
+                      ),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.28 : 0.10,
+                        ),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: widget.accentColor.withValues(
+                                  alpha: isDark ? 0.26 : 0.14,
+                                ),
+                                borderRadius: BorderRadius.circular(9),
+                              ),
+                              child: Icon(
+                                Icons.palette_outlined,
+                                size: 16,
+                                color: widget.accentColor,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    widget.title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: widget.textColor,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    widget.subtitle,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: widget.textColor.withValues(
+                                        alpha: 0.78,
+                                      ),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.check_circle_rounded,
+                              size: 17,
+                              color: widget.accentColor.withValues(
+                                alpha: isDark ? 0.92 : 0.86,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

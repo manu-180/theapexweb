@@ -223,6 +223,7 @@ class _FlutterCard extends StatelessWidget {
       title: 'Flutter',
       icon: const Icon(FontAwesomeIcons.flutter, size: 28, color: accentColor),
       accentColor: accentColor,
+      themeNoticeLabel: 'Flutter',
       bullets: const [
         'Aplicaciones Ultrarrápidas: Tiempos de carga mínimos que retienen clientes.',
         'Experiencia Premium: Fluidez visual y animaciones profesionales.',
@@ -247,6 +248,7 @@ class _SupabaseCard extends StatelessWidget {
       title: 'Supabase',
       icon: const Icon(FontAwesomeIcons.bolt, size: 28, color: accentColor),
       accentColor: accentColor,
+      themeNoticeLabel: 'Supabase',
       bullets: const [
         'Seguridad Bancaria: Protección total de los datos de tus usuarios.',
         'Escalabilidad Automática: Crece de 1 a 1 millón de usuarios sin caídas.',
@@ -271,6 +273,7 @@ class _RiverpodCard extends StatelessWidget {
       title: 'Riverpod',
       icon: const Icon(FontAwesomeIcons.water, size: 28, color: accentColor),
       accentColor: accentColor,
+      themeNoticeLabel: 'Riverpod',
       bullets: const [
         'Arquitectura Sólida: Tu proyecto puede crecer años sin volverse un caos.',
         'Inversión Eficiente: Actualizar tu app en el futuro es más rápido y económico.',
@@ -294,6 +297,7 @@ class _BotLodeCard extends ConsumerWidget {
       mousePos: mousePos,
       theme: AppTheme.botlode,
       title: 'BotLode: Ecosistema de Bots IA',
+      themeNoticeLabel: 'BotLode',
       onTapOverride: () {
         showProjectDrawer(context, content: const BotLodeDrawerContent());
         Future.delayed(const Duration(milliseconds: 150), () {
@@ -332,7 +336,7 @@ class _AssistifyCard extends ConsumerWidget {
       mousePos: mousePos,
       theme: AppTheme.assistify,
       title: 'Assistify: App en Producción',
-
+      themeNoticeLabel: 'Assistify',
       onTapOverride: () {
         showProjectDrawer(context, content: const AssistifyDrawerContent());
         Future.delayed(const Duration(milliseconds: 150), () {
@@ -371,6 +375,7 @@ class _ContactEngineCard extends ConsumerWidget {
       mousePos: mousePos,
       theme: AppTheme.contactEngine,
       title: 'Contact Engine',
+      themeNoticeLabel: 'Contact Engine',
       onTapOverride: () {
         showProjectDrawer(context, content: const ContactEngineDrawerContent());
         Future.delayed(const Duration(milliseconds: 150), () {
