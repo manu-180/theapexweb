@@ -19,6 +19,7 @@ class TechCard extends ConsumerStatefulWidget {
     this.onTapOverride,
     this.themeNoticeLabel,
     this.themeNoticeDuration,
+    this.themeBannerBelowAppBar = true,
   });
 
   final AppTheme theme;
@@ -31,6 +32,8 @@ class TechCard extends ConsumerStatefulWidget {
   final String? themeNoticeLabel;
   /// Si no se pasa, por defecto 3400 ms. Para las cards de abajo (Assistify, BotLode, Contact Engine) usar ~2000 ms.
   final Duration? themeNoticeDuration;
+  /// true: cartel debajo del app bar (home, temas Flutter/Supabase/Riverpod). false: cartel a la altura del app bar (BotLode, Assistify, Contact Engine; el drawer tapa el app bar).
+  final bool themeBannerBelowAppBar;
 
   @override
   ConsumerState<TechCard> createState() => _TechCardState();
@@ -89,7 +92,10 @@ class _TechCardState extends ConsumerState<TechCard> {
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return;
     final colorScheme = Theme.of(context).colorScheme;
-    final topInset = MediaQuery.paddingOf(context).top + kToolbarHeight + 10;
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final topInset = widget.themeBannerBelowAppBar
+        ? topPadding + kToolbarHeight + 10
+        : topPadding + 10;
     _activeThemeToastTimer?.cancel();
     _activeThemeToastEntry?.remove();
     _activeThemeToastEntry = null;

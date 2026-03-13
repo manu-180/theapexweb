@@ -314,6 +314,7 @@ class _BotLodeCard extends ConsumerWidget {
       title: 'BotLode: Ecosistema de Bots IA',
       themeNoticeLabel: 'BotLode',
       themeNoticeDuration: const Duration(milliseconds: 2000),
+      themeBannerBelowAppBar: false,
       onTapOverride: () {
         showProjectDrawer(context, content: const BotLodeDrawerContent());
         Future.delayed(const Duration(milliseconds: 150), () {
@@ -354,6 +355,7 @@ class _AssistifyCard extends ConsumerWidget {
       title: 'Assistify: App en Producción',
       themeNoticeLabel: 'Assistify',
       themeNoticeDuration: const Duration(milliseconds: 2000),
+      themeBannerBelowAppBar: false,
       onTapOverride: () {
         showProjectDrawer(context, content: const AssistifyDrawerContent());
         Future.delayed(const Duration(milliseconds: 150), () {
@@ -394,6 +396,7 @@ class _ContactEngineCard extends ConsumerWidget {
       title: 'Contact Engine',
       themeNoticeLabel: 'Contact Engine',
       themeNoticeDuration: const Duration(milliseconds: 2000),
+      themeBannerBelowAppBar: false,
       onTapOverride: () {
         showProjectDrawer(context, content: const ContactEngineDrawerContent());
         Future.delayed(const Duration(milliseconds: 150), () {

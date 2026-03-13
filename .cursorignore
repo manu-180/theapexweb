@@ -18,6 +18,7 @@ ios/
 linux/
 macos/
 windows/
+web/
 
 # Seguridad y Configuración (¡IMPORTANTE!)
 .env

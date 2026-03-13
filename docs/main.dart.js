@@ -8692,8 +8692,8 @@ Bc:function Bc(a,b){this.c=a
 this.a=b},
 aIw:function aIw(a){this.a=a},
 a6U:function a6U(a){this.a=a},
-JX(a,b,c,d,e,f,g,h,i){return new A.JW(f,i,c,b,a,e,h,g,null)},
-JW:function JW(a,b,c,d,e,f,g,h,i){var _=this
+JX(a,b,c,d,e,f,g,h,i,j){return new A.JW(f,j,c,b,a,e,i,h,g,null)},
+JW:function JW(a,b,c,d,e,f,g,h,i,j){var _=this
 _.d=a
 _.e=b
 _.f=c
@@ -8702,7 +8702,8 @@ _.w=e
 _.y=f
 _.z=g
 _.Q=h
-_.a=i},
+_.as=i
+_.a=j},
 OK:function OK(){var _=this
 _.w=!1
 _.x=null
@@ -54122,15 +54123,15 @@ A.aNm.prototype={
 $1(a){return this.a.apl(a.gc_())},
 $S:57}
 A.a7B.prototype={
-H(a){return A.JX(B.j4,B.a4B,B.WV,this.c,null,B.mo,null,"Flutter","Flutter")}}
+H(a){return A.JX(B.j4,B.a4B,B.WV,this.c,null,B.mo,!0,null,"Flutter","Flutter")}}
 A.act.prototype={
 H(a){var s="Supabase"
-return A.JX(B.j_,B.ZT,B.Wz,this.c,null,B.mp,null,s,s)}}
+return A.JX(B.j_,B.ZT,B.Wz,this.c,null,B.mp,!0,null,s,s)}}
 A.abl.prototype={
 H(a){var s="Riverpod"
-return A.JX(B.j5,B.a6S,B.Wx,this.c,null,B.mq,null,s,s)}}
+return A.JX(B.j5,B.a6S,B.Wx,this.c,null,B.mq,!0,null,s,s)}}
 A.a5s.prototype={
-hz(a,b){return A.JX(B.bR,B.a0P,A.uu("assets/icons/logo_botlode.png",new A.aHJ(),B.dh,B.cN,null,!1,28,!0,null,28),this.e,new A.aHK(a,b),B.mr,B.ef,"BotLode","BotLode: Ecosistema de Bots IA")}}
+hz(a,b){return A.JX(B.bR,B.a0P,A.uu("assets/icons/logo_botlode.png",new A.aHJ(),B.dh,B.cN,null,!1,28,!0,null,28),this.e,new A.aHK(a,b),B.mr,!1,B.ef,"BotLode","BotLode: Ecosistema de Bots IA")}}
 A.aHK.prototype={
 $0(){A.b0b(this.a,B.Nz)
 A.jk(B.cQ,new A.aHI(this.b),t.P)},
@@ -54143,7 +54144,7 @@ $3(a,b,c){return B.WY},
 $S:95}
 A.a5c.prototype={
 hz(a,b){var s=null
-return A.JX(B.dd,B.a4t,A.uu("assets/icons/logo_assistify.png",s,B.dh,B.cN,s,!1,28,!0,s,s),this.e,new A.aGW(a,b),B.ms,B.ef,"Assistify","Assistify: App en Producci\xf3n")}}
+return A.JX(B.dd,B.a4t,A.uu("assets/icons/logo_assistify.png",s,B.dh,B.cN,s,!1,28,!0,s,s),this.e,new A.aGW(a,b),B.ms,!1,B.ef,"Assistify","Assistify: App en Producci\xf3n")}}
 A.aGW.prototype={
 $0(){A.b0b(this.a,B.MQ)
 A.jk(B.cQ,new A.aGV(this.b),t.P)},
@@ -54153,7 +54154,7 @@ $0(){this.a.bX($.nd().geR(),t.sv).qs(B.ms)},
 $S:11}
 A.a5T.prototype={
 hz(a,b){var s="Contact Engine"
-return A.JX(B.de,B.a1i,B.WI,this.e,new A.aJ9(a,b),B.mt,B.ef,s,s)}}
+return A.JX(B.de,B.a1i,B.WI,this.e,new A.aJ9(a,b),B.mt,!1,B.ef,s,s)}}
 A.aJ9.prototype={
 $0(){A.b0b(this.a,B.RG)
 A.jk(B.cQ,new A.aJ8(this.b),t.P)},
@@ -54399,28 +54400,29 @@ s.x=null
 s.gdG().bX($.nd().geR(),t.sv).qs(s.a.d)
 r=s.a.z
 if(r.length!==0)s.a_l(r)}},
-a_l(a){var s,r,q,p,o,n=this,m=n.c
-m.toString
-s=A.HC(m,!0)
+a_l(a){var s,r,q,p,o,n,m=this,l=m.c
+l.toString
+s=A.HC(l,!0)
 if(s==null)return
-m=n.c
-m.toString
-m=A.I(m)
-r=n.c
+l=m.c
+l.toString
+l=A.I(l)
+r=m.c
 r.toString
-r=A.bj(r,B.bq,t.l).w
-q=$.b7i
-if(q!=null)q.aV()
-q=$.acN
-if(q!=null)q.fb(0)
+q=A.bj(r,B.bq,t.l).w.r.b
+p=m.a.as?q+56+10:q+10
+r=$.b7i
+if(r!=null)r.aV()
+r=$.acN
+if(r!=null)r.fb(0)
 $.acN=null
-p=A.bg()
-p.seD(A.qA(new A.aRY(n,a,m.ax,r.r.b+56+10),!1,!1))
-$.acN=p.aC()
-s.jJ(0,p.aC())
-o=n.a.Q
-if(o==null)o=B.SF
-$.b7i=A.cx(o,new A.aRZ(p))},
+o=A.bg()
+o.seD(A.qA(new A.aRY(m,a,l.ax,p),!1,!1))
+$.acN=o.aC()
+s.jJ(0,o.aC())
+n=m.a.Q
+if(n==null)n=B.SF
+$.b7i=A.cx(n,new A.aRZ(o))},
 H(b5){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9=this,b0=null,b1=A.I(b5),b2=b1.ax,b3=b2.a===B.a6,b4=b2.ry
 if(b4==null){b4=b2.t
 if(b4==null)b4=b2.k3}s=b4.aU(b3?0.2:0.24)
