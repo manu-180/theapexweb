@@ -18,6 +18,7 @@ class TechCard extends ConsumerStatefulWidget {
     required this.mousePos,
     this.onTapOverride,
     this.themeNoticeLabel,
+    this.themeNoticeDuration,
   });
 
   final AppTheme theme;
@@ -28,6 +29,8 @@ class TechCard extends ConsumerStatefulWidget {
   final ValueNotifier<Offset> mousePos;
   final VoidCallback? onTapOverride;
   final String? themeNoticeLabel;
+  /// Si no se pasa, por defecto 3400 ms. Para las cards de abajo (Assistify, BotLode, Contact Engine) usar ~2000 ms.
+  final Duration? themeNoticeDuration;
 
   @override
   ConsumerState<TechCard> createState() => _TechCardState();
@@ -107,7 +110,8 @@ class _TechCardState extends ConsumerState<TechCard> {
     _activeThemeToastEntry = entry;
     overlay.insert(entry);
 
-    _activeThemeToastTimer = Timer(const Duration(milliseconds: 3400), () {
+    final duration = widget.themeNoticeDuration ?? const Duration(milliseconds: 3400);
+    _activeThemeToastTimer = Timer(duration, () {
       entry.remove();
       if (identical(_activeThemeToastEntry, entry)) {
         _activeThemeToastEntry = null;

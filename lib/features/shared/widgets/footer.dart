@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
+import 'package:apex/core/widgets/inspector_gadget.dart';
 import 'package:apex/core/widgets/responsive_builder.dart';
 
 class Footer extends ConsumerWidget {
@@ -17,66 +18,120 @@ class Footer extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-        border: Border(
-          top: BorderSide(
-            color: colorScheme.outline.withOpacity(0.1),
-            width: 1,
+    return InspectorGadget(
+      name: 'Pie de página global',
+      techSpecs:
+          'Contenedor del footer: columnas de navegación (marca, servicios, tech stack) y copyright. Responsive: fila en desktop, columna en móvil.',
+      icon: FontAwesomeIcons.solidCopyright,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+          border: Border(
+            top: BorderSide(
+              color: colorScheme.outline.withOpacity(0.1),
+              width: 1,
+            ),
           ),
         ),
-      ),
-      padding: const EdgeInsets.only(top: 60.0, bottom: 40.0, left: 30.0, right: 30.0),
-      child: Column(
-        children: [
-          // --- CONTENIDO PRINCIPAL ---
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: ResponsiveBuilder(
-              desktop: (context) => Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: _buildBrandColumn(context, ref)),
-                  Expanded(child: _buildServicesColumn(context)),
-                  Expanded(child: _buildTechStackColumn(context, ref)),
-                ],
+        padding: const EdgeInsets.only(top: 60.0, bottom: 40.0, left: 30.0, right: 30.0),
+        child: Column(
+          children: [
+            // --- CONTENIDO PRINCIPAL ---
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: ResponsiveBuilder(
+                desktop: (context) => Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: InspectorGadget(
+                        name: 'Columna marca',
+                        techSpecs:
+                            'Logo APEX y enlaces a Inicio, Sobre Mí y Contacto. Navegación rápida desde el pie.',
+                        icon: FontAwesomeIcons.link,
+                        child: _buildBrandColumn(context, ref),
+                      ),
+                    ),
+                    Expanded(
+                      child: InspectorGadget(
+                        name: 'Columna servicios',
+                        techSpecs:
+                            'Enlaces a Desarrollo Web y Aplicaciones Móviles. Llevan a la pantalla Servicios con el índice correspondiente.',
+                        icon: FontAwesomeIcons.briefcase,
+                        child: _buildServicesColumn(context),
+                      ),
+                    ),
+                    Expanded(
+                      child: InspectorGadget(
+                        name: 'Columna tech stack',
+                        techSpecs:
+                            'Badges Flutter, Supabase y Riverpod. Clic en cada uno cambia el tema global de la app.',
+                        icon: FontAwesomeIcons.layerGroup,
+                        child: _buildTechStackColumn(context, ref),
+                      ),
+                    ),
+                  ],
+                ),
+                mobile: (context) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    InspectorGadget(
+                      name: 'Columna marca',
+                      techSpecs:
+                          'Logo APEX y enlaces a Inicio, Sobre Mí y Contacto. En móvil centrado.',
+                      icon: FontAwesomeIcons.link,
+                      child: _buildBrandColumn(context, ref),
+                    ),
+                    const SizedBox(height: 50),
+                    InspectorGadget(
+                      name: 'Columna servicios',
+                      techSpecs:
+                          'Enlaces a Desarrollo Web y Aplicaciones Móviles.',
+                      icon: FontAwesomeIcons.briefcase,
+                      child: _buildServicesColumn(context),
+                    ),
+                    const SizedBox(height: 50),
+                    InspectorGadget(
+                      name: 'Columna tech stack',
+                      techSpecs:
+                          'Badges Flutter, Supabase y Riverpod. Clic cambia el tema global.',
+                      icon: FontAwesomeIcons.layerGroup,
+                      child: _buildTechStackColumn(context, ref),
+                    ),
+                  ],
+                ),
               ),
-              mobile: (context) => Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+            ),
+
+            const SizedBox(height: 80),
+            Divider(color: colorScheme.outline.withOpacity(0.1)),
+            const SizedBox(height: 24),
+
+            // --- COPYRIGHT ---
+            InspectorGadget(
+              name: 'Copyright',
+              techSpecs:
+                  'Fila de derechos reservados. Año dinámico y marca APEX. Visible en todas las pantallas.',
+              icon: FontAwesomeIcons.copyright,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildBrandColumn(context, ref),
-                  const SizedBox(height: 50),
-                  _buildServicesColumn(context),
-                  const SizedBox(height: 50),
-                  _buildTechStackColumn(context, ref),
+                  Icon(Icons.code, size: 16, color: colorScheme.onSurfaceVariant),
+                  const SizedBox(width: 10),
+                  Text(
+                    '© $_currentYear APEX Development. Todos los derechos reservados.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             ),
-          ),
-
-          const SizedBox(height: 80),
-          Divider(color: colorScheme.outline.withOpacity(0.1)),
-          const SizedBox(height: 24),
-
-          // --- COPYRIGHT ---
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.code, size: 16, color: colorScheme.onSurfaceVariant),
-              const SizedBox(width: 10),
-              Text(
-                '© $_currentYear APEX Development. Todos los derechos reservados.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

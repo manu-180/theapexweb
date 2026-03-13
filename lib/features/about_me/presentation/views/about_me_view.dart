@@ -84,14 +84,20 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
                   constraints: const BoxConstraints(maxWidth: 900),
                   child: Column(
                     children: [
-                      FadeIn(
-                        key: ValueKey(
-                          'hero-${themeConfig.theme.name}-$themeMode',
+                      InspectorGadget(
+                        name: 'Hero imagen / video',
+                        techSpecs:
+                            'Imagen o video de presentación según tema y plataforma. En desktop se usa WebM con canal alfa; en Apple fallback estático. Precarga de assets para cambio de tema fluido.',
+                        icon: FontAwesomeIcons.image,
+                        child: FadeIn(
+                          key: ValueKey(
+                            'hero-${themeConfig.theme.name}-$themeMode',
+                          ),
+                          duration: const Duration(milliseconds: 420),
+                          child: useStaticFallback
+                              ? _StaticHeroImage(themeConfig: themeConfig)
+                              : _DynamicHeroImage(themeConfig: themeConfig),
                         ),
-                        duration: const Duration(milliseconds: 420),
-                        child: useStaticFallback
-                            ? _StaticHeroImage(themeConfig: themeConfig)
-                            : _DynamicHeroImage(themeConfig: themeConfig),
                       ),
 
                       FadeIn(
@@ -113,13 +119,25 @@ class _AboutMeViewState extends ConsumerState<AboutMeView> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
-              child: FadeIn(
-                duration: const Duration(milliseconds: 420),
-                delay: const Duration(milliseconds: 120),
-                child: _AboutCtaCard(mousePos: _mousePos),
+              child: InspectorGadget(
+                name: 'CTA Sobre mí',
+                techSpecs:
+                    'Llamada a la acción para agendar consulta desde la pantalla Sobre mí. Mismo estilo glass y glow que el resto de la vista.',
+                icon: FontAwesomeIcons.handPointer,
+                child: FadeIn(
+                  duration: const Duration(milliseconds: 420),
+                  delay: const Duration(milliseconds: 120),
+                  child: _AboutCtaCard(mousePos: _mousePos),
+                ),
               ),
             ),
-            const Footer(),
+            InspectorGadget(
+              name: 'Pie de página (Sobre mí)',
+              techSpecs:
+                  'Footer global: enlaces, stack tecnológico y copyright. Mismo componente que en Home, Servicios y Contacto.',
+              icon: FontAwesomeIcons.solidCopyright,
+              child: const Footer(),
+            ),
           ],
         ),
       ),

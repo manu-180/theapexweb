@@ -78,22 +78,32 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
                   child: Column(
                     children: [
                       // ── Header ───────────────────────────────────────────
-                      Text(
-                        'Mis Servicios',
-                        style: theme.textTheme.displayMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
+                      InspectorGadget(
+                        name: 'Cabecera Servicios',
+                        techSpecs:
+                            'Título y subtítulo de la pantalla de servicios. Tipografía destacada y mensaje orientado a conversión.',
+                        icon: FontAwesomeIcons.heading,
+                        child: Column(
+                          children: [
+                            Text(
+                              'Mis Servicios',
+                              style: theme.textTheme.displayMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              'Soluciones tecnológicas diseñadas para escalar tu negocio',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 36),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      Text(
-                        'Soluciones tecnológicas diseñadas para escalar tu negocio',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 36),
 
                       // ── Toggle ───────────────────────────────────────────
                       InspectorGadget(
@@ -192,7 +202,13 @@ class _ServicesViewState extends ConsumerState<ServicesView> {
             ),
 
             const SizedBox(height: 64),
-            const Footer(),
+            InspectorGadget(
+              name: 'Pie de página (Servicios)',
+              techSpecs:
+                  'Footer global: enlaces a secciones, stack tecnológico y copyright. Mismo componente que en Home, Sobre mí y Contacto.',
+              icon: FontAwesomeIcons.solidCopyright,
+              child: const Footer(),
+            ),
           ],
         ),
       ),

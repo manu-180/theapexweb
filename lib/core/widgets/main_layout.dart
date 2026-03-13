@@ -144,34 +144,54 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
         key: _scaffoldKey,
           endDrawer: isMobile ? _MobileDrawer(navItems: _navItems, onHelpTap: _showShortcutsDialog) : null,
           appBar: AppBar(
-            title: const _BrandLogo(),
+            title: InspectorGadget(
+              name: 'Marca y navegación al Home',
+              techSpecs: 'Logo clickeable que lleva al inicio. Refleja el tema de color activo (Flutter, Supabase, Riverpod, etc.) y define la identidad visual de la barra.',
+              icon: FontAwesomeIcons.houseChimney,
+              child: const _BrandLogo(),
+            ),
             centerTitle: false,
             automaticallyImplyLeading: false,
             actions: [
             if (!isMobile) ...[
-              _DynamicSlidingNavBar(
-                items: _navItems,
-                selectedIndex: activeIndex,
-                onTap: (index) => context.goNamed(_navItems[index]['name']),
-              ),
-
-              const SizedBox(width: 16),
-
-              FilledButton.icon(
-                onPressed: () => context.goNamed('contact'),
-                icon: const Icon(Icons.calendar_month_rounded, size: 16),
-                label: const Text(
-                  'Agendar consulta gratis',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              InspectorGadget(
+                name: 'Barra de navegación principal',
+                techSpecs: 'Links a Home, Servicios, Sobre Mí y Contacto. El ítem activo se resalta según la ruta actual (GoRouter). Navegación sin recarga.',
+                icon: FontAwesomeIcons.barsStaggered,
+                child: _DynamicSlidingNavBar(
+                  items: _navItems,
+                  selectedIndex: activeIndex,
+                  onTap: (index) => context.goNamed(_navItems[index]['name']),
                 ),
               ),
 
               const SizedBox(width: 16),
-              const PresenceBadge(),
+
+              InspectorGadget(
+                name: 'CTA Agendar consulta',
+                techSpecs: 'Botón principal que lleva a la pantalla de contacto/agendado. Diseño destacado para máxima conversión desde cualquier pantalla.',
+                icon: FontAwesomeIcons.calendarCheck,
+                child: FilledButton.icon(
+                  onPressed: () => context.goNamed('contact'),
+                  icon: const Icon(Icons.calendar_month_rounded, size: 16),
+                  label: const Text(
+                    'Agendar consulta gratis',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 16),
+              InspectorGadget(
+                name: 'Presencia en línea',
+                techSpecs: 'Indicador de estado (Online/Offline). Útil para soporte o para mostrar disponibilidad en tiempo real.',
+                icon: FontAwesomeIcons.signal,
+                child: const PresenceBadge(),
+              ),
               const SizedBox(width: 8),
 
               InspectorGadget(
@@ -192,12 +212,22 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
               const SizedBox(width: 16),
             ] else ...[
-              const PresenceBadge(),
-              IconButton(
-                onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-                icon: const Icon(Icons.menu_rounded, size: 28),
-                color: theme.colorScheme.primary,
-                tooltip: 'Menú',
+              InspectorGadget(
+                name: 'Presencia en línea',
+                techSpecs: 'Indicador de estado (Online/Offline). En móvil se muestra junto al menú hamburguesa.',
+                icon: FontAwesomeIcons.signal,
+                child: const PresenceBadge(),
+              ),
+              InspectorGadget(
+                name: 'Menú de navegación (móvil)',
+                techSpecs: 'Abre el drawer lateral con links a Home, Servicios, Sobre Mí, Contacto y atajos. Sustituye la barra horizontal en pantallas estrechas.',
+                icon: FontAwesomeIcons.bars,
+                child: IconButton(
+                  onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                  icon: const Icon(Icons.menu_rounded, size: 28),
+                  color: theme.colorScheme.primary,
+                  tooltip: 'Menú',
+                ),
               ),
               const SizedBox(width: 16),
             ],

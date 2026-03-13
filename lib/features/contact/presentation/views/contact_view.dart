@@ -60,7 +60,7 @@ class _ContactViewState extends State<ContactView> {
                         InspectorGadget(
                           name: "Smart Scheduler",
                           techSpecs:
-                              "Lógica de negocio compleja. Algoritmo de disponibilidad que filtra domingos y horarios ocupados desde la DB en tiempo real. Validación anti-colisiones (Constraint SQL).",
+                              "Lógica de negocio compleja. Algoritmo de disponibilidad que filtra domingos y horarios ocupados desde la DB en tiempo real. Validación anti-colisiones (Constraint SQL). Borde luminoso que sigue la posición del cursor con un gradiente radial en tiempo real.",
                           icon: FontAwesomeIcons.calendarCheck,
                           borderRadius: 24,
                           child: CursorGlowFrame(
@@ -123,7 +123,13 @@ class _ContactViewState extends State<ContactView> {
                       ],
                     ),
                   ),
-                  const Footer(),
+                  InspectorGadget(
+                    name: 'Pie de página (Contacto)',
+                    techSpecs:
+                        'Footer global: enlaces a secciones, stack tecnológico y copyright. Mismo componente que en el resto de la app.',
+                    icon: FontAwesomeIcons.solidCopyright,
+                    child: const Footer(),
+                  ),
                 ],
               ),
             ),
@@ -722,16 +728,27 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
 
         // -----------------------------------
         const SizedBox(height: 30),
-        CommentInputArea(
-          replyingTo: _replyingTo,
-          onCancelReply: _onCancelReply,
+        InspectorGadget(
+          name: 'Área de comentarios',
+          techSpecs:
+              'Input para escribir y enviar comentarios. Soporta respuestas (reply). Validación y envío a Edge Functions / Supabase en tiempo real.',
+          icon: FontAwesomeIcons.message,
+          child: CommentInputArea(
+            replyingTo: _replyingTo,
+            onCancelReply: _onCancelReply,
+          ),
         ),
         const SizedBox(height: 30),
         Divider(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
         const SizedBox(height: 20),
-        commentsState.when(
-          loading: () => const _SkeletonList(),
-          error: (err, stack) => Center(
+        InspectorGadget(
+          name: 'Lista de comentarios',
+          techSpecs:
+              'Listado de opiniones cargadas desde Supabase. Estados: loading (skeleton), error (reintentar), data (CommentCard por ítem). Actualización en vivo vía provider.',
+          icon: FontAwesomeIcons.list,
+          child: commentsState.when(
+            loading: () => const _SkeletonList(),
+            error: (err, stack) => Center(
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 24),
               padding: const EdgeInsets.all(24),
@@ -801,6 +818,7 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
                   .toList(),
             );
           },
+        ),
         ),
       ],
     );

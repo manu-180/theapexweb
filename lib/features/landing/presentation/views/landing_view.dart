@@ -88,9 +88,9 @@ class _LandingViewState extends ConsumerState<LandingView> {
 
                       // --- STACK TECNOLÓGICO (Cards de arriba) CON RAYOS X ---
                       InspectorGadget(
-                        name: "Efecto 'Mouse Glow'",
+                        name: "Cards de tema interactivas",
                         techSpecs:
-                            "Matemática visual. Rastreo la coordenada exacta de tu mouse/dedo para pintar un gradiente de luz dinámico en los bordes. Renderizado en tiempo real a 60 FPS.",
+                            "Pasá el mouse para previsualizar y hacé click para aplicar el tema global.",
                         icon: FontAwesomeIcons.layerGroup,
                         child: Wrap(
                           spacing: 24,
@@ -133,25 +133,34 @@ class _LandingViewState extends ConsumerState<LandingView> {
                       // --- PROYECTO DESTACADO (Card de abajo) CON RAYOS X ---
                       Column(
                         children: [
-                          Text(
-                            'Desarrollo Integral: De la Idea al Lanzamiento',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 28,
+                          InspectorGadget(
+                            name: 'Sección proyectos destacados',
+                            techSpecs:
+                                'Título y subtítulo de la sección de productos (Contact Engine, BotLode, Assistify). Tipografía responsive y alineación centrada.',
+                            icon: FontAwesomeIcons.layerGroup,
+                            child: Column(
+                              children: [
+                                Text(
+                                  'Desarrollo Integral: De la Idea al Lanzamiento',
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 28,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Productos digitales listos para atraer clientes y convertir conversaciones en ventas.',
+                                  textAlign: TextAlign.center,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(height: 30),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Productos digitales listos para atraer clientes y convertir conversaciones en ventas.',
-                            textAlign: TextAlign.center,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 30),
-
                           InspectorGadget(
                             name: "Inyección de Tema Aislado",
                             techSpecs:
@@ -200,7 +209,13 @@ class _LandingViewState extends ConsumerState<LandingView> {
             ),
 
             // --- FOOTER ---
-            const Footer(),
+            InspectorGadget(
+              name: 'Pie de página (Home)',
+              techSpecs:
+                  'Footer global: enlaces a secciones, stack tecnológico y copyright. Reutilizado en todas las pantallas principales.',
+              icon: FontAwesomeIcons.solidCopyright,
+              child: const Footer(),
+            ),
           ],
         ),
       ),
@@ -298,6 +313,7 @@ class _BotLodeCard extends ConsumerWidget {
       theme: AppTheme.botlode,
       title: 'BotLode: Ecosistema de Bots IA',
       themeNoticeLabel: 'BotLode',
+      themeNoticeDuration: const Duration(milliseconds: 2000),
       onTapOverride: () {
         showProjectDrawer(context, content: const BotLodeDrawerContent());
         Future.delayed(const Duration(milliseconds: 150), () {
@@ -337,6 +353,7 @@ class _AssistifyCard extends ConsumerWidget {
       theme: AppTheme.assistify,
       title: 'Assistify: App en Producción',
       themeNoticeLabel: 'Assistify',
+      themeNoticeDuration: const Duration(milliseconds: 2000),
       onTapOverride: () {
         showProjectDrawer(context, content: const AssistifyDrawerContent());
         Future.delayed(const Duration(milliseconds: 150), () {
@@ -376,6 +393,7 @@ class _ContactEngineCard extends ConsumerWidget {
       theme: AppTheme.contactEngine,
       title: 'Contact Engine',
       themeNoticeLabel: 'Contact Engine',
+      themeNoticeDuration: const Duration(milliseconds: 2000),
       onTapOverride: () {
         showProjectDrawer(context, content: const ContactEngineDrawerContent());
         Future.delayed(const Duration(milliseconds: 150), () {

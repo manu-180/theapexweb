@@ -22,15 +22,8 @@ class InspectorGadget extends ConsumerWidget {
     this.borderRadius = 12.0, 
   });
 
-  static const _inspectorEnabled = bool.fromEnvironment(
-    'ENABLE_INSPECTOR',
-    defaultValue: false,
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!_inspectorEnabled) return child;
-
     final isInspectorOn = ref.watch(inspectorModeProvider);
     if (!isInspectorOn) return child;
 
