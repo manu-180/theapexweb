@@ -5,32 +5,35 @@ class EnvConfig {
   const EnvConfig._();
 
   static Future<void> load() async {
-    // En Web no cargamos .env: evita 404 a assets/.env en producción.
-    // Usar --dart-define=SUPABASE_URL=... y SUPABASE_ANON_KEY=... en el build.
-    if (kIsWeb) return;
+    // En Web en release no cargamos .env (no exponer credenciales). En debug sí para desarrollo local.
+    if (kIsWeb && !kDebugMode) return;
 
     try {
       await dotenv.load(fileName: ".env");
     } catch (e) {
-      debugPrint("Nota: .env no cargado (Uso de variables de entorno o defaults): $e");
+      debugPrint("Nota: .env no cargado (usa variables de entorno o --dart-define): $e");
     }
   }
 
   static String get supabaseUrl {
-    // CORRECCIÓN: Usamos String.fromEnvironment con el literal directo y const
     const fromDefine = String.fromEnvironment('SUPABASE_URL');
     if (fromDefine.isNotEmpty) return fromDefine;
-    // En Web no cargamos .env: acceder a dotenv.env sin load() lanza NotInitializedError
-    if (kIsWeb) return '';
-    return dotenv.env['SUPABASE_URL'] ?? '';
+    if (kIsWeb && !kDebugMode) return '';
+    try {
+      return dotenv.env['SUPABASE_URL'] ?? '';
+    } catch (_) {
+      return '';
+    }
   }
 
   static String get supabaseAnonKey {
-    // CORRECCIÓN: Usamos String.fromEnvironment con el literal directo y const
     const fromDefine = String.fromEnvironment('SUPABASE_ANON_KEY');
     if (fromDefine.isNotEmpty) return fromDefine;
-    // En Web no cargamos .env: acceder a dotenv.env sin load() lanza NotInitializedError
-    if (kIsWeb) return '';
-    return dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+    if (kIsWeb && !kDebugMode) return '';
+    try {
+      return dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+    } catch (_) {
+      return '';
+    }
   }
 }

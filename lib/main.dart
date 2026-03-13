@@ -127,96 +127,63 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   }
 
   Future<SharedPreferences> _initializeApp() async {
-    // 1. Carga de Entorno (Silenciosa si falla)
-    await EnvConfig.load();
+    // 1. Cargar .env y SharedPreferences
+    late SharedPreferences prefs;
+    await Future.wait([
+      EnvConfig.load(),
+      SharedPreferences.getInstance().then((p) => prefs = p).catchError((Object e, StackTrace stack) {
+        debugPrint('[Bootstrap] SharedPreferences fallback: $e');
+        if (kDebugMode) debugPrint('$stack');
+        prefs = _InMemorySharedPreferences();
+        return prefs;
+      }),
+    ]);
 
-    // 2. Preferencias (Esto es lo único vital para que Riverpod no falle)
-    SharedPreferences prefs;
-    try {
-      prefs = await SharedPreferences.getInstance();
-    } catch (e, stack) {
-      debugPrint('⚠️ Error al cargar SharedPreferences (localStorage): $e');
-      if (kDebugMode) debugPrint('$stack');
-      debugPrint('📦 Usando almacenamiento en memoria como fallback (ajustes no se guardarán)');
-      // En Flutter Web, SharedPreferences usa localStorage.
-      // Si falla (ej: navegador en modo privado, políticas de seguridad, Vercel),
-      // usamos un fallback en memoria para que la app funcione de todos modos.
-      prefs = _InMemorySharedPreferences();
-    }
-
-    // 3. Validación y Supabase (Intento optimista)
-    final url = EnvConfig.supabaseUrl;
-    final key = EnvConfig.supabaseAnonKey;
-
-    if (url.isNotEmpty && key.isNotEmpty) {
-      // Detectamos si venimos de un callback OAuth ANTES de inicializar Supabase
-      final hasOAuthCode = kIsWeb && Uri.base.queryParameters.containsKey('code');
-      
-      try {
-        await Supabase.initialize(
-          url: url,
-          anonKey: key,
-          realtimeClientOptions: RealtimeClientOptions(
-            eventsPerSecond: 10,
-            logLevel: kIsWeb ? RealtimeLogLevel.error : RealtimeLogLevel.info,
-          ),
-          // CORRECCIÓN CRÍTICA: detectSessionInUri = false
-          // Deshabilitamos la detección automática para evitar doble intercambio PKCE
-          // que generaba dos 401 consecutivos y dejaba al usuario sin sesión.
-          // Lo manejamos manualmente abajo con exchangeCodeForSession.
-          authOptions: const FlutterAuthClientOptions(
-            authFlowType: AuthFlowType.pkce,
-            detectSessionInUri: false,
-          ),
-        ).timeout(const Duration(seconds: 15));
-
-        // OAuth callback manual: intercambiamos el ?code= por sesión UNA SOLA VEZ
-        if (hasOAuthCode) {
-          final code = Uri.base.queryParameters['code']!;
-          debugPrint('OAuth: código detectado en URL, intercambiando por sesión...');
-          try {
-            final response = await Supabase.instance.client.auth
-                .exchangeCodeForSession(code);
-            debugPrint('OAuth: ✅ Sesión establecida correctamente.');
-            final user = response.session.user;
-            debugPrint('OAuth: Usuario: ${user.email ?? "sin email"}');
-            debugPrint('OAuth: Nombre: ${user.userMetadata?['full_name'] ?? "sin nombre"}');
-            debugPrint('OAuth: Avatar: ${user.userMetadata?['avatar_url'] != null ? "presente" : "ausente"}');
-            
-            // Limpiamos la URL para evitar reusar el código al refrescar
-            _cleanOAuthCodeFromUrl();
-          } catch (e, stack) {
-            debugPrint('OAuth: ❌ Error al intercambiar código: $e');
-            if (kDebugMode) debugPrint('$stack');
-            
-            // Diagnóstico adicional
-            final currentUser = Supabase.instance.client.auth.currentUser;
-            if (currentUser != null) {
-              debugPrint('OAuth: Aunque falló el intercambio, HAY sesión activa: ${currentUser.email}');
-            } else {
-              debugPrint('OAuth: No hay sesión activa. El usuario aparecerá como anónimo.');
-              debugPrint('OAuth: Posibles causas:');
-              debugPrint('  1. El código ya fue consumido (recarga de página)');
-              debugPrint('  2. El code_verifier no se encontró en localStorage');
-              debugPrint('  3. La Redirect URL no coincide en el dashboard de Supabase');
-            }
-            
-            // Limpiamos la URL incluso si falló para evitar 401 en cada recarga
-            _cleanOAuthCodeFromUrl();
-          }
-        }
-
-        if (kIsWeb) {
-          debugPrint("Flutter Web: Si aparecen errores de WebSocket, son esperados y no afectan la funcionalidad.");
-        }
-      } catch (e) {
-        debugPrint("Advertencia: Supabase no conectó al inicio ($e). La app continuará.");
-      }
-    } else {
-      debugPrint("Advertencia: Faltan credenciales de Supabase.");
-    }
+    // 2. Inicializar Supabase con las credenciales del config (antes de mostrar la app)
+    await _initSupabase();
 
     return prefs;
+  }
+
+  Future<void> _initSupabase() async {
+    final url = EnvConfig.supabaseUrl;
+    final key = EnvConfig.supabaseAnonKey;
+    if (url.isEmpty || key.isEmpty) {
+      debugPrint('[Bootstrap] Supabase: sin credenciales (usa .env o --dart-define=SUPABASE_URL / SUPABASE_ANON_KEY).');
+      return;
+    }
+
+    final hasOAuthCode = kIsWeb && Uri.base.queryParameters.containsKey('code');
+
+    try {
+      await Supabase.initialize(
+        url: url,
+        anonKey: key,
+        realtimeClientOptions: RealtimeClientOptions(
+          eventsPerSecond: 10,
+          logLevel: kIsWeb ? RealtimeLogLevel.error : RealtimeLogLevel.info,
+        ),
+        authOptions: const FlutterAuthClientOptions(
+          authFlowType: AuthFlowType.pkce,
+          detectSessionInUri: false,
+        ),
+      ).timeout(const Duration(seconds: 10));
+
+      if (kDebugMode) debugPrint('[Bootstrap] Supabase conectado: $url');
+
+      if (hasOAuthCode) {
+        final code = Uri.base.queryParameters['code']!;
+        try {
+          await Supabase.instance.client.auth.exchangeCodeForSession(code);
+          debugPrint('[OAuth] Session established.');
+        } catch (e) {
+          debugPrint('[OAuth] Exchange failed: $e');
+        }
+        _cleanOAuthCodeFromUrl();
+      }
+    } catch (e) {
+      debugPrint('[Bootstrap] Supabase init failed: $e');
+    }
   }
 
   @override

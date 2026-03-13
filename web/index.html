@@ -13,6 +13,44 @@
 
   <link rel="canonical" href="https://www.theapexweb.com/">
 
+  <!-- Open Graph -->
+  <meta property="og:title" content="APEX - Desarrollo Web & Apps a Medida">
+  <meta property="og:description" content="Desarrollo web profesional, aplicaciones móviles y software a medida. Flutter, Supabase y soluciones Full-Stack en Argentina.">
+  <meta property="og:image" content="https://www.theapexweb.com/icons/Icon-512.png">
+  <meta property="og:url" content="https://www.theapexweb.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="APEX">
+  <meta property="og:locale" content="es_AR">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="APEX - Desarrollo Web & Apps a Medida">
+  <meta name="twitter:description" content="Desarrollo web profesional, aplicaciones móviles y software a medida. Flutter, Supabase y soluciones Full-Stack en Argentina.">
+  <meta name="twitter:image" content="https://www.theapexweb.com/icons/Icon-512.png">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    "name": "APEX - Manuel Navarro",
+    "description": "Desarrollo web profesional, aplicaciones móviles y software a medida.",
+    "url": "https://www.theapexweb.com",
+    "image": "https://www.theapexweb.com/icons/Icon-512.png",
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "AR"
+    },
+    "sameAs": [],
+    "priceRange": "$$",
+    "serviceType": ["Desarrollo Web", "Aplicaciones Móviles", "Software a Medida"],
+    "areaServed": {
+      "@type": "Country",
+      "name": "Argentina"
+    }
+  }
+  </script>
+
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="APEX">
@@ -38,228 +76,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600;700;800;900&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oxanium:wght@600;700;800;900&display=swap"></noscript>
 
-  <style>
-    /* === BODY BASE === */
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #0A0A0A;
-      overflow: hidden;
-      font-family: 'Oxanium', 'Roboto', sans-serif;
-    }
-
-    /* === INTRO PREMIUM APEX === */
-    #loading-splash {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(160deg, #050508 0%, #0A0A0F 40%, #0D1117 100%);
-      z-index: 999999;
-      opacity: 1;
-      transition: opacity 0.5s ease-out;
-    }
-
-    #loading-splash.fade-out {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    /* Glow de fondo (verde/cyan APEX) */
-    .apex-glow {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(0, 230, 118, 0.12) 0%, rgba(0, 184, 212, 0.06) 40%, transparent 70%);
-      animation: apex-glow-pulse 3s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    @keyframes apex-glow-pulse {
-      0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
-      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
-    }
-
-    .apex-logo-wrap {
-      position: relative;
-      margin-bottom: 36px;
-      z-index: 1;
-    }
-
-    /* Logo APEX: entrada con impacto */
-    .apex-logo-text {
-      font-family: 'Oxanium', sans-serif;
-      font-size: clamp(48px, 12vw, 72px);
-      font-weight: 900;
-      letter-spacing: -2px;
-      background: linear-gradient(135deg, #00E676 0%, #69F0AE 35%, #00B8D4 100%);
-      background-size: 200% auto;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: apex-text-shine 4s ease-in-out infinite, apex-logo-pop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-      text-shadow: 0 0 40px rgba(0, 230, 118, 0.25);
-      opacity: 0;
-      transform: scale(0.85);
-    }
-
-    @keyframes apex-logo-pop {
-      to {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-
-    @keyframes apex-text-shine {
-      0%, 100% { background-position: 0% center; }
-      50% { background-position: 100% center; }
-    }
-
-    .apex-subtitle {
-      font-family: 'Oxanium', sans-serif;
-      text-align: center;
-      font-size: 11px;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.45);
-      margin-top: 10px;
-      font-weight: 600;
-      animation: apex-subtitle-in 0.6s ease-out 0.4s forwards;
-      opacity: 0;
-    }
-
-    @keyframes apex-subtitle-in {
-      to { opacity: 1; }
-    }
-
-    /* Spinner moderno */
-    .apex-spinner {
-      width: 56px;
-      height: 56px;
-      border: 3px solid rgba(0, 230, 118, 0.12);
-      border-top-color: #00E676;
-      border-radius: 50%;
-      animation: apex-spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-      box-shadow: 0 0 24px rgba(0, 230, 118, 0.2);
-      position: relative;
-      z-index: 1;
-    }
-
-    @keyframes apex-spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* Barra de progreso */
-    .apex-progress-wrap {
-      width: 220px;
-      height: 3px;
-      background: rgba(0, 230, 118, 0.1);
-      border-radius: 10px;
-      margin-top: 28px;
-      overflow: hidden;
-      position: relative;
-      z-index: 1;
-    }
-
-    .apex-progress-bar {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #00E676 0%, #00B8D4 100%);
-      border-radius: 10px;
-      animation: apex-progress 2s ease-in-out infinite;
-      box-shadow: 0 0 12px rgba(0, 230, 118, 0.5);
-    }
-
-    @keyframes apex-progress {
-      0% { width: 0%; }
-      50% { width: 70%; }
-      100% { width: 100%; }
-    }
-
-    .apex-loading-text {
-      margin-top: 20px;
-      font-family: 'Oxanium', sans-serif;
-      font-size: 12px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: rgba(255, 255, 255, 0.4);
-      font-weight: 600;
-      animation: apex-fade-inout 2s ease-in-out infinite;
-      position: relative;
-      z-index: 1;
-    }
-
-    @keyframes apex-fade-inout {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 1; }
-    }
-
-    /* Forzar transparencia del iframe en Safari/Mac */
-    #botlode-player {
-      background: none !important;
-      background-color: transparent !important;
-      -webkit-background-color: transparent !important;
-    }
-    /* Desactivar controles flotantes de video en Edge/Chrome */
-    video {
-      -webkit-media-controls: none !important;
-      -moz-media-controls: none !important;
-      -o-media-controls: none !important;
-      -ms-media-controls: none !important;
-    }
-    video::-webkit-media-controls { display: none !important; }
-    video::-webkit-media-controls-panel { display: none !important; }
-    video::-webkit-media-controls-play-button { display: none !important; }
-    video::-webkit-media-controls-timeline { display: none !important; }
-    video::-webkit-media-controls-current-time-display { display: none !important; }
-    video::-webkit-media-controls-time-remaining-display { display: none !important; }
-    video::-webkit-media-controls-mute-button { display: none !important; }
-    video::-webkit-media-controls-volume-slider { display: none !important; }
-    video::-webkit-media-controls-fullscreen-button { display: none !important; }
-    video::-webkit-media-controls-enclosure { display: none !important; }
-    video::-moz-media-controls { display: none !important; }
-    /* 🛡️ BLINDAJE COMPLETO DE HIT ZONES */
-    #botlode-hitzone-bot,
-    #botlode-hitzone-wpp {
-      -webkit-appearance: none !important;
-      -moz-appearance: none !important;
-      appearance: none !important;
-      background-color: transparent !important;
-      background-image: none !important;
-      border: 0 !important;
-      outline: 0 !important;
-      outline-width: 0 !important;
-      outline-style: none !important;
-      box-shadow: none !important;
-      -webkit-tap-highlight-color: transparent !important;
-      -webkit-touch-callout: none !important;
-      -webkit-user-select: none !important;
-      -moz-user-select: none !important;
-      -ms-user-select: none !important;
-      user-select: none !important;
-      backface-visibility: hidden !important;
-      -webkit-backface-visibility: hidden !important;
-    }
-    #botlode-hitzone-bot:active,
-    #botlode-hitzone-wpp:active,
-    #botlode-hitzone-bot:focus,
-    #botlode-hitzone-wpp:focus,
-    #botlode-hitzone-bot:hover,
-    #botlode-hitzone-wpp:hover {
-      background: transparent !important;
-      background-color: transparent !important;
-      border: 0 !important;
-      outline: 0 !important;
-      box-shadow: none !important;
-      transform: none !important;
-    }
-
-  </style>
+  <link rel="stylesheet" href="splash.css">
 </head>
 <body>
   <!-- Bot flotante: primero en el body para que empiece a cargar de inmediato -->
@@ -305,7 +122,7 @@
     }, 5000);
   </script>
 
-  <div id="botlode-hitzone-bot" style="
+  <button id="botlode-hitzone-bot" type="button" role="button" tabindex="0" aria-label="Abrir chat con asistente virtual" style="
     position: fixed;
     bottom: 28px;
     right: 28px;
@@ -324,9 +141,10 @@
     -webkit-user-select: none !important;
     user-select: none !important;
     touch-action: manipulation !important;
-  "></div>
+    padding: 0;
+  "></button>
 
-  <div id="botlode-hitzone-wpp" style="
+  <button id="botlode-hitzone-wpp" type="button" role="button" tabindex="0" aria-label="Contactar por WhatsApp" style="
     position: fixed;
     bottom: 168px;
     right: 28px;
@@ -346,7 +164,8 @@
     -webkit-user-select: none !important;
     user-select: none !important;
     touch-action: manipulation !important;
-  "></div>
+    padding: 0;
+  "></button>
 
   <!-- Intro premium APEX -->
   <div id="loading-splash">
@@ -379,547 +198,12 @@
     });
   </script>
 
-  <script>
-    // Ajustar tamaño del iframe según estado del chat (igual que botlode_web)
-    (function() {
-      console.log('🎯 IFRAME SCRIPT v2.8 - Tap blindado: pointerdown+mousedown+retry+redundancia');
-      console.log('⏳ Esperando que iframe envíe CMD_READY...');
-      const iframe = document.getElementById('botlode-player');
-      const hitzoneBotEl = document.getElementById('botlode-hitzone-bot');
-      const hitzoneWppEl = document.getElementById('botlode-hitzone-wpp');
-      if (!iframe) return;
-
-      let isExpanded = false;
-      let isAnimatingBubble = false;
-      const BUBBLE_HEIGHT_SOLO_BOT = 140;
-      const BUBBLE_HEIGHT_WITH_WPP = 290;
-      let bubbleHeight = BUBBLE_HEIGHT_SOLO_BOT;
-
-      let lastClickTime = 0;
-      const CLICK_COOLDOWN_MS = 150;
-
-      let iframeReady = false;
-      let pendingOpenWhenReady = false;
-
-      let touchHandled = false;
-      let mouseHandled = false;
-
-      let retryTimer = null;
-      let retryCount = 0;
-      const MAX_RETRIES = 2;
-      const RETRY_DELAY_MS = 250;
-
-      let chatOpenViewportHeight = null;
-      let currentKeyboardHeight = 0;
-
-      function forwardEventToIframe(event, eventType) {
-        try {
-          if (!iframe.contentWindow) return;
-          const iframeRect = iframe.getBoundingClientRect();
-          const message = {
-            type: eventType,
-            clientX: event.clientX || 0,
-            clientY: event.clientY || 0,
-            iframeX: iframeRect.left,
-            iframeY: iframeRect.top,
-          };
-          iframe.contentWindow.postMessage(message, '*');
-        } catch (e) {
-          console.error('❌ Error al enviar mensaje al iframe:', e);
-        }
-      }
-
-      function sendClickToIframe(source) {
-        var rect = iframe.getBoundingClientRect();
-        try {
-          iframe.contentWindow.postMessage({
-            type: 'HITZONE_CLICK_BOT',
-            clientX: rect.left + rect.width / 2,
-            clientY: rect.bottom - 70,
-            iframeX: rect.left,
-            iframeY: rect.top,
-          }, '*');
-          iframe.contentWindow.postMessage('HITZONE_CLICK_BOT', '*');
-        } catch (e) {
-          console.error('❌ Error enviando click al iframe (' + source + '):', e);
-        }
-      }
-
-      function openBotChat(source) {
-        var now = Date.now();
-        try { window.focus(); } catch(e) {}
-
-        if (!iframeReady) {
-          pendingOpenWhenReady = true;
-          console.warn('⏳ Tap recibido (' + source + ') pero iframe NO listo. Se abrirá al recibir CMD_READY.');
-          if (hitzoneBotEl) hitzoneBotEl.style.cursor = 'wait';
-          return;
-        }
-        if (isExpanded) return;
-        if (now - lastClickTime < CLICK_COOLDOWN_MS) return;
-
-        lastClickTime = now;
-        console.log('🎯✨ Bot click VÁLIDO (' + source + ') - Enviando al iframe (Map+String)');
-        sendClickToIframe(source);
-
-        retryCount = 0;
-        if (retryTimer) clearTimeout(retryTimer);
-        retryTimer = setTimeout(function retryFn() {
-          if (isExpanded) return;
-          retryCount++;
-          if (retryCount <= MAX_RETRIES) {
-            console.warn('🔄 Retry #' + retryCount + ': No se recibió CMD_OPEN. Reenviando click al iframe...');
-            sendClickToIframe('retry-' + retryCount);
-            retryTimer = setTimeout(retryFn, RETRY_DELAY_MS);
-          } else {
-            console.error('❌ Se agotaron los reintentos (' + MAX_RETRIES + '). El iframe no respondió.');
-          }
-        }, RETRY_DELAY_MS);
-      }
-
-      function openWppChat(source) {
-        var now = Date.now();
-        if (!iframeReady || isExpanded) return;
-        if (now - lastClickTime < CLICK_COOLDOWN_MS) return;
-        lastClickTime = now;
-        console.log('🎯✨ WPP click VÁLIDO (' + source + ')');
-        var rect = iframe.getBoundingClientRect();
-        try {
-          iframe.contentWindow.postMessage({
-            type: 'HITZONE_CLICK_WPP',
-            clientX: rect.left + rect.width / 2,
-            clientY: rect.top + 50,
-            iframeX: rect.left,
-            iframeY: rect.top,
-          }, '*');
-        } catch (e) {}
-      }
-
-      if (hitzoneBotEl) {
-        hitzoneBotEl.addEventListener('pointerdown', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (e.pointerType === 'touch') {
-            touchHandled = true;
-            setTimeout(function() { touchHandled = false; }, 500);
-            console.log('👆 pointerdown(touch) en hitzone bot');
-          } else {
-            mouseHandled = true;
-            setTimeout(function() { mouseHandled = false; }, 500);
-            console.log('🖱️ pointerdown(mouse) en hitzone bot');
-          }
-          openBotChat('pointerdown-' + e.pointerType);
-        }, { passive: false });
-
-        hitzoneBotEl.addEventListener('touchstart', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (touchHandled) return;
-          touchHandled = true;
-          console.log('👆 touchstart en hitzone bot (fallback)');
-          openBotChat('touchstart');
-          setTimeout(function() { touchHandled = false; }, 500);
-        }, { passive: false });
-
-        hitzoneBotEl.addEventListener('mousedown', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (mouseHandled || touchHandled) return;
-          mouseHandled = true;
-          console.log('🖱️ mousedown en hitzone bot (fallback)');
-          openBotChat('mousedown');
-          setTimeout(function() { mouseHandled = false; }, 500);
-        }, { passive: false });
-
-        hitzoneBotEl.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (touchHandled || mouseHandled) {
-            console.log('⏭️ Click ignorado (ya manejado por pointerdown/touch/mousedown)');
-            return;
-          }
-          console.log('🖱️ click en hitzone bot (último fallback)');
-          openBotChat('click');
-        }, { passive: false });
-
-        hitzoneBotEl.addEventListener('mouseenter', function(e) {
-          if (!isExpanded) forwardEventToIframe(e, 'HITZONE_ENTER_BOT');
-        });
-        hitzoneBotEl.addEventListener('mouseleave', function(e) {
-          if (!isExpanded) forwardEventToIframe(e, 'HITZONE_LEAVE_BOT');
-        });
-        hitzoneBotEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-        hitzoneBotEl.addEventListener('dragstart', function(e) { e.preventDefault(); });
-      }
-
-      if (hitzoneWppEl) {
-        hitzoneWppEl.addEventListener('pointerdown', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (e.pointerType === 'touch') {
-            touchHandled = true;
-            setTimeout(function() { touchHandled = false; }, 500);
-          } else {
-            mouseHandled = true;
-            setTimeout(function() { mouseHandled = false; }, 500);
-          }
-          openWppChat('pointerdown-' + e.pointerType);
-        }, { passive: false });
-
-        hitzoneWppEl.addEventListener('touchstart', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (touchHandled) return;
-          touchHandled = true;
-          openWppChat('touchstart');
-          setTimeout(function() { touchHandled = false; }, 500);
-        }, { passive: false });
-
-        hitzoneWppEl.addEventListener('mousedown', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (mouseHandled || touchHandled) return;
-          mouseHandled = true;
-          openWppChat('mousedown');
-          setTimeout(function() { mouseHandled = false; }, 500);
-        }, { passive: false });
-
-        hitzoneWppEl.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (touchHandled || mouseHandled) return;
-          openWppChat('click');
-        }, { passive: false });
-
-        hitzoneWppEl.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-        hitzoneWppEl.addEventListener('dragstart', function(e) { e.preventDefault(); });
-      }
-
-      function updateHitzones(show) {
-        if (hitzoneBotEl) {
-          hitzoneBotEl.style.display = show ? 'block' : 'none';
-          if (show) {
-            hitzoneBotEl.style.pointerEvents = 'auto';
-            hitzoneBotEl.style.cursor = iframeReady ? 'pointer' : 'wait';
-          }
-        }
-      }
-
-      function updateWppHitzone(show) {
-        if (hitzoneWppEl) {
-          hitzoneWppEl.style.display = show ? 'block' : 'none';
-          if (show) {
-            hitzoneWppEl.style.pointerEvents = 'auto';
-            hitzoneWppEl.style.cursor = iframeReady ? 'pointer' : 'wait';
-          }
-        }
-      }
-
-      function isNarrowScreen() {
-        return window.innerWidth < 600;
-      }
-
-      function applyBubblePosition() {
-        iframe.style.left = 'auto';
-        iframe.style.top = 'auto';
-        iframe.style.right = '16px';
-        iframe.style.bottom = '16px';
-        iframe.style.width = '140px';
-        iframe.style.height = bubbleHeight + 'px';
-      }
-
-      const T = {
-        closeFadeOut: 120,
-        closeWaitChat: 380,
-        pauseBeforeEntrance: 100,
-        entranceDelay: 60,
-        entranceMain: 380,
-        entranceBounce2: 180,
-        entranceSettle: 120,
-        resetAfter: 80
-      };
-
-      function animateBubbleEntrance() {
-        isAnimatingBubble = true;
-        iframe.style.opacity = '0';
-        iframe.style.transform = 'translateZ(0) scale(0.3) rotate(-15deg)';
-        iframe.style.filter = 'blur(8px) brightness(2)';
-
-        setTimeout(function() {
-          iframe.style.transition = 'opacity ' + (T.entranceMain * 0.4) + 'ms cubic-bezier(0.34, 1.56, 0.64, 1), transform ' + T.entranceMain + 'ms cubic-bezier(0.34, 1.56, 0.64, 1), filter ' + (T.entranceMain * 0.5) + 'ms ease-out';
-          requestAnimationFrame(function() {
-            iframe.style.opacity = '1';
-            iframe.style.transform = 'translateZ(0) scale(1.1) rotate(3deg)';
-            iframe.style.filter = 'blur(0px) brightness(1.3)';
-          });
-
-          setTimeout(function() {
-            iframe.style.transition = 'transform ' + T.entranceBounce2 + 'ms cubic-bezier(0.25, 0.46, 0.45, 0.94), filter ' + T.entranceBounce2 + 'ms ease-out';
-            iframe.style.transform = 'translateZ(0) scale(0.95) rotate(-1deg)';
-            iframe.style.filter = 'blur(0px) brightness(1.1)';
-
-            setTimeout(function() {
-              iframe.style.transition = 'transform ' + T.entranceSettle + 'ms ease-out, filter ' + T.entranceSettle + 'ms ease-out';
-              iframe.style.transform = 'translateZ(0) scale(1) rotate(0deg)';
-              iframe.style.filter = 'blur(0px) brightness(1)';
-              setTimeout(function() {
-                iframe.style.transition = '';
-                iframe.style.filter = '';
-                isAnimatingBubble = false;
-                console.log('✨ Animación de burbuja completada');
-              }, T.resetAfter);
-            }, T.entranceBounce2 * 0.6);
-          }, T.entranceMain);
-        }, T.entranceDelay);
-      }
-
-      window.addEventListener('message', function(event) {
-        const data = event.data;
-
-        if (data === 'CMD_OPEN') {
-          if (!isExpanded) {
-            if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
-            console.log('🚀 CMD_OPEN recibido - Expandiendo iframe');
-            isAnimatingBubble = false;
-            iframe.style.filter = '';
-            iframe.style.transform = 'translateZ(0)';
-
-            iframe.style.transition = 'none';
-            iframe.style.opacity = '0';
-
-            iframe.style.pointerEvents = 'auto';
-            try { iframe.focus(); } catch(e) {}
-            updateHitzones(false);
-            updateWppHitzone(false);
-
-            if (isNarrowScreen()) {
-              iframe.style.left = '0';
-              iframe.style.top = '0';
-              iframe.style.right = '0';
-              iframe.style.bottom = '0';
-              iframe.style.width = '100%';
-              iframe.style.height = '100%';
-              console.log('✅ Iframe expandido a 100% (móvil)');
-              if (window.visualViewport) {
-                chatOpenViewportHeight = window.visualViewport.height;
-                console.log('📱 Viewport base capturado: ' + Math.round(chatOpenViewportHeight) + 'px');
-              }
-            } else {
-              iframe.style.left = 'auto';
-              iframe.style.top = 'auto';
-              iframe.style.right = '16px';
-              iframe.style.bottom = '16px';
-              iframe.style.width = '450px';
-              iframe.style.height = 'calc(100vh - 32px)';
-              console.log('✅ Iframe expandido a 450px x 100vh (desktop)');
-            }
-
-            iframe.offsetHeight;
-
-            requestAnimationFrame(function() {
-              requestAnimationFrame(function() {
-                iframe.style.transition = 'opacity 100ms ease-out';
-                iframe.style.opacity = '1';
-                console.log('✅✨ Chat ABIERTO exitosamente - Protección de clicks reseteada');
-                setTimeout(function() {
-                  iframe.style.transition = 'none';
-                }, 150);
-              });
-            });
-
-            isExpanded = true;
-          }
-        } else if (data === 'CMD_CLOSE') {
-          if (isExpanded) {
-            console.log('🎭 CMD_CLOSE recibido - Iniciando secuencia épica de burbuja');
-            iframe.style.transition = 'opacity ' + (T.closeFadeOut / 1000) + 's ease-out';
-            iframe.style.opacity = '0';
-            iframe.style.pointerEvents = 'none';
-            chatOpenViewportHeight = null;
-            currentKeyboardHeight = 0;
-            updateHitzones(true);
-
-            setTimeout(function() {
-              iframe.style.transition = 'none';
-              if (isNarrowScreen()) {
-                applyBubblePosition();
-              } else {
-                iframe.style.width = '140px';
-                iframe.style.height = bubbleHeight + 'px';
-              }
-              iframe.offsetHeight;
-              setTimeout(function() { animateBubbleEntrance(); }, T.pauseBeforeEntrance);
-            }, T.closeWaitChat);
-
-            isExpanded = false;
-          }
-        } else if (data === 'CMD_WPP_VISIBLE') {
-          bubbleHeight = BUBBLE_HEIGHT_WITH_WPP;
-          updateWppHitzone(true);
-          if (!isExpanded) {
-            iframe.style.transition = 'height 0.25s ease-out';
-            iframe.style.width = '140px';
-            iframe.style.height = BUBBLE_HEIGHT_WITH_WPP + 'px';
-          }
-        } else if (data === 'CMD_WPP_HIDDEN') {
-          bubbleHeight = BUBBLE_HEIGHT_SOLO_BOT;
-          updateWppHitzone(false);
-          if (!isExpanded) {
-            iframe.style.transition = 'height 0.25s ease-out';
-            iframe.style.width = '140px';
-            iframe.style.height = BUBBLE_HEIGHT_SOLO_BOT + 'px';
-          }
-        } else if (data === 'CMD_HOVER_START' || data === 'CMD_HOVER_END') {
-          // Intencionalmente no cambiar width/height del iframe.
-        }
-      });
-
-      function activateIframe(source) {
-        if (iframeReady) return;
-
-        console.log('✅ BotLode Player LISTO (' + source + ') - Activando hitzones interactivas');
-        iframeReady = true;
-
-        iframe.style.transition = 'opacity 0.3s ease-out';
-        iframe.style.opacity = '1';
-        setTimeout(function() { iframe.style.transition = ''; }, 350);
-
-        if (hitzoneBotEl) {
-          hitzoneBotEl.style.cursor = 'pointer';
-        }
-        if (hitzoneWppEl && hitzoneWppEl.style.display !== 'none') {
-          hitzoneWppEl.style.cursor = 'pointer';
-        }
-
-        if (pendingOpenWhenReady) {
-          pendingOpenWhenReady = false;
-          console.log('🎯🚀 Ejecutando tap PENDIENTE tras activación del iframe');
-          setTimeout(function() {
-            openBotChat('pendingOpen');
-          }, 200);
-        }
-      }
-
-      window.addEventListener('message', function(event) {
-        if (event.data === 'CMD_READY') {
-          activateIframe('CMD_READY');
-        }
-      });
-
-      setTimeout(function() {
-        if (!iframeReady) {
-          console.warn('⚠️ Timeout: iframe no envió CMD_READY en 8s. Activando hitzones de todos modos...');
-          activateIframe('timeout 8s');
-        }
-      }, 8000);
-
-      function updateHitzonePositions() {
-        const isMobile = window.innerWidth < 600;
-        const padBottom = isMobile ? 12 : 28;
-        const padRight = isMobile ? 16 : 28;
-        const hitzoneSize = isMobile ? 120 : 100;
-        const gap = 12;
-
-        if (hitzoneBotEl) {
-          hitzoneBotEl.style.width = hitzoneSize + 'px';
-          hitzoneBotEl.style.height = hitzoneSize + 'px';
-          var offsetBottom = isMobile ? 10 : 16;
-          var offsetRight = isMobile ? -2 : 4;
-          hitzoneBotEl.style.bottom = (padBottom + offsetBottom) + 'px';
-          hitzoneBotEl.style.right = (padRight + offsetRight) + 'px';
-        }
-        if (hitzoneWppEl) {
-          hitzoneWppEl.style.width = hitzoneSize + 'px';
-          hitzoneWppEl.style.height = hitzoneSize + 'px';
-          hitzoneWppEl.style.bottom = (padBottom + 16 + hitzoneSize + gap) + 'px';
-          hitzoneWppEl.style.right = (padRight + 4) + 'px';
-        }
-      }
-
-      updateHitzonePositions();
-      window.addEventListener('resize', updateHitzonePositions);
-
-      var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
-      if (!isTouchDevice) {
-        var lastMouseUpdate = 0;
-        var MOUSE_THROTTLE_MS = 50;
-
-        function onMouseMove(event) {
-          var now = Date.now();
-          if (now - lastMouseUpdate < MOUSE_THROTTLE_MS) return;
-          lastMouseUpdate = now;
-
-          try {
-            if (!iframe.contentWindow) return;
-            var iframeRect = iframe.getBoundingClientRect();
-
-            iframe.contentWindow.postMessage({
-              type: 'MOUSE_MOVE',
-              x: event.clientX,
-              y: event.clientY,
-              iframeX: iframeRect.left,
-              iframeY: iframeRect.top,
-              iframeWidth: iframeRect.width,
-              iframeHeight: iframeRect.height
-            }, '*');
-          } catch (e) {}
-        }
-
-        function onMouseLeave() {
-          try {
-            if (iframe.contentWindow) {
-              iframe.contentWindow.postMessage({ type: 'MOUSE_LEAVE' }, '*');
-            }
-          } catch (e) {}
-        }
-
-        document.addEventListener('mousemove', onMouseMove, true);
-        document.addEventListener('mouseleave', onMouseLeave, true);
-        document.documentElement.addEventListener('mouseleave', onMouseLeave, true);
-
-        console.log('🖱️ Mouse tracking para RIV activado (capture phase, 20fps)');
-      } else {
-        console.log('📱 Mouse tracking desactivado (dispositivo táctil)');
-      }
-
-      if (window.visualViewport) {
-        function handleKeyboardViewport() {
-          if (!isExpanded || !isNarrowScreen()) return;
-          if (!chatOpenViewportHeight) return;
-
-          var vv = window.visualViewport;
-          var diff = chatOpenViewportHeight - vv.height;
-
-          if (diff > 80) {
-            if (currentKeyboardHeight === 0) {
-              console.log('⌨️ Teclado detectado (' + Math.round(diff) + 'px) - Ajustando iframe');
-            }
-            currentKeyboardHeight = diff;
-            iframe.style.height = Math.round(vv.height) + 'px';
-            iframe.style.top = Math.round(vv.offsetTop) + 'px';
-            iframe.style.bottom = 'auto';
-          } else if (currentKeyboardHeight > 0) {
-            console.log('⌨️ Teclado cerrado - Restaurando iframe a 100%');
-            currentKeyboardHeight = 0;
-            chatOpenViewportHeight = vv.height;
-            iframe.style.height = '100%';
-            iframe.style.top = '0';
-            iframe.style.bottom = '0';
-          }
-        }
-
-        window.visualViewport.addEventListener('resize', handleKeyboardViewport);
-        window.visualViewport.addEventListener('scroll', handleKeyboardViewport);
-        console.log('📱 Detección de teclado (VisualViewport API) activada para iframe');
-      }
-    })();
-  </script>
+  <script src="botlode-chat.js" defer></script>
 
   <script>
-    const path = window.location.pathname;
-    const head = document.getElementsByTagName('head')[0];
-    let canonical = document.querySelector('link[rel="canonical"]');
+    var path = window.location.pathname;
+    var head = document.getElementsByTagName('head')[0];
+    var canonical = document.querySelector('link[rel="canonical"]');
     if (!canonical) {
       canonical = document.createElement('link');
       canonical.setAttribute('rel', 'canonical');

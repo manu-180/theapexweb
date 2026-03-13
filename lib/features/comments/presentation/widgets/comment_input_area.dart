@@ -128,21 +128,27 @@ class _CommentInputAreaState extends ConsumerState<CommentInputArea> {
     }
   }
 
+  bool _authListenerSetup = false;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // --- ESCUCHA DE RED ---
     final networkStatus = ref.watch(networkStatusNotifierProvider);
     final isOffline = networkStatus == NetworkStatus.offline;
 
-    ref.listen(authStateStreamProvider, (previous, next) {
-      if (next.value == null && _focusNode.hasFocus) {
-        _focusNode.unfocus();
-        showDialog(context: context, builder: (_) => const AuthRequiredModal());
-      }
-    });
+    if (!_authListenerSetup) {
+      _authListenerSetup = true;
+      ref.listenManual(authStateStreamProvider, (previous, next) {
+        if (next.value == null && _focusNode.hasFocus) {
+          _focusNode.unfocus();
+          if (mounted) {
+            showDialog(context: context, builder: (_) => const AuthRequiredModal());
+          }
+        }
+      });
+    }
 
     return Opacity(
       // Reducimos opacidad visualmente si está offline para indicar estado desactivado

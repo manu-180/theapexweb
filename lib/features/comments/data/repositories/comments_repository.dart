@@ -1,6 +1,7 @@
 // Archivo: lib/features/comments/data/repositories/comments_repository.dart
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:apex/core/errors/app_exceptions.dart';
 import 'package:apex/core/providers/supabase_providers.dart';
 import 'package:apex/features/comments/domain/models/comment_model.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -8,7 +9,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'comments_repository.g.dart';
 
-// Tu ID de administrador para anclar tus comentarios
 const String _kOwnerUuid = '37dad3e9-531c-4657-8db6-ddebbdcfa878';
 
 class CommentsRepository {
@@ -22,6 +22,15 @@ class CommentsRepository {
 
   Stream<void> get onDataChanged => _dataChangeController.stream;
 
+  void _requireClient() {
+    if (_supabase == null) {
+      throw const InfrastructureException(
+        'Servicio no disponible. Intenta de nuevo más tarde.',
+        code: 'SUPABASE_NULL',
+      );
+    }
+  }
+
   void _initRealtime() {
     if (_supabase == null) return;
     if (kIsWeb) {
@@ -29,15 +38,14 @@ class CommentsRepository {
       return;
     }
     try {
-      final subComments = _supabase!.channel('public:comments').onPostgresChanges(
+      final subComments = _supabase.channel('public:comments').onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'comments',
         callback: (_) => _dataChangeController.add(null),
       ).subscribe();
 
-      // Escuchamos cambios en 'comment_likes'
-      final subLikes = _supabase!.channel('public:comment_likes').onPostgresChanges(
+      final subLikes = _supabase.channel('public:comment_likes').onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
         table: 'comment_likes',
@@ -59,55 +67,45 @@ class CommentsRepository {
 
   Future<List<Comment>> fetchComments() async {
     if (_supabase == null) return [];
-    try {
-      final rootsResponse = await _supabase!
-          .from('comments_with_metadata') 
-          .select()
-          .filter('parent_id', 'is', null) // <--- CORRECCIÓN ROBUSTA: Usamos .filter explícito
-          .order('created_at', ascending: false)
-          .limit(50);
 
-      final roots = (rootsResponse as List).map((json) => Comment.fromJson(json)).toList();
+    final rootsResponse = await _supabase
+        .from('comments_with_metadata')
+        .select()
+        .filter('parent_id', 'is', null)
+        .order('created_at', ascending: false)
+        .limit(50);
 
-      if (roots.isEmpty) return []; 
+    final roots = (rootsResponse as List).map((json) => Comment.fromJson(json)).toList();
 
-      // 2. Fetch RESPUESTAS (Hijos) correspondientes a estos padres
-      final rootIds = roots.map((c) => c.id).toList();
+    if (roots.isEmpty) return [];
 
-      final repliesResponse = await _supabase!
-          .from('comments_with_metadata')
-          .select()
-          .filter('parent_id', 'in', rootIds) // <--- CORRECCIÓN ROBUSTA: Usamos .filter explícito
-          .order('created_at', ascending: true); 
+    final rootIds = roots.map((c) => c.id).toList();
 
-      final replies = (repliesResponse as List).map((json) => Comment.fromJson(json)).toList();
+    final repliesResponse = await _supabase
+        .from('comments_with_metadata')
+        .select()
+        .filter('parent_id', 'in', rootIds)
+        .order('created_at', ascending: true);
 
-      // 3. Reconstrucción del Árbol (Mapping)
-      final Map<int, List<Comment>> childrenMap = {};
-      for (var r in replies) {
-        childrenMap.putIfAbsent(r.parentId!, () => []).add(r);
-      }
+    final replies = (repliesResponse as List).map((json) => Comment.fromJson(json)).toList();
 
-      // 4. Asignación y Lógica de Admin (Pinning)
-      final processedParents = roots.map((p) {
-        return p.copyWith(replies: childrenMap[p.id] ?? []);
-      }).toList();
-
-      // Buscamos si existe un comentario tuyo (Admin) para anclarlo
-      final adminIndex = processedParents.indexWhere((c) => c.userId == _kOwnerUuid);
-      
-      if (adminIndex > 0) {
-        final adminComment = processedParents.removeAt(adminIndex);
-        processedParents.insert(0, adminComment);
-      }
-
-      return processedParents;
-      
-    } catch (e) {
-      // Log de error para depuración
-      print("Error crítico fetching comments: $e");
-      return []; // Retornamos lista vacía para no romper la UI
+    final Map<int, List<Comment>> childrenMap = {};
+    for (var r in replies) {
+      childrenMap.putIfAbsent(r.parentId!, () => []).add(r);
     }
+
+    final processedParents = roots.map((p) {
+      return p.copyWith(replies: childrenMap[p.id] ?? []);
+    }).toList();
+
+    final adminIndex = processedParents.indexWhere((c) => c.userId == _kOwnerUuid);
+
+    if (adminIndex > 0) {
+      final adminComment = processedParents.removeAt(adminIndex);
+      processedParents.insert(0, adminComment);
+    }
+
+    return processedParents;
   }
 
   Future<void> postComment({
@@ -116,17 +114,17 @@ class CommentsRepository {
     int? parentId,
     int? rating,
   }) async {
-    if (_supabase == null) return;
+    _requireClient();
     await _supabase!.from('comments').insert({
       'user_id': userId,
       'content': content,
-      'parent_id': parentId, 
+      'parent_id': parentId,
       'rating': rating,
     });
   }
 
   Future<void> toggleLike(String userId, int commentId) async {
-    if (_supabase == null) return;
+    _requireClient();
     final maybeLike = await _supabase!
         .from('comment_likes')
         .select()
@@ -135,9 +133,9 @@ class CommentsRepository {
         .maybeSingle();
 
     if (maybeLike != null) {
-      await _supabase!.from('comment_likes').delete().eq('user_id', userId).eq('comment_id', commentId);
+      await _supabase.from('comment_likes').delete().eq('user_id', userId).eq('comment_id', commentId);
     } else {
-      await _supabase!.from('comment_likes').insert({'user_id': userId, 'comment_id': commentId});
+      await _supabase.from('comment_likes').insert({'user_id': userId, 'comment_id': commentId});
     }
   }
 }

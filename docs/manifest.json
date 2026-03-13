@@ -1,13 +1,16 @@
 {
-    "name": "APEX",
+    "name": "APEX - Desarrollo Web & Apps a Medida",
     "short_name": "APEX",
-    "start_url": ".",
+    "id": "/",
+    "scope": "/",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#000000",
     "theme_color": "#000000",
-    "description": "A new Flutter project.",
+    "description": "Desarrollo web profesional, aplicaciones móviles y software a medida. Flutter, Supabase y soluciones Full-Stack en Argentina.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "categories": ["business", "productivity"],
     "icons": [
         {
             "src": "icons/Icon-192.png",

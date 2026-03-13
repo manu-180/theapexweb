@@ -2,6 +2,7 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BotlodeCaseStudyModal extends StatelessWidget {
@@ -208,6 +209,36 @@ class BotlodeCaseStudyModal extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 24),
+                    Divider(color: colorScheme.outline.withOpacity(0.2)),
+                    const SizedBox(height: 16),
+                    FadeInUp(
+                      child: Column(
+                        children: [
+                          Text(
+                            "¿Quieres algo similar para tu negocio?",
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                              if (context.mounted) {
+                                GoRouter.of(context).goNamed('contact');
+                              }
+                            },
+                            icon: const Icon(Icons.calendar_month_rounded, size: 18),
+                            label: const Text("Agendar consulta gratis"),
+                            style: FilledButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 20),
                   ],

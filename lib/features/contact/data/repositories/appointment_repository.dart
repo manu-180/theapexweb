@@ -1,6 +1,7 @@
 // Archivo: lib/features/contact/data/repositories/appointment_repository.dart
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:apex/core/errors/app_exceptions.dart';
 import 'package:apex/core/providers/supabase_providers.dart';
 import 'package:apex/features/contact/domain/models/appointment_model.dart';
 
@@ -11,8 +12,17 @@ class AppointmentRepository {
 
   AppointmentRepository(this._supabase);
 
+  void _requireClient() {
+    if (_supabase == null) {
+      throw const InfrastructureException(
+        'Reservas temporalmente no disponibles. Comprueba tu conexión o inténtalo más tarde.',
+        code: 'SUPABASE_NULL',
+      );
+    }
+  }
+
   Future<List<int>> getBookedHours(DateTime date) async {
-    if (_supabase == null) return [];
+    _requireClient();
     final dateString = date.toIso8601String().split('T')[0];
     final response = await _supabase!
         .from('appointments')
@@ -23,26 +33,28 @@ class AppointmentRepository {
   }
 
   Future<void> createAppointment(Appointment appointment) async {
-    if (_supabase == null) return;
+    _requireClient();
     try {
       await _supabase!.from('appointments').insert(appointment.toJson());
     } on PostgrestException catch (e) {
       if (e.code == '23505') {
-        throw Exception('Lo sentimos, ese horario acaba de ser ocupado por otra persona.');
+        throw const ValidationException(
+          'Lo sentimos, ese horario acaba de ser ocupado por otra persona.',
+          code: 'SLOT_TAKEN',
+        );
       }
       rethrow;
     }
   }
 
-  // --- NUEVO: Envío de Email de Confirmación ---
   Future<void> sendBookingEmail({
     required String email,
     required String name,
     required DateTime date,
     required int hour,
   }) async {
-    if (_supabase == null) return;
-    await _supabase!.functions.invoke(
+    _requireClient();
+    final response = await _supabase!.functions.invoke(
       'send-booking-email',
       body: {
         'name': name,
@@ -51,6 +63,13 @@ class AppointmentRepository {
         'hour': hour,
       },
     );
+
+    if (response.status != 200) {
+      throw ProviderException(
+        'Error al enviar la confirmación. Código: ${response.status}',
+        code: 'BOOKING_EMAIL_FAILED',
+      );
+    }
   }
 }
 

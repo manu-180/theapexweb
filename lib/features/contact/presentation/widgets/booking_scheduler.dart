@@ -7,8 +7,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:apex/core/analytics/analytics_service.dart';
+import 'package:apex/core/analytics/analytics_events.dart';
 
 class BookingScheduler extends ConsumerStatefulWidget {
+  static final _dayFormat = DateFormat('EEE', 'es');
+  static final _fullDateFormat = DateFormat("EEEE d 'de' MMMM", 'es');
+
   const BookingScheduler({super.key});
 
   @override
@@ -39,14 +44,48 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
     super.dispose();
   }
 
-  void _submit() {
-    if (!_formKey.currentState!.validate()) return;
-    
-    ref.read(bookingNotifierProvider.notifier).confirmBooking(
-      contactInfo: _contactController.text.trim(),
-      contactType: _contactType,
-      name: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
-    );
+  bool _isSubmitting = false;
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate() || _isSubmitting) return;
+
+    setState(() => _isSubmitting = true);
+    final analytics = ref.read(analyticsServiceProvider);
+    analytics.trackEvent(AnalyticsEvents.bookingSubmitted);
+
+    try {
+      await ref.read(bookingNotifierProvider.notifier).confirmBooking(
+        contactInfo: _contactController.text.trim(),
+        contactType: _contactType,
+        name: _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
+      );
+    } catch (e) {
+      analytics.trackEvent(AnalyticsEvents.bookingFailed, {'error': e.toString()});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text(
+                  e.toString().contains('ocupado')
+                      ? 'Ese horario acaba de ser ocupado. Selecciona otro.'
+                      : 'No se pudo confirmar la reserva. Intenta de nuevo.',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                )),
+              ],
+            ),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   void _scrollList(double offset) {
@@ -181,7 +220,7 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
                       // Etiqueta superior
                       final topLabel = isToday 
                           ? "HOY" 
-                          : DateFormat('EEE', 'es').format(date).toUpperCase().replaceAll('.', '');
+                          : BookingScheduler._dayFormat.format(date).toUpperCase().replaceAll('.', '');
 
                       return MouseRegion(
                         cursor: SystemMouseCursors.click,
@@ -256,13 +295,40 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
         const SizedBox(height: 32),
 
         // --- 2. GRILLA DE HORARIOS (CON ESTADOS) ---
+        if (state.hasError)
+          Container(
+            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: colorScheme.errorContainer.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: colorScheme.error.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: colorScheme.error),
+                const SizedBox(width: 12),
+                Expanded(child: Text(
+                  state.errorMessage!,
+                  style: TextStyle(color: colorScheme.error, fontWeight: FontWeight.w500),
+                )),
+                IconButton(
+                  onPressed: () => ref.read(bookingNotifierProvider.notifier).selectDate(state.selectedDate),
+                  icon: Icon(Icons.refresh_rounded, color: colorScheme.error),
+                ),
+              ],
+            ),
+          ),
+
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          child: state.isLoading 
+          child: state.isLoading
               ? _buildShimmerGrid(context)
-              : (state.availableHours.isEmpty && state.selectedDate.weekday == DateTime.sunday) // Solo mostramos empty state si es Domingo cerrado
-                  ? _buildEmptyState(context, isSunday: true)
-                  : _buildHoursGrid(context, state),
+              : state.hasError
+                  ? const SizedBox.shrink()
+                  : state.availableHours.isEmpty
+                      ? _buildEmptyState(context, isSunday: state.selectedDate.weekday == DateTime.sunday)
+                      : _buildHoursGrid(context, state),
         ),
 
         // 3. FORMULARIO
@@ -278,102 +344,62 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
   }
 
   static const int _minHour = 9;
-  static const int _maxHour = 19;
 
   Widget _buildHoursGrid(BuildContext context, BookingState state) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final allHours = List.generate(11, (i) => _minHour + i);
-
-    // Hora seleccionada: si no hay, usar la primera disponible o la primera del rango
-    final current = state.selectedHour ?? (state.availableHours.isNotEmpty ? state.availableHours.first : _minHour);
-    final hourPrev = current > _minHour ? current - 1 : null;
-    final hourNext = current < _maxHour ? current + 1 : null;
-
-    Widget buildHourRow(int? hour, bool isSelected) {
-      if (hour == null) return const SizedBox(height: 48);
-      final isAvailable = state.availableHours.contains(hour);
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: isAvailable ? () => ref.read(bookingNotifierProvider.notifier).selectHour(hour) : null,
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-              child: Text(
-                "$hour:00",
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected
-                      ? colorScheme.onSurface
-                      : colorScheme.onSurface.withOpacity(0.45),
-                  decoration: isAvailable ? null : TextDecoration.lineThrough,
-                  decorationColor: colorScheme.outline,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
+    final hasUnavailable = allHours.any((h) => !state.availableHours.contains(h));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               "Horarios",
               style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
-            if (allHours.any((h) => !state.availableHours.contains(h)))
+            const Spacer(),
+            if (hasUnavailable) ...[
+              _LegendDot(color: colorScheme.outline.withOpacity(0.35)),
+              const SizedBox(width: 5),
               Text(
-                "Tachado = No disponible",
-                style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline, fontSize: 10),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // Solo 3 filas visibles: anterior (gris), seleccionada (negrita), siguiente (gris)
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    buildHourRow(hourPrev, false),
-                    buildHourRow(current, true),
-                    buildHourRow(hourNext, false),
-                  ],
+                "Ocupado",
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.55),
+                  fontSize: 10,
                 ),
               ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    onPressed: hourPrev != null && state.availableHours.contains(hourPrev)
-                        ? () => ref.read(bookingNotifierProvider.notifier).selectHour(hourPrev)
-                        : null,
-                    icon: Icon(Icons.keyboard_arrow_up, color: colorScheme.primary),
-                  ),
-                  IconButton(
-                    onPressed: hourNext != null && state.availableHours.contains(hourNext)
-                        ? () => ref.read(bookingNotifierProvider.notifier).selectHour(hourNext)
-                        : null,
-                    icon: Icon(Icons.keyboard_arrow_down, color: colorScheme.primary),
-                  ),
-                ],
-              ),
+              const SizedBox(width: 12),
             ],
-          ),
+            _LegendDot(color: colorScheme.primary),
+            const SizedBox(width: 5),
+            Text(
+              "Disponible",
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant.withOpacity(0.55),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: allHours.map((hour) {
+            final isAvailable = state.availableHours.contains(hour);
+            final isSelected = state.selectedHour == hour;
+            return _TimeSlotCard(
+              hour: hour,
+              isAvailable: isAvailable,
+              isSelected: isSelected,
+              onTap: isAvailable
+                  ? () => ref.read(bookingNotifierProvider.notifier).selectHour(hour)
+                  : null,
+            );
+          }).toList(),
         ),
       ],
     );
@@ -383,7 +409,7 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     
-    final dateStr = DateFormat('EEEE d \'de\' MMMM', 'es').format(state.selectedDate);
+    final dateStr = BookingScheduler._fullDateFormat.format(state.selectedDate);
     final hourStr = "${state.selectedHour}:00 hs";
 
     return FadeInUp(
@@ -510,9 +536,19 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
             style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           if (!isSunday)
-            TextButton(
-              onPressed: () {}, 
-              child: const Text("Busca otro día ->"),
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: FilledButton.tonal(
+                onPressed: () {
+                  final bookingState = ref.read(bookingNotifierProvider);
+                  final nextDay = bookingState.selectedDate.add(const Duration(days: 1));
+                  ref.read(bookingNotifierProvider.notifier).selectDate(nextDay);
+                  if (_scrollController.hasClients) {
+                    _scrollList(87);
+                  }
+                },
+                child: const Text("Buscar otro día"),
+              ),
             )
         ],
       ),
@@ -520,19 +556,35 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
   }
 
   Widget _buildShimmerGrid(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Shimmer.fromColors(
-      baseColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-      highlightColor: Theme.of(context).colorScheme.surface,
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: List.generate(8, (index) => Container(
-          width: 80, height: 40,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+      baseColor: colorScheme.surfaceContainerHighest,
+      highlightColor: colorScheme.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 90,
+            height: 13,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(4),
+            ),
           ),
-        )),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: List.generate(11, (index) => Container(
+              width: 88,
+              height: 54,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+            )),
+          ),
+        ],
       ),
     );
   }
@@ -542,6 +594,159 @@ class _BookingSchedulerState extends ConsumerState<BookingScheduler> {
   }
 }
 
+// ─── Punto de leyenda ────────────────────────────────────────────────────────
+class _LegendDot extends StatelessWidget {
+  final Color color;
+  const _LegendDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+}
+
+// ─── Card de horario individual ───────────────────────────────────────────────
+class _TimeSlotCard extends StatefulWidget {
+  final int hour;
+  final bool isAvailable;
+  final bool isSelected;
+  final VoidCallback? onTap;
+
+  const _TimeSlotCard({
+    required this.hour,
+    required this.isAvailable,
+    required this.isSelected,
+    this.onTap,
+  });
+
+  @override
+  State<_TimeSlotCard> createState() => _TimeSlotCardState();
+}
+
+class _TimeSlotCardState extends State<_TimeSlotCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final accent = colorScheme.primary;
+
+    final Color bgColor;
+    final Color borderColor;
+    final double borderWidth;
+    final List<BoxShadow> shadows;
+    final Color textColor;
+
+    if (widget.isSelected) {
+      bgColor = accent.withOpacity(0.12);
+      borderColor = accent;
+      borderWidth = 1.2;
+      shadows = [
+        BoxShadow(
+          color: accent.withOpacity(0.14),
+          blurRadius: 10,
+          offset: const Offset(0, 3),
+          spreadRadius: -2,
+        ),
+      ];
+      textColor = accent;
+    } else if (!widget.isAvailable) {
+      bgColor = colorScheme.surfaceContainerHighest.withOpacity(0.22);
+      borderColor = colorScheme.outline.withOpacity(0.06);
+      borderWidth = 1.0;
+      shadows = [];
+      textColor = colorScheme.onSurface.withOpacity(0.22);
+    } else if (_isHovered) {
+      bgColor = accent.withOpacity(0.07);
+      borderColor = accent.withOpacity(0.35);
+      borderWidth = 1.0;
+      shadows = [
+        BoxShadow(
+          color: accent.withOpacity(0.07),
+          blurRadius: 18,
+          offset: const Offset(0, 6),
+        ),
+      ];
+      textColor = colorScheme.onSurface;
+    } else {
+      bgColor = colorScheme.surfaceContainerHighest.withOpacity(0.45);
+      borderColor = colorScheme.outline.withOpacity(0.12);
+      borderWidth = 1.0;
+      shadows = [];
+      textColor = colorScheme.onSurface;
+    }
+
+    return MouseRegion(
+      cursor: widget.isAvailable ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: widget.isAvailable ? (_) => setState(() => _isHovered = true) : null,
+      onExit: widget.isAvailable ? (_) => setState(() => _isHovered = false) : null,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _isHovered && !widget.isSelected ? 1.015 : 1.0,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            width: 88,
+            height: 54,
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor, width: borderWidth),
+              boxShadow: shadows,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(11),
+              child: Stack(
+                children: [
+                  // Contenido centrado
+                  Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.isSelected) ...[
+                          Icon(Icons.access_time_rounded, size: 11, color: accent),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(
+                          "${widget.hour}:00",
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: widget.isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: textColor,
+                            fontFamily: 'Oxanium',
+                            letterSpacing: widget.isSelected ? -0.3 : 0,
+                            decoration: !widget.isAvailable
+                                ? TextDecoration.lineThrough
+                                : null,
+                            decorationColor: colorScheme.outline.withOpacity(0.45),
+                            decorationThickness: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Chip de tipo de contacto ─────────────────────────────────────────────────
 class _ContactTypeChip extends StatelessWidget {
   final String label;
   final IconData icon;

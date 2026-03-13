@@ -13,7 +13,8 @@ class AuthRequiredModal extends ConsumerStatefulWidget {
   ConsumerState<AuthRequiredModal> createState() => _AuthRequiredModalState();
 }
 
-class _AuthRequiredModalState extends ConsumerState<AuthRequiredModal> with SingleTickerProviderStateMixin {
+class _AuthRequiredModalState extends ConsumerState<AuthRequiredModal>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
@@ -28,7 +29,7 @@ class _AuthRequiredModalState extends ConsumerState<AuthRequiredModal> with Sing
     super.dispose();
   }
 
-  // MENTORÍA: Ahora seleccionamos por el ENUM del tema. 
+  // MENTORÍA: Ahora seleccionamos por el ENUM del tema.
   // Esto es 100% robusto porque no depende de cómo Flutter altere los colores.
   String _getAnimationAsset(AppTheme currentTheme) {
     switch (currentTheme) {
@@ -41,6 +42,7 @@ class _AuthRequiredModalState extends ConsumerState<AuthRequiredModal> with Sing
       case AppTheme.assistify:
         return 'assets/animations/password_assistify.json';
       case AppTheme.botlode:
+      case AppTheme.contactEngine:
       case AppTheme.neutral:
         return 'assets/animations/password_neutral.json';
     }
@@ -50,19 +52,19 @@ class _AuthRequiredModalState extends ConsumerState<AuthRequiredModal> with Sing
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     // 1. Escuchamos la configuración actual del tema desde Riverpod
     final appConfig = ref.watch(currentAppThemeConfigProvider);
-    
+
     // 2. Obtenemos el path basado en el Enum (appConfig.theme)
     final animationPath = _getAnimationAsset(appConfig.theme);
-    
+
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       backgroundColor: colorScheme.surface,
       elevation: 0,
       insetPadding: const EdgeInsets.all(20),
-      
+
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: ConstrainedBox(
@@ -72,23 +74,23 @@ class _AuthRequiredModalState extends ConsumerState<AuthRequiredModal> with Sing
             children: [
               // --- ANIMACIÓN LOTTIE SELECCIONADA ---
               SizedBox(
-                height: 220, 
+                height: 220,
                 width: double.infinity,
                 child: Lottie.asset(
-                  animationPath, 
+                  animationPath,
                   controller: _controller,
                   onLoaded: (composition) {
                     _controller
-                      ..duration = composition.duration * 0.7 
-                      ..repeat(); 
+                      ..duration = composition.duration * 0.7
+                      ..repeat();
                   },
                   fit: BoxFit.contain,
                 ),
               ),
-              
+
               // --- CONTENIDO ---
               Padding(
-                padding: const EdgeInsets.fromLTRB(32, 0, 32, 32), 
+                padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
                 child: Column(
                   children: [
                     Text(
@@ -110,17 +112,22 @@ class _AuthRequiredModalState extends ConsumerState<AuthRequiredModal> with Sing
                         fontSize: 15,
                       ),
                     ),
-                    const SizedBox(height: 32), 
-                    
+                    const SizedBox(height: 32),
+
                     // --- BOTONES ---
                     Row(
                       children: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 18,
+                            ),
                             foregroundColor: colorScheme.onSurfaceVariant,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
                           ),
                           child: const Text(
                             "Cancelar",
@@ -131,27 +138,51 @@ class _AuthRequiredModalState extends ConsumerState<AuthRequiredModal> with Sing
                         Expanded(
                           child: FilledButton.icon(
                             onPressed: () async {
-                              Navigator.pop(context);
-                              final started = await ref.read(authRepositoryProvider).signInWithGoogle();
-                              if (!started && context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Login con Google no está configurado. Ejecutá la app con credenciales de Supabase (ver README).',
+                              try {
+                                final started = await ref
+                                    .read(authRepositoryProvider)
+                                    .signInWithGoogle();
+                                if (!context.mounted) return;
+
+                                if (!started) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Login con Google no está configurado. Ejecutá la app con credenciales de Supabase (ver README).',
+                                      ),
+                                      duration: Duration(seconds: 5),
                                     ),
-                                    duration: Duration(seconds: 5),
+                                  );
+                                  return;
+                                }
+
+                                Navigator.pop(context);
+                              } catch (e) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('No se pudo iniciar Google Login: $e'),
+                                    duration: const Duration(seconds: 5),
                                   ),
                                 );
                               }
                             },
-                            icon: const Icon(Icons.g_mobiledata_rounded, size: 26),
+                            icon: const Icon(
+                              Icons.g_mobiledata_rounded,
+                              size: 26,
+                            ),
                             label: const Text(
                               "Autenticar",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                             style: FilledButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 18),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                               elevation: 0,
                               backgroundColor: colorScheme.primary,
                               foregroundColor: colorScheme.onPrimary,

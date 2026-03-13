@@ -15,7 +15,36 @@ class RatingSummary extends StatelessWidget {
         .map((c) => c.rating!)
         .toList();
 
-    if (ratings.isEmpty) return const SizedBox.shrink();
+    if (ratings.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.star_outline_rounded, size: 40, color: Colors.amber.withOpacity(0.5)),
+            const SizedBox(height: 8),
+            Text(
+              "Sé el primero en calificar",
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Tu opinión ayuda a otros a tomar mejores decisiones.",
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
 
     // 2. Cálculos Estadísticos
     final double average = ratings.reduce((a, b) => a + b) / ratings.length;

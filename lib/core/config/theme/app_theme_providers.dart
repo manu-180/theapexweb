@@ -22,7 +22,7 @@ class AppThemeConfig {
   // Helpers para acceder rápido a los assets desde la UI
   String? get logoAsset => theme.logoAsset;
   IconData? get logoIcon => theme.icon;
-  String get themeName => theme.name; 
+  String get themeName => theme.name;
 
   const AppThemeConfig({
     required this.theme,
@@ -31,72 +31,57 @@ class AppThemeConfig {
   });
 }
 
-// 3. Notifier que maneja el tema y la persistencia
 @Riverpod(keepAlive: true)
 class DynamicTheme extends _$DynamicTheme {
-  
   static const _themePrefsKey = 'selected_theme_key';
+  static final Map<AppTheme, AppThemeConfig> _configCache = {};
 
   @override
   AppThemeConfig build() {
-    // LECTURA SÍNCRONA: Gracias al override en main.dart, esto es instantáneo.
-    // Evita pantallas blancas o parpadeos al iniciar.
     final prefs = ref.watch(sharedPreferencesProvider);
     final savedThemeName = prefs.getString(_themePrefsKey);
 
-    AppTheme initialTheme = AppTheme.neutral; // Default seguro
-    
+    AppTheme initialTheme = AppTheme.neutral;
     if (savedThemeName != null) {
-      // Lógica blindada: Si el nombre guardado no existe (ej. cambio de versión),
-      // fallback a Neutral sin crashear.
       try {
         initialTheme = AppTheme.values.firstWhere(
-          (e) => e.name == savedThemeName, 
-          orElse: () => AppTheme.neutral
+          (e) => e.name == savedThemeName,
+          orElse: () => AppTheme.neutral,
         );
       } catch (_) {
         initialTheme = AppTheme.neutral;
       }
     }
 
-    return _createConfig(initialTheme);
+    return _getOrCreateConfig(initialTheme);
   }
 
-  void setTheme(AppTheme theme) {
-    // 1. Guardamos en disco (fire and forget)
-    ref.read(sharedPreferencesProvider).setString(_themePrefsKey, theme.name);
-    // 2. Actualizamos UI inmediatamente
-    state = _createConfig(theme);
-  }
-
-  void setHoverTheme(AppTheme theme) {
-    // Cambio temporal visual, NO toca persistencia
-    state = _createConfig(theme);
-  }
-
-  void clearHoverTheme() {
-    // Restauramos lo que realmente está guardado en disco
-    final prefs = ref.read(sharedPreferencesProvider);
-    final savedName = prefs.getString(_themePrefsKey);
-    
-    AppTheme savedTheme = AppTheme.neutral;
-    if (savedName != null) {
-      savedTheme = AppTheme.values.firstWhere(
-        (e) => e.name == savedName, 
-        orElse: () => AppTheme.neutral
-      );
+  void setTheme(AppTheme theme, {bool persist = true}) {
+    debugPrint('[DynamicTheme] setTheme → ${theme.name} (persist: $persist)');
+    if (persist) {
+      ref.read(sharedPreferencesProvider).setString(_themePrefsKey, theme.name);
     }
-    state = _createConfig(savedTheme);
-  }
-
-  // Helper privado para crear el objeto de configuración
-  AppThemeConfig _createConfig(AppTheme theme) {
-    return AppThemeConfig(
-      theme: theme,
-      lightTheme: theme.getThemeData(Brightness.light),
-      darkTheme: theme.getThemeData(Brightness.dark),
+    state = _getOrCreateConfig(theme);
+    final s = state.lightTheme.colorScheme.surface;
+    debugPrint(
+      '[DynamicTheme] surface light = #${s.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}',
     );
   }
+
+  static AppThemeConfig _getOrCreateConfig(AppTheme theme) {
+    // No cacheamos indefinidamente para que hot-reload refleje cambios en getThemeData.
+    return _configCache.putIfAbsent(theme, () {
+      debugPrint('[DynamicTheme] creando config para ${theme.name}');
+      return AppThemeConfig(
+        theme: theme,
+        lightTheme: theme.getThemeData(Brightness.light),
+        darkTheme: theme.getThemeData(Brightness.dark),
+      );
+    });
+  }
+
+  /// Limpia el cache (útil en desarrollo para reflejar cambios en getThemeData).
+  static void clearCache() => _configCache.clear();
 }
 
 // 4. Providers de lectura fácil para la UI

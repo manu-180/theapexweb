@@ -8,6 +8,8 @@ import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/widgets/responsive_builder.dart';
 
 class Footer extends ConsumerWidget {
+  static final int _currentYear = DateTime.now().year;
+
   const Footer({super.key});
 
   @override
@@ -66,7 +68,7 @@ class Footer extends ConsumerWidget {
               Icon(Icons.code, size: 16, color: colorScheme.onSurfaceVariant),
               const SizedBox(width: 10),
               Text(
-                '© ${DateTime.now().year} APEX Development. Todos los derechos reservados.',
+                '© $_currentYear APEX Development. Todos los derechos reservados.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant.withOpacity(0.7),
                 ),

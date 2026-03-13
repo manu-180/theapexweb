@@ -24,14 +24,16 @@ class App extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Manuel Navarro - Full-Stack Developer',
       debugShowCheckedModeBanner: false,
-      
+      themeAnimationDuration: const Duration(milliseconds: 520),
+      themeAnimationCurve: Curves.easeInOutCubicEmphasized,
+
       // Conectamos el router
       routerConfig: goRouter,
 
       // Conectamos los providers del tema
       themeMode: themeMode,
-      theme: themeConfig.lightTheme, 
-      darkTheme: themeConfig.darkTheme, 
+      theme: themeConfig.lightTheme,
+      darkTheme: themeConfig.darkTheme,
 
       // --- 2. CONFIGURACIÓN DE IDIOMA (CRUCIAL PARA DATEFORMAT) ---
       localizationsDelegates: const [
@@ -53,19 +55,29 @@ class App extends ConsumerWidget {
             color: Colors.black87,
             child: Center(
               child: Padding(
-                padding: const EdgeInsets.all(16.0), // Reduje un poco el padding
-                // BLINDAJE: Usamos FittedBox para que el error se encoja 
+                padding: const EdgeInsets.all(
+                  16.0,
+                ), // Reduje un poco el padding
+                // BLINDAJE: Usamos FittedBox para que el error se encoja
                 // si ocurre dentro de un widget pequeño (como tu calendario)
-                child: FittedBox( 
+                child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.bug_report_rounded, color: Colors.orangeAccent, size: 48),
+                      const Icon(
+                        Icons.bug_report_rounded,
+                        color: Colors.orangeAccent,
+                        size: 48,
+                      ),
                       const SizedBox(height: 16),
                       const Text(
                         "Algo salió mal visualmente",
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
@@ -82,10 +94,8 @@ class App extends ConsumerWidget {
           );
         };
 
-        // 2. Envolvemos la app en el Monitor de Red
-        return OfflineStatusBanner(
-          child: child!,
-        );
+        // 2. Monitor de red
+        return OfflineStatusBanner(child: child!);
       },
     );
   }

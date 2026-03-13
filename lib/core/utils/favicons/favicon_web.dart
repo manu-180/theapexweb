@@ -28,7 +28,7 @@ void _updateLinkTag(String rel, String href) {
   // A. Buscar y destruir etiquetas existentes
   final selector = "link[rel='$rel']";
   final existingLinks = web.document.querySelectorAll(selector);
-  
+
   // CORRECCIÓN AQUÍ: Iteramos y casteamos a Element para poder usar .remove()
   for (var i = 0; i < existingLinks.length; i++) {
     final node = existingLinks.item(i);
@@ -62,25 +62,17 @@ void _injectDynamicManifest(String iconUrl, AppTheme theme) {
     "background_color": "#ffffff",
     "theme_color": _getThemeColorHex(theme),
     "icons": [
-      {
-        "src": iconUrl,
-        "sizes": "192x192",
-        "type": "image/png"
-      },
-      {
-        "src": iconUrl,
-        "sizes": "512x512",
-        "type": "image/png"
-      }
-    ]
+      {"src": iconUrl, "sizes": "192x192", "type": "image/png"},
+      {"src": iconUrl, "sizes": "512x512", "type": "image/png"},
+    ],
   };
 
   // B. Convertir a Blob
   final jsonString = jsonEncode(manifestJson);
-  
+
   // CORRECCIÓN: Conversión explícita para JSAny
   final blob = web.Blob(
-    [jsonString.toJS].toJS, 
+    [jsonString.toJS].toJS,
     web.BlobPropertyBag(type: 'application/json'),
   );
 
@@ -90,7 +82,7 @@ void _injectDynamicManifest(String iconUrl, AppTheme theme) {
   // D. Reemplazar la etiqueta del manifiesto
   final selector = "link[rel='manifest']";
   final existingManifest = web.document.querySelector(selector);
-  
+
   // querySelector devuelve Element?, así que aquí remove() funciona directo
   existingManifest?.remove();
 
@@ -103,11 +95,19 @@ void _injectDynamicManifest(String iconUrl, AppTheme theme) {
 
 String _getThemeColorHex(AppTheme theme) {
   switch (theme) {
-    case AppTheme.flutter: return "#0175C2";
-    case AppTheme.supabase: return "#3ECF8E";
-    case AppTheme.riverpod: return "#6E56F8";
-    case AppTheme.botlode: return "#FFC000";
-    case AppTheme.assistify: return "#00A8E8";
-    default: return "#64748B"; // Neutral
+    case AppTheme.flutter:
+      return "#0175C2";
+    case AppTheme.supabase:
+      return "#3ECF8E";
+    case AppTheme.riverpod:
+      return "#6E56F8";
+    case AppTheme.botlode:
+      return "#FFC000";
+    case AppTheme.assistify:
+      return "#00A8E8";
+    case AppTheme.contactEngine:
+      return "#6B7280";
+    default:
+      return "#64748B"; // Neutral
   }
 }

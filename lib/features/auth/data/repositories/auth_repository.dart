@@ -1,6 +1,6 @@
 // Archivo: lib/features/auth/data/repositories/auth_repository.dart
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, kDebugMode; 
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, kDebugMode;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthRepository {
@@ -22,30 +22,29 @@ class AuthRepository {
     }
     try {
       String? redirectTo;
-      
-      if (kIsWeb) {
-        // CORRECCIÓN: Evitamos problemas con fragments en la URL base
-        // Si estamos en https://midominio.com/#/contact, queremos redireccionar a la raíz
-        // o a una ruta limpia.
-        String origin = Uri.base.origin;
-        if (!origin.startsWith('http')) {
-           // Fallback por si origin viene vacío en algunos navegadores
-           origin = Uri.base.scheme + '://' + Uri.base.host;
-           if (Uri.base.hasPort) origin += ':${Uri.base.port}';
-        }
 
-        if (kDebugMode) {
-          redirectTo = null; // Supabase usa localhost:3000 por defecto
-        } else {
-          // IMPORTANTE: Asegúrate de tener esta URL exacta en "Redirect URLs" en Supabase
-          redirectTo = '$origin/'; // Redirigimos al Home para evitar problemas con hashes
-        }
+      if (kIsWeb) {
+        // Usamos una URL estable (sin query/fragment) para evitar callbacks inconsistentes.
+        final base = Uri.base;
+        final normalizedPath = (base.path.isEmpty || base.path == '/')
+            ? '/'
+            : (base.path.endsWith('/') ? base.path : '${base.path}/');
+        redirectTo = Uri(
+          scheme: base.scheme,
+          host: base.host,
+          port: base.hasPort ? base.port : null,
+          path: normalizedPath,
+        ).toString();
       } else {
         redirectTo = 'io.supabase.flutter://callback';
       }
 
+      if (kDebugMode) {
+        debugPrint('OAuth redirectTo: $redirectTo');
+      }
+
       await _supabase.auth.signInWithOAuth(
-        OAuthProvider.google, 
+        OAuthProvider.google,
         redirectTo: redirectTo,
       );
       return true;

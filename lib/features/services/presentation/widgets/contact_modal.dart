@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:apex/core/config/app_constants.dart';
+import 'package:apex/core/analytics/analytics_service.dart';
+import 'package:apex/core/analytics/analytics_events.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:apex/features/payments/data/repositories/mercadopago_repository.dart';
 import 'package:apex/features/services/domain/models/plan_model.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:apex/core/utils/whatsapp_launcher.dart';
 
 class ContactModal extends ConsumerStatefulWidget {
   final ServicePlan plan;
@@ -25,26 +27,18 @@ class _ContactModalState extends ConsumerState<ContactModal> {
   String? _errorMessage;
 
   void _launchWhatsApp() async {
-    final phone = AppConstants.whatsappNumber;
-    final message = "Hola Manuel, estuve viendo tu portfolio. Me interesa el plan *${widget.plan.name}* para potenciar mi negocio. ¿Podemos coordinar una reunión?";
-    final url = "https://wa.me/$phone?text=${Uri.encodeComponent(message)}";
-    
-    try {
-      if (!await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication)) {
-        throw 'No se pudo abrir WhatsApp';
-      }
-    } catch (e) {
-      // Fallback: Copiar al portapapeles si falla el deep link
-      if (mounted) {
-        Clipboard.setData(ClipboardData(text: phone));
-        ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text('No se pudo abrir WhatsApp. Número copiado al portapapeles.')),
-        );
-      }
-    }
+    ref.read(analyticsServiceProvider).trackEvent(
+      AnalyticsEvents.whatsappClicked,
+      {'source': 'contact_modal', 'plan': widget.plan.name},
+    );
+    await WhatsAppLauncher.open(
+      context: context,
+      message: "Hola Manuel, estuve viendo tu portfolio. Me interesa el plan *${widget.plan.name}* para potenciar mi negocio. ¿Podemos coordinar una reunión?",
+    );
   }
 
   Future<void> _processPayment() async {
+    final analytics = ref.read(analyticsServiceProvider);
     final user = ref.read(currentUserProvider);
     
     setState(() {
@@ -71,12 +65,15 @@ class _ContactModalState extends ConsumerState<ContactModal> {
       }
 
       // 3. Si falla (bloqueo de popup), activamos modo manual
+      analytics.trackEvent(AnalyticsEvents.paymentLinkGenerated, {'plan': widget.plan.name});
+
       if (!launched) {
         setState(() => _manualUrl = url);
       }
 
     } catch (e) {
       final msg = e.toString().replaceAll('Exception:', '').trim();
+      analytics.trackEvent(AnalyticsEvents.paymentLinkFailed, {'error': msg, 'plan': widget.plan.name});
       setState(() => _errorMessage = msg);
     } finally {
       if (mounted) setState(() => _isLoadingPayment = false);
@@ -159,7 +156,35 @@ class _ContactModalState extends ConsumerState<ContactModal> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colorScheme.primary.withOpacity(0.15)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "¿Qué incluye?",
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _buildGuaranteeRow(Icons.schedule_rounded, "Entrega en plazo acordado", theme),
+                    _buildGuaranteeRow(Icons.description_rounded, "Entregables detallados por etapa", theme),
+                    _buildGuaranteeRow(Icons.support_agent_rounded, "3 meses de soporte incluido", theme),
+                    _buildGuaranteeRow(Icons.refresh_rounded, "Revisiones ilimitadas en desarrollo", theme),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
 
               // --- ZONA DE ACCIÓN Y ERRORES ---
               
@@ -186,36 +211,58 @@ class _ContactModalState extends ConsumerState<ContactModal> {
                   ),
                 ),
 
-              // 2. Botón Manual (Fallback si el automático falla)
               if (_manualUrl != null) ...[
-                 Container(
-                   margin: const EdgeInsets.only(bottom: 16),
-                   padding: const EdgeInsets.all(16),
-                   decoration: BoxDecoration(
-                     border: Border.all(color: Colors.amber),
-                     borderRadius: BorderRadius.circular(12),
-                     color: Colors.amber.withOpacity(0.1),
-                   ),
-                   child: Column(
-                     children: [
-                       const Text(
-                         "El navegador bloqueó la ventana de pago automática.",
-                         textAlign: TextAlign.center,
-                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                       ),
-                       const SizedBox(height: 8),
-                       FilledButton.icon(
-                         onPressed: _launchManualUrl,
-                         style: FilledButton.styleFrom(
-                           backgroundColor: Colors.amber[800],
-                           foregroundColor: Colors.white,
-                         ),
-                         icon: const Icon(Icons.open_in_new), 
-                         label: const Text("Abrir MercadoPago Manualmente"),
-                       ),
-                     ],
-                   ),
-                 )
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.amber),
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.amber.withOpacity(0.1),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "El navegador bloqueó la apertura automática.",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildStepRow("1", "Toca el botón para abrir MercadoPago", theme),
+                      _buildStepRow("2", "Si no funciona, copia el link y ábrelo manualmente", theme),
+                      _buildStepRow("3", "¿Problemas? Contacta por WhatsApp", theme),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: _launchManualUrl,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.amber[800],
+                                foregroundColor: Colors.white,
+                              ),
+                              icon: const Icon(Icons.open_in_new, size: 16),
+                              label: const Text("Abrir link"),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: () {
+                              if (_manualUrl != null) {
+                                Clipboard.setData(ClipboardData(text: _manualUrl!));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Link copiado al portapapeles')),
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.copy, size: 18),
+                            tooltip: 'Copiar link',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ],
 
               Column(
@@ -273,6 +320,48 @@ class _ContactModalState extends ConsumerState<ContactModal> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStepRow(String step, String text, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 20, height: 20,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.amber[800],
+              shape: BoxShape.circle,
+            ),
+            child: Text(step, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuaranteeRow(IconData icon, String text, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: theme.colorScheme.primary.withOpacity(0.7)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

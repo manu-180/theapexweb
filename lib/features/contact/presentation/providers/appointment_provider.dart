@@ -1,18 +1,20 @@
 // Archivo: lib/features/contact/presentation/providers/appointment_provider.dart
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:apex/core/errors/app_exceptions.dart';
 import 'package:apex/features/contact/data/repositories/appointment_repository.dart';
-import 'package:apex/features/contact/data/repositories/whatsapp_repository.dart'; // <--- IMPORTANTE
+import 'package:apex/features/contact/data/repositories/whatsapp_repository.dart';
 import 'package:apex/features/contact/domain/models/appointment_model.dart';
 
 part 'appointment_provider.g.dart';
 
-// ... (BookingState queda igual) ...
 class BookingState {
   final DateTime selectedDate;
-  final List<int> availableHours; 
-  final int? selectedHour;        
+  final List<int> availableHours;
+  final int? selectedHour;
   final bool isLoading;
-  final bool isSuccess;           
+  final bool isSuccess;
+  final String? errorMessage;
 
   BookingState({
     required this.selectedDate,
@@ -20,27 +22,45 @@ class BookingState {
     this.selectedHour,
     this.isLoading = false,
     this.isSuccess = false,
+    this.errorMessage,
   });
+
+  const BookingState._({
+    required this.selectedDate,
+    required this.availableHours,
+    required this.selectedHour,
+    required this.isLoading,
+    required this.isSuccess,
+    required this.errorMessage,
+  });
+
+  bool get hasError => errorMessage != null;
 
   BookingState copyWith({
     DateTime? selectedDate,
     List<int>? availableHours,
     int? selectedHour,
+    bool clearSelectedHour = false,
     bool? isLoading,
     bool? isSuccess,
+    String? errorMessage,
+    bool clearError = false,
   }) {
-    return BookingState(
+    return BookingState._(
       selectedDate: selectedDate ?? this.selectedDate,
       availableHours: availableHours ?? this.availableHours,
-      selectedHour: selectedHour ?? this.selectedHour,
+      selectedHour: clearSelectedHour ? null : (selectedHour ?? this.selectedHour),
       isLoading: isLoading ?? this.isLoading,
       isSuccess: isSuccess ?? this.isSuccess,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 }
 
 @riverpod
 class BookingNotifier extends _$BookingNotifier {
+  bool _isSubmitting = false;
+
   @override
   BookingState build() {
     final now = DateTime.now();
@@ -50,9 +70,10 @@ class BookingNotifier extends _$BookingNotifier {
   Future<void> selectDate(DateTime date) async {
     state = state.copyWith(
       selectedDate: date,
-      selectedHour: null, 
+      clearSelectedHour: true,
       isLoading: true,
       isSuccess: false,
+      clearError: true,
     );
 
     if (date.weekday == DateTime.sunday) {
@@ -64,40 +85,57 @@ class BookingNotifier extends _$BookingNotifier {
       final repo = ref.read(appointmentRepositoryProvider);
       final bookedHours = await repo.getBookedHours(date);
 
-      final List<int> allSlots = List.generate(11, (index) => 9 + index); 
+      final List<int> allSlots = List.generate(11, (index) => 9 + index);
       final freeSlots = allSlots.where((h) => !bookedHours.contains(h)).toList();
 
       final now = DateTime.now();
       final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
-      
+
       if (isToday) {
         freeSlots.removeWhere((h) => h <= now.hour);
       }
 
       state = state.copyWith(availableHours: freeSlots, isLoading: false);
+    } on AppException catch (e) {
+      state = state.copyWith(
+        availableHours: [],
+        isLoading: false,
+        errorMessage: e.message,
+      );
     } catch (e) {
-      state = state.copyWith(availableHours: [], isLoading: false);
+      final msg = e.toString().toLowerCase();
+      final isNetworkError = msg.contains('name not resolved') ||
+          msg.contains('connection') ||
+          msg.contains('socket') ||
+          msg.contains('network') ||
+          msg.contains('failed to load');
+      state = state.copyWith(
+        availableHours: [],
+        isLoading: false,
+        errorMessage: isNetworkError
+            ? 'No se pudo conectar al servidor. Comprueba tu conexión a internet e inténtalo de nuevo.'
+            : 'Error al cargar horarios. Intenta de nuevo.',
+      );
     }
   }
 
   void selectHour(int hour) {
-    state = state.copyWith(selectedHour: hour);
+    state = state.copyWith(selectedHour: hour, clearError: true);
   }
 
-  // --- CONFIRMACIÓN CON NOTIFICACIONES AUTOMÁTICAS ---
   Future<void> confirmBooking({
     required String contactInfo,
-    required String contactType, // 'whatsapp' o 'email'
+    required String contactType,
     String? name,
   }) async {
-    if (state.selectedHour == null) return;
+    if (state.selectedHour == null || _isSubmitting) return;
 
-    state = state.copyWith(isLoading: true);
+    _isSubmitting = true;
+    state = state.copyWith(isLoading: true, clearError: true);
 
     try {
       final appRepo = ref.read(appointmentRepositoryProvider);
-      
-      // 1. Crear Reserva en BD
+
       final appointment = Appointment(
         dateSlot: state.selectedDate,
         hourSlot: state.selectedHour!,
@@ -107,17 +145,19 @@ class BookingNotifier extends _$BookingNotifier {
       );
 
       await appRepo.createAppointment(appointment);
-      
-      // 2. DISPARAR NOTIFICACIONES (Fire and Forget)
-      // No usamos 'await' bloqueante para que el usuario vea el éxito rápido
+
       _sendNotification(contactType, contactInfo, name ?? 'Cliente');
 
-      // 3. Éxito
       state = state.copyWith(isLoading: false, isSuccess: true);
-      
+    } on AppException catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.message);
     } catch (e) {
-      state = state.copyWith(isLoading: false);
-      rethrow; 
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'No se pudo confirmar la reserva. Intenta de nuevo.',
+      );
+    } finally {
+      _isSubmitting = false;
     }
   }
 
@@ -126,9 +166,9 @@ class BookingNotifier extends _$BookingNotifier {
       if (type == 'whatsapp') {
         final wppRepo = ref.read(whatsappRepositoryProvider);
         await wppRepo.sendBookingConfirmation(
-          phone: contact, 
-          date: state.selectedDate, 
-          hour: state.selectedHour!
+          phone: contact,
+          date: state.selectedDate,
+          hour: state.selectedHour!,
         );
       } else if (type == 'email') {
         final appRepo = ref.read(appointmentRepositoryProvider);
@@ -140,12 +180,12 @@ class BookingNotifier extends _$BookingNotifier {
         );
       }
     } catch (e) {
-      // Loguear error silencioso (analytics)
-      print("Error enviando notificación automática: $e");
+      debugPrint('Error enviando notificación automática: $e');
     }
   }
-  
+
   void reset() {
+    _isSubmitting = false;
     state = build();
   }
 }

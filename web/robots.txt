@@ -1,7 +1,5 @@
 User-agent: *
-Disallow: /
-Allow: /$
-Allow: /services$
-Allow: /about$
-Allow: /contact$
+Allow: /
+Disallow: /api/
+Disallow: /#/
 Sitemap: https://www.theapexweb.com/sitemap.xml

@@ -1,15 +1,14 @@
 // Archivo: lib/features/landing/presentation/views/landing_view.dart
-import 'package:animate_do/animate_do.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/widgets/inspector_gadget.dart'; // <--- IMPORTACIÓN RAYOS X
-import 'package:apex/features/landing/presentation/widgets/assistify_case_study_modal.dart';
-import 'package:apex/features/landing/presentation/widgets/botlode_case_study_modal.dart';
+import 'package:apex/features/landing/presentation/widgets/project_drawer.dart';
 import 'package:apex/features/landing/presentation/widgets/tech_card.dart';
-import 'package:apex/features/shared/widgets/footer.dart'; 
+import 'package:apex/features/shared/widgets/footer.dart';
 
 class LandingView extends ConsumerStatefulWidget {
   const LandingView({super.key});
@@ -20,25 +19,31 @@ class LandingView extends ConsumerStatefulWidget {
 
 class _LandingViewState extends ConsumerState<LandingView> {
   final ValueNotifier<Offset> _mousePosNotifier = ValueNotifier(Offset.zero);
+  Timer? _mouseThrottle;
 
   @override
   void dispose() {
+    _mouseThrottle?.cancel();
     _mousePosNotifier.dispose();
     super.dispose();
+  }
+
+  void _onMouseMove(Offset position) {
+    if (_mouseThrottle?.isActive ?? false) return;
+    _mouseThrottle = Timer(const Duration(milliseconds: 32), () {
+      _mousePosNotifier.value = position;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Ajustamos la altura y ancho para mantener uniformidad
-    const double cardHeight = 590; 
+    const double cardHeight = 590;
     const double cardWidth = 350;
 
     return MouseRegion(
-      onHover: (event) {
-        _mousePosNotifier.value = event.position;
-      },
+      onHover: (event) => _onMouseMove(event.position),
       child: SingleChildScrollView(
         child: Column(
           children: [
@@ -53,34 +58,28 @@ class _LandingViewState extends ConsumerState<LandingView> {
                       // --- SECCIÓN DE TÍTULOS CON RAYOS X ---
                       InspectorGadget(
                         name: "Hero Header Adaptativo",
-                        techSpecs: "Diseño fluido. Detecto el tamaño de tu pantalla para ajustar tipografías y márgenes matemáticamente, asegurando legibilidad perfecta en cualquier dispositivo.",
+                        techSpecs:
+                            "Diseño fluido. Detecto el tamaño de tu pantalla para ajustar tipografías y márgenes matemáticamente, asegurando legibilidad perfecta en cualquier dispositivo.",
                         icon: Icons.title,
                         child: Column(
                           children: [
-                            FadeInDown(
-                              duration: const Duration(milliseconds: 800),
-                              child: Text(
-                                'Desarrollador Full-Stack & Mobile',
-                                style: theme.textTheme.displaySmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: theme.colorScheme.primary,
-                                  letterSpacing: -0.5,
-                                ),
-                                textAlign: TextAlign.center,
+                            Text(
+                              'Desarrollador Full-Stack & Mobile',
+                              style: theme.textTheme.displaySmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
+                                letterSpacing: -0.5,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 24),
-                            
-                            FadeInDown(
-                              delay: const Duration(milliseconds: 300),
-                              child: Text(
-                                'Especializado en crear experiencias de usuario fluidas y eficientes\ncon Flutter, Supabase y Riverpod.',
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  height: 1.3,
-                                ),
-                                textAlign: TextAlign.center,
+                            Text(
+                              'Especializado en crear experiencias de usuario fluidas y eficientes\ncon Flutter, Supabase y Riverpod.',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                height: 1.3,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
@@ -90,32 +89,40 @@ class _LandingViewState extends ConsumerState<LandingView> {
                       // --- STACK TECNOLÓGICO (Cards de arriba) CON RAYOS X ---
                       InspectorGadget(
                         name: "Efecto 'Mouse Glow'",
-                        techSpecs: "Matemática visual. Rastreo la coordenada exacta de tu mouse/dedo para pintar un gradiente de luz dinámico en los bordes. Renderizado en tiempo real a 60 FPS.",
+                        techSpecs:
+                            "Matemática visual. Rastreo la coordenada exacta de tu mouse/dedo para pintar un gradiente de luz dinámico en los bordes. Renderizado en tiempo real a 60 FPS.",
                         icon: FontAwesomeIcons.layerGroup,
                         child: Wrap(
-                          spacing: 24,     
-                          runSpacing: 24, 
+                          spacing: 24,
+                          runSpacing: 24,
                           alignment: WrapAlignment.center,
                           children: [
-                            // --- FLUTTER ---
-                            Container(
-                              constraints: const BoxConstraints(maxWidth: cardWidth),
-                              height: cardHeight, 
-                              child: _FlutterCard(_mousePosNotifier),
+                            RepaintBoundary(
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                  maxWidth: cardWidth,
+                                ),
+                                height: cardHeight,
+                                child: _FlutterCard(_mousePosNotifier),
+                              ),
                             ),
-                            
-                            // --- SUPABASE ---
-                            Container(
-                              constraints: const BoxConstraints(maxWidth: cardWidth),
-                              height: cardHeight, 
-                              child: _SupabaseCard(_mousePosNotifier),
+                            RepaintBoundary(
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                  maxWidth: cardWidth,
+                                ),
+                                height: cardHeight,
+                                child: _SupabaseCard(_mousePosNotifier),
+                              ),
                             ),
-                            
-                            // --- RIVERPOD ---
-                            Container(
-                              constraints: const BoxConstraints(maxWidth: cardWidth),
-                              height: cardHeight, 
-                              child: _RiverpodCard(_mousePosNotifier),
+                            RepaintBoundary(
+                              child: Container(
+                                constraints: const BoxConstraints(
+                                  maxWidth: cardWidth,
+                                ),
+                                height: cardHeight,
+                                child: _RiverpodCard(_mousePosNotifier),
+                              ),
                             ),
                           ],
                         ),
@@ -124,58 +131,74 @@ class _LandingViewState extends ConsumerState<LandingView> {
                       const SizedBox(height: 60),
 
                       // --- PROYECTO DESTACADO (Card de abajo) CON RAYOS X ---
-                      FadeInUp(
-                        delay: const Duration(milliseconds: 500),
-                        child: Column(
-                          children: [
-                             Text(
-                              'Desarrollo Integral: De la Idea al Lanzamiento',
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.titleLarge?.copyWith(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 28,
-                              ),
+                      Column(
+                        children: [
+                          Text(
+                            'Desarrollo Integral: De la Idea al Lanzamiento',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 28,
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Aplicaciones móviles en tiendas y software de escritorio a medida.',
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Productos digitales listos para atraer clientes y convertir conversaciones en ventas.',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
-                            const SizedBox(height: 30),
-                            
-                            InspectorGadget(
-                              name: "Inyección de Tema Aislado",
-                              techSpecs: "Arquitectura avanzada. Al abrir este modal, inyecto un 'ThemeData' nuevo solo para esta sección, sin afectar los colores globales del resto de la app.",
-                              icon: FontAwesomeIcons.mobileScreen,
-                              child: Wrap(
-                                spacing: 24,
-                                runSpacing: 24,
-                                alignment: WrapAlignment.center,
-                                children: [
-                                  ConstrainedBox(
-                                    constraints: const BoxConstraints(maxWidth: 800),
+                          ),
+                          const SizedBox(height: 30),
+
+                          InspectorGadget(
+                            name: "Inyección de Tema Aislado",
+                            techSpecs:
+                                "Arquitectura avanzada. Al abrir este modal, inyecto un 'ThemeData' nuevo solo para esta sección, sin afectar los colores globales del resto de la app.",
+                            icon: FontAwesomeIcons.mobileScreen,
+                            child: Wrap(
+                              spacing: 24,
+                              runSpacing: 24,
+                              alignment: WrapAlignment.center,
+                              children: [
+                                RepaintBoundary(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 800,
+                                    ),
+                                    child: _ContactEngineCard(
+                                      _mousePosNotifier,
+                                    ),
+                                  ),
+                                ),
+                                RepaintBoundary(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 800,
+                                    ),
                                     child: _BotLodeCard(_mousePosNotifier),
                                   ),
-                                  ConstrainedBox(
-                                    constraints: const BoxConstraints(maxWidth: 800),
+                                ),
+                                RepaintBoundary(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 800,
+                                    ),
                                     child: _AssistifyCard(_mousePosNotifier),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-            
+
             // --- FOOTER ---
             const Footer(),
           ],
@@ -201,10 +224,10 @@ class _FlutterCard extends StatelessWidget {
       icon: const Icon(FontAwesomeIcons.flutter, size: 28, color: accentColor),
       accentColor: accentColor,
       bullets: const [
-        'Aplicaciones Ultrarrápidas: Tiempos de carga mínimos que retienen clientes.', 
+        'Aplicaciones Ultrarrápidas: Tiempos de carga mínimos que retienen clientes.',
         'Experiencia Premium: Fluidez visual y animaciones profesionales.',
         'Time-to-Market: Tu producto listo para lanzar en tiempo récord.',
-        'Gráficos de Alta Calidad: Renderizado nítido en cualquier dispositivo.', 
+        'Gráficos de Alta Calidad: Renderizado nítido en cualquier dispositivo.',
         'Diseño Adaptativo: Se ve increíble en celulares, tablets y web.',
       ],
     );
@@ -229,7 +252,7 @@ class _SupabaseCard extends StatelessWidget {
         'Escalabilidad Automática: Crece de 1 a 1 millón de usuarios sin caídas.',
         'Tiempo Real: Actualizaciones instantáneas (stock, chats, alertas).',
         'Base de Datos Robusta: Tecnología SQL confiable y potente.',
-        'Acceso Simplificado: Inicia sesión con Google o Apple en un clic.', 
+        'Acceso Simplificado: Inicia sesión con Google o Apple en un clic.',
       ],
     );
   }
@@ -252,7 +275,7 @@ class _RiverpodCard extends StatelessWidget {
         'Arquitectura Sólida: Tu proyecto puede crecer años sin volverse un caos.',
         'Inversión Eficiente: Actualizar tu app en el futuro es más rápido y económico.',
         'Estabilidad Total: Minimiza errores y cierres inesperados de la app.',
-        'Calidad Asegurada: Código preparado para detectar fallos antes de salir.', 
+        'Calidad Asegurada: Código preparado para detectar fallos antes de salir.',
         'Datos 100% Confiables: Tus usuarios nunca verán información errónea o vieja.',
       ],
     );
@@ -272,27 +295,10 @@ class _BotLodeCard extends ConsumerWidget {
       theme: AppTheme.botlode,
       title: 'BotLode: Ecosistema de Bots IA',
       onTapOverride: () {
-        ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.botlode);
-        showGeneralDialog(
-          context: context,
-          barrierDismissible: true,
-          barrierLabel: 'Cerrar',
-          barrierColor: Colors.black.withOpacity(0.6),
-          transitionDuration: const Duration(milliseconds: 500),
-          pageBuilder: (context, animation, secondaryAnimation) {
-            return const BotlodeCaseStudyModal();
-          },
-          transitionBuilder: (context, animation, secondaryAnimation, child) {
-            final curvedValue = Curves.easeOutCubic.transform(animation.value);
-            return Transform.scale(
-              scale: 0.95 + (0.05 * curvedValue),
-              child: Opacity(
-                opacity: curvedValue,
-                child: child,
-              ),
-            );
-          },
-        );
+        showProjectDrawer(context, content: const BotLodeDrawerContent());
+        Future.delayed(const Duration(milliseconds: 150), () {
+          ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.botlode);
+        });
       },
       icon: Image.asset(
         'assets/icons/logo_botlode.png',
@@ -301,7 +307,8 @@ class _BotLodeCard extends ConsumerWidget {
         fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
         isAntiAlias: true,
-        errorBuilder: (context, error, stackTrace) => const Icon(FontAwesomeIcons.robot, size: 28, color: _botlodeGold),
+        errorBuilder: (context, error, stackTrace) =>
+            const Icon(FontAwesomeIcons.robot, size: 28, color: _botlodeGold),
       ),
       accentColor: _botlodeGold,
       bullets: const [
@@ -325,29 +332,12 @@ class _AssistifyCard extends ConsumerWidget {
       mousePos: mousePos,
       theme: AppTheme.assistify,
       title: 'Assistify: App en Producción',
-      
+
       onTapOverride: () {
-        ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify);
-        showGeneralDialog(
-          context: context,
-          barrierDismissible: true, 
-          barrierLabel: 'Cerrar',
-          barrierColor: Colors.black.withOpacity(0.6), 
-          transitionDuration: const Duration(milliseconds: 500), 
-          pageBuilder: (context, animation, secondaryAnimation) {
-            return const AssistifyCaseStudyModal();
-          },
-          transitionBuilder: (context, animation, secondaryAnimation, child) {
-            final curvedValue = Curves.easeOutCubic.transform(animation.value);
-            return Transform.scale(
-              scale: 0.95 + (0.05 * curvedValue), 
-              child: Opacity(
-                opacity: curvedValue, 
-                child: child,
-              ),
-            );
-          },
-        );
+        showProjectDrawer(context, content: const AssistifyDrawerContent());
+        Future.delayed(const Duration(milliseconds: 150), () {
+          ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify);
+        });
       },
 
       icon: Image.asset(
@@ -364,6 +354,41 @@ class _AssistifyCard extends ConsumerWidget {
         'Listas de Espera Inteligentes: El sistema rellena huecos libres automáticamente.',
         'Panel de Administración: Gestión total de horarios, altas, bajas y asignación de créditos.',
         'Despliegue Real: Aplicación activa y descargable en Play Store y App Store.',
+      ],
+    );
+  }
+}
+
+class _ContactEngineCard extends ConsumerWidget {
+  final ValueNotifier<Offset> mousePos;
+  const _ContactEngineCard(this.mousePos);
+
+  static const _contactEngineGray = Color(0xFF6B7280);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return TechCard(
+      mousePos: mousePos,
+      theme: AppTheme.contactEngine,
+      title: 'Contact Engine',
+      onTapOverride: () {
+        showProjectDrawer(context, content: const ContactEngineDrawerContent());
+        Future.delayed(const Duration(milliseconds: 150), () {
+          ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.contactEngine);
+        });
+      },
+      icon: const Icon(
+        FontAwesomeIcons.crosshairs,
+        size: 28,
+        color: _contactEngineGray,
+      ),
+      accentColor: _contactEngineGray,
+      bullets: const [
+        'Hace búsquedas en Google (por rubro y ciudad) y extrae los contactos por vos.',
+        'Encuentra clientes potenciales de forma automática todos los días.',
+        'Activa email + WhatsApp para convertir más conversaciones en oportunidades.',
+        'Organiza el seguimiento comercial sin perder tiempo en tareas repetitivas.',
+        'Muestra resultados claros con panel de control en tiempo real.',
       ],
     );
   }

@@ -5,15 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:apex/features/presence/presentation/widgets/presence_badge.dart';
 import 'package:apex/core/config/theme/app_theme.dart';
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/config/theme/brightness_provider.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
-import 'package:apex/core/config/app_constants.dart';
 import 'package:apex/core/widgets/inspector_gadget.dart'; 
-import 'package:apex/core/providers/inspector_provider.dart'; 
+import 'package:apex/core/providers/inspector_provider.dart';
+import 'package:apex/core/utils/whatsapp_launcher.dart';
 
 class MainLayout extends ConsumerStatefulWidget {
   const MainLayout({required this.child, super.key});
@@ -34,21 +33,10 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   ];
 
   Future<void> _triggerWhatsApp() async {
-    const phoneNumber = AppConstants.whatsappNumber;
-    const message = 'Hola, vengo desde los atajos de teclado 🚀';
-    final uri = Uri.parse('https://wa.me/$phoneNumber?text=${Uri.encodeComponent(message)}');
-    
-    try {
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        throw 'No se pudo abrir';
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-           const SnackBar(content: Text('No se pudo abrir WhatsApp (Error de navegador)')),
-        );
-      }
-    }
+    await WhatsAppLauncher.open(
+      context: context,
+      message: 'Hola, vengo desde los atajos de teclado 🚀',
+    );
   }
 
   void _showShortcutsDialog() {
@@ -85,13 +73,14 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
 
     final key = event.logicalKey;
 
-    // 3. PROCESAMIENTO DE COMANDOS
-    // Si llegamos aquí, el usuario NO está escribiendo. Ejecutamos comandos.
+    final isCtrl = HardwareKeyboard.instance.isControlPressed ||
+        HardwareKeyboard.instance.isMetaPressed;
 
-    // --- NAVEGACIÓN ---
+    if (!isCtrl) return KeyEventResult.ignored;
+
     if (key == LogicalKeyboardKey.keyH) {
       context.goNamed('home');
-      return KeyEventResult.handled; // 'handled' detiene el evento aquí.
+      return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.keyA) {
       context.goNamed('about');
@@ -110,58 +99,16 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       return KeyEventResult.handled;
     }
 
-    // --- TEMAS (1-5 y Numpad 1-5) ---
-    if (key == LogicalKeyboardKey.digit1 || key == LogicalKeyboardKey.numpad1) {
-      ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral);
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit2 || key == LogicalKeyboardKey.numpad2) {
-      ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.flutter);
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit3 || key == LogicalKeyboardKey.numpad3) {
-      ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.supabase);
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit4 || key == LogicalKeyboardKey.numpad4) {
-      ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.riverpod);
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit5 || key == LogicalKeyboardKey.numpad5) {
-      ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.botlode);
-      return KeyEventResult.handled;
-    }
-    if (key == LogicalKeyboardKey.digit6 || key == LogicalKeyboardKey.numpad6) {
-      ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.assistify);
-      return KeyEventResult.handled;
-    }
-
-    // --- UTILIDADES ---
-    if (key == LogicalKeyboardKey.keyR) {
-      ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral);
-      return KeyEventResult.handled;
-    }
     if (key == LogicalKeyboardKey.keyT) {
       ref.read(brightnessModeProvider.notifier).toggleMode();
       return KeyEventResult.handled;
     }
-    if (key == LogicalKeyboardKey.keyW) {
-      _triggerWhatsApp();
+    if (key == LogicalKeyboardKey.keyR) {
+      ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral);
       return KeyEventResult.handled;
     }
-    if (key == LogicalKeyboardKey.keyL) {
-      ref.read(authRepositoryProvider).signInWithGoogle().then((started) {
-        if (!started && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Login con Google no está configurado. Ejecutá la app con credenciales de Supabase (ver README).',
-              ),
-              duration: Duration(seconds: 5),
-            ),
-          );
-        }
-      });
+    if (key == LogicalKeyboardKey.keyW) {
+      _triggerWhatsApp();
       return KeyEventResult.handled;
     }
     if (key == LogicalKeyboardKey.keyI) {
@@ -173,7 +120,6 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
       return KeyEventResult.handled;
     }
 
-    // Si no es ningún atajo conocido, lo ignoramos.
     return KeyEventResult.ignored;
   }
 
@@ -189,29 +135,45 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
     });
     if (activeIndex == -1) activeIndex = 0;
 
+    // Inset horizontal para que la barra y el contenido no se “sobresalgan” con bordes redondeados del navegador.
     // REEMPLAZO TOTAL: Usamos Focus en lugar de CallbackShortcuts
     return Focus(
-      autofocus: true, 
+      autofocus: true,
       onKeyEvent: _handleKeyEvent, // <--- Conectamos nuestro cerebro manual
       child: Scaffold(
         key: _scaffoldKey,
-        endDrawer: isMobile ? _MobileDrawer(navItems: _navItems, onHelpTap: _showShortcutsDialog) : null,
-        appBar: AppBar(
-          title: const _BrandLogo(),
-          centerTitle: false,
-          automaticallyImplyLeading: false,
-          actions: [
+          endDrawer: isMobile ? _MobileDrawer(navItems: _navItems, onHelpTap: _showShortcutsDialog) : null,
+          appBar: AppBar(
+            title: const _BrandLogo(),
+            centerTitle: false,
+            automaticallyImplyLeading: false,
+            actions: [
             if (!isMobile) ...[
               _DynamicSlidingNavBar(
                 items: _navItems,
                 selectedIndex: activeIndex,
                 onTap: (index) => context.goNamed(_navItems[index]['name']),
               ),
-              
-              const SizedBox(width: 24),
-              const PresenceBadge(),
+
               const SizedBox(width: 16),
-              
+
+              FilledButton.icon(
+                onPressed: () => context.goNamed('contact'),
+                icon: const Icon(Icons.calendar_month_rounded, size: 16),
+                label: const Text(
+                  'Agendar consulta gratis',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+
+              const SizedBox(width: 16),
+              const PresenceBadge(),
+              const SizedBox(width: 8),
+
               InspectorGadget(
                 name: "Cerebro de Estado (Riverpod)",
                 techSpecs: "Gestión global. Un único 'Source of Truth' controla el tema, usuario y configuración. Si tocas algo aquí, la UI de toda la app reacciona y se redibuja instantáneamente.",
@@ -219,16 +181,16 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 child: _ToolsBar(onHelpTap: _showShortcutsDialog),
               ),
 
-              const SizedBox(width: 16),
-              
+              const SizedBox(width: 8),
+
               InspectorGadget(
                 name: "Seguridad OAuth 2.0",
                 techSpecs: "Login Real. Integración profunda con Supabase Auth y Google. Gestiono tokens encriptados y persistencia de sesión segura, igual que las apps bancarias.",
                 icon: FontAwesomeIcons.shieldHalved,
                 child: const _AuthButton(),
               ),
-              
-              const SizedBox(width: 24),
+
+              const SizedBox(width: 16),
             ] else ...[
               const PresenceBadge(),
               IconButton(
@@ -239,10 +201,10 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
               ),
               const SizedBox(width: 16),
             ],
-          ],
+            ],
+          ),
+          body: widget.child,
         ),
-        body: widget.child,
-      ),
     );
   }
 }
@@ -273,7 +235,7 @@ class _ToolsBar extends ConsumerWidget {
             onPressed: () => ref.read(brightnessModeProvider.notifier).toggleMode(),
             icon: Icon(theme.brightness == Brightness.dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded),
             color: color,
-            tooltip: "Cambiar Modo (T)",
+            tooltip: "Cambiar Modo (Ctrl+T)",
             iconSize: 20,
           ),
           
@@ -283,7 +245,7 @@ class _ToolsBar extends ConsumerWidget {
             onPressed: () => ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.neutral),
             icon: const Icon(Icons.refresh_rounded),
             color: color,
-            tooltip: "Resetear Tema (R)",
+            tooltip: "Resetear Tema (Ctrl+R)",
             iconSize: 20,
           ),
 
@@ -293,7 +255,7 @@ class _ToolsBar extends ConsumerWidget {
             onPressed: () => ref.read(inspectorModeProvider.notifier).toggle(),
             icon: Icon(isInspectorActive ? Icons.build_circle : Icons.build_circle_outlined),
             color: isInspectorActive ? Colors.cyanAccent : color,
-            tooltip: "Modo Ingeniería (I)",
+            tooltip: "Modo Ingeniería (Ctrl+I)",
             iconSize: 20,
           ),
 
@@ -303,7 +265,7 @@ class _ToolsBar extends ConsumerWidget {
             onPressed: onHelpTap,
             icon: const Icon(Icons.keyboard_command_key_rounded),
             color: color, 
-            tooltip: "Ver Atajos (K)",
+            tooltip: "Ver Atajos (Ctrl+K)",
             iconSize: 20,
           ),
         ],
@@ -322,11 +284,6 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-
-    void navAndClose(String routeName, {Object? extra}) {
-      Navigator.pop(context);
-      context.goNamed(routeName, extra: extra);
-    }
 
     // Aquí dentro SI usamos CallbackShortcuts porque es un contexto modal local
     // y no hay inputs de texto que interfieran.
@@ -375,23 +332,21 @@ class _ShortcutsHelpDialog extends ConsumerWidget {
                       _ShortcutSection(
                         title: "Navegación",
                         items: const [
-                          {'key': 'H', 'desc': 'Ir al Home'},
-                          {'key': 'S', 'desc': 'Servicios (Web)'},
-                          {'key': 'M', 'desc': 'Servicios (Apps)'},
-                          {'key': 'A', 'desc': 'Sobre Mí'},
-                          {'key': 'C', 'desc': 'Contacto'},
+                          {'key': 'Ctrl+H', 'desc': 'Ir al Home'},
+                          {'key': 'Ctrl+S', 'desc': 'Servicios (Web)'},
+                          {'key': 'Ctrl+M', 'desc': 'Servicios (Apps)'},
+                          {'key': 'Ctrl+A', 'desc': 'Sobre Mí'},
+                          {'key': 'Ctrl+C', 'desc': 'Contacto'},
                         ],
                       ),
                       _ShortcutSection(
                         title: "Acciones",
                         items: const [
-                          {'key': 'T', 'desc': 'Modo Claro/Oscuro'},
-                          {'key': 'I', 'desc': 'Modo Ingeniería (Rayos X)'}, 
-                          {'key': '1-6', 'desc': 'Cambiar Tema'},
-                          {'key': 'R', 'desc': 'Resetear Tema'},
-                          {'key': 'L', 'desc': 'Login Google'},
-                          {'key': 'W', 'desc': 'Abrir WhatsApp'},
-                          {'key': 'K', 'desc': 'Cerrar este menú'},
+                          {'key': 'Ctrl+T', 'desc': 'Modo Claro/Oscuro'},
+                          {'key': 'Ctrl+I', 'desc': 'Modo Ingeniería (Rayos X)'},
+                          {'key': 'Ctrl+R', 'desc': 'Resetear Tema'},
+                          {'key': 'Ctrl+W', 'desc': 'Abrir WhatsApp'},
+                          {'key': 'Ctrl+K', 'desc': 'Cerrar este menú'},
                         ],
                       ),
                     ],
@@ -494,21 +449,45 @@ class _MobileDrawer extends ConsumerWidget {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              children: navItems.map((item) {
-                final bool isActive = GoRouterState.of(context).uri.path == item['path'];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: isActive ? colorScheme.primary.withOpacity(0.1) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      context.goNamed('contact');
+                    },
+                    icon: const Icon(Icons.calendar_month_rounded),
+                    label: const Text(
+                      'Agendar consulta gratis',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      minimumSize: const Size(double.infinity, 48),
+                    ),
                   ),
-                  child: ListTile(
-                    title: Text(item['label'], style: TextStyle(fontWeight: isActive ? FontWeight.bold : FontWeight.w500, color: isActive ? colorScheme.primary : colorScheme.onSurface)),
-                    leading: Icon(_getIconForLabel(item['label']), color: isActive ? colorScheme.primary : colorScheme.onSurfaceVariant),
-                    onTap: () { Navigator.pop(context); context.goNamed(item['name']); },
-                  ),
-                );
-              }).toList(),
+                ),
+                ...navItems.map((item) {
+                  final currentPath = GoRouterState.of(context).uri.path;
+                  final bool isActive = item['path'] == '/'
+                      ? currentPath == '/'
+                      : currentPath.startsWith(item['path']);
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: isActive ? colorScheme.primary.withOpacity(0.1) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      title: Text(item['label'], style: TextStyle(fontWeight: isActive ? FontWeight.bold : FontWeight.w500, color: isActive ? colorScheme.primary : colorScheme.onSurface)),
+                      leading: Icon(_getIconForLabel(item['label']), color: isActive ? colorScheme.primary : colorScheme.onSurfaceVariant),
+                      onTap: () { Navigator.pop(context); context.goNamed(item['name']); },
+                    ),
+                  );
+                }),
+              ],
             ),
           ),
           Container(
@@ -826,14 +805,24 @@ class _AuthButton extends ConsumerWidget {
     if (user == null) {
       return FilledButton.icon(
         onPressed: () async {
-          final started = await ref.read(authRepositoryProvider).signInWithGoogle();
-          if (!started && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Login con Google no está configurado. Ejecutá la app con credenciales de Supabase (ver README).',
+          try {
+            final started = await ref.read(authRepositoryProvider).signInWithGoogle();
+            if (!started && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Login con Google no está configurado. Ejecutá la app con credenciales de Supabase (ver README).',
+                  ),
+                  duration: Duration(seconds: 5),
                 ),
-                duration: Duration(seconds: 5),
+              );
+            }
+          } catch (e) {
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('No se pudo iniciar Google Login: $e'),
+                duration: const Duration(seconds: 5),
               ),
             );
           }

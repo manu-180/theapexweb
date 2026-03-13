@@ -11,19 +11,22 @@ class PlansRepository {
   final List<ServicePlan> webPlans = const [
     ServicePlan(
       id: 'web_basic',
-      name: 'Presencia Digital',
+      name: 'Landing Page',
+      badge: 'Esencial',
       price: 300000,
-      originalPrice: 400000,
+      originalPrice: 420000,
       type: PlanType.web,
-      description: 'Tu carta de presentación al mundo. Ideal para profesionales que necesitan validar su marca.',
-      idealFor: 'Profesionales independientes (Abogados, Contadores, Psicólogos) que necesitan validar su autoridad y ser encontrados en Google.',
+      description:
+          'Tu mejor vendedor, disponible las 24 h. Diseñada para convertir visitas en clientes reales.',
+      idealFor:
+          'Coaches, abogados, psicólogos, contadores y profesionales independientes que necesitan presencia sólida en línea.',
       caseStudies: [
         CaseStudy(
           name: 'Simon Mindset',
           logoAsset: 'assets/icons/simon_logo.png',
           url: 'https://simonmindset.com',
           brandColor: Color(0xFF8B0000),
-          logoBgColor: Colors.black, 
+          logoBgColor: Colors.black,
         ),
         CaseStudy(
           name: 'Pérez Yeregui',
@@ -36,33 +39,38 @@ class PlansRepository {
           name: 'Metal Wailers',
           logoLetter: 'M',
           url: 'https://metalwailers.com',
-          brandColor: Color(0xFF263238), 
+          brandColor: Color(0xFF263238),
           logoBgColor: Colors.black,
         ),
         CaseStudy(
           name: 'Poncho Spanish',
           logoAsset: 'assets/icons/ponchospanish_logo.png',
           url: 'https://ponchospanish.com',
-          brandColor: Color(0xFFD4A84B), // naranja-dorado/ocre de la marca
+          brandColor: Color(0xFFD4A84B),
           logoBgColor: Colors.black,
         ),
       ],
       features: [
-        'Diseño a Medida (Sin plantillas)',
-        'Información optimizada para vender',
-        'Carga ultrarrápida (Flutter Web)',
-        'Hosting incluido',
-        'Mantenimiento incluido (3 meses)', // <--- NUEVO
+        'Diseño 100% a medida (sin plantillas genéricas)',
+        'Secciones de servicios, bio, testimonios y contacto',
+        'Botón WhatsApp + formulario con auto-respuesta por email',
+        'Carga ultrarrápida optimizada con Flutter Web',
+        'SEO técnico para aparecer en Google',
+        'Hosting + 3 meses de mantenimiento incluidos',
       ],
     ),
     ServicePlan(
       id: 'web_interactive',
-      name: 'Web Interactiva + Backend',
+      name: 'Web Interactiva',
+      badge: 'Más elegido',
+      isFeatured: true,
       price: 600000,
-      originalPrice: 860000,
+      originalPrice: 880000,
       type: PlanType.web,
-      description: 'Pasa al siguiente nivel. Automatiza el contacto con tus clientes y muestra contenido dinámico.',
-      idealFor: 'Pequeñas empresas o Startups que buscan automatizar la atención al cliente, agendar citas y capturar leads.',
+      description:
+          'Automatizá el contacto con tus clientes y agregá cualquier funcionalidad a medida.',
+      idealFor:
+          'Pequeñas empresas y startups que quieren automatizar procesos y capturar leads sin esfuerzo.',
       caseStudies: [
         CaseStudy(
           name: 'Assistify',
@@ -86,21 +94,25 @@ class PlansRepository {
         ),
       ],
       features: [
-        'Todo lo del plan Presencia',
-        'Backend conectado (Supabase)',
-        'Formularios con auto-respuesta (Email)',
-        'Galería Multimedia / Videos',
-        'Mantenimiento incluido (3 meses)', // <--- NUEVO
+        'Todo lo del plan Landing Page',
+        'Base de datos conectada (Supabase)',
+        'Funcionalidades complejas: control de stock, cotizadores, calculadoras, reservas y dashboards',
+        'Panel de administración para gestionar contenido sin tocar código',
+        'Integraciones: WhatsApp, MercadoPago, Google Calendar y más',
+        'Hosting + 3 meses de mantenimiento incluidos',
       ],
     ),
     ServicePlan(
       id: 'web_premium',
-      name: 'Sistema de Gestión Integral',
+      name: 'Tienda Online',
+      badge: 'E-commerce',
       price: 900000,
-      originalPrice: 1500000,
+      originalPrice: 1400000,
       type: PlanType.web,
-      description: 'Profesionaliza tu gestión. Una web para tus clientes y una App privada para controlar el negocio.',
-      idealFor: 'Negocios en expansión que requieren control operativo total: gestión de stock, usuarios y métricas.',
+      description:
+          'Vendé productos o servicios con tu propio canal de ventas. Sin comisiones de terceros.',
+      idealFor:
+          'Comercios y emprendimientos que quieren vender online sin depender de Mercado Libre ni de Instagram.',
       caseStudies: [
         CaseStudy(
           name: 'Pulpiprint',
@@ -116,11 +128,12 @@ class PlansRepository {
         ),
       ],
       features: [
-        'Web de Ventas Completa',
-        'App de Escritorio (Admin Dashboard)',
-        'Panel de Métricas y Reportes', 
-        'Gestión de Stock y Usuarios (Roles)', 
-        'Mantenimiento incluido (3 meses)', // <--- NUEVO
+        'Catálogo de productos con filtros y búsqueda',
+        'Carrito + checkout con MercadoPago / Stripe',
+        'Panel admin para gestionar pedidos, stock y clientes',
+        'Sistema de cuentas de clientes con historial de compras',
+        'SEO técnico avanzado para atraer tráfico orgánico',
+        'Hosting + 3 meses de mantenimiento incluidos',
       ],
     ),
   ];
@@ -129,49 +142,63 @@ class PlansRepository {
   final List<ServicePlan> appPlans = const [
     ServicePlan(
       id: 'app_mvp',
-      name: 'App MVP (Lanzamiento)',
+      name: 'App Profesional',
+      badge: 'Starter',
       price: 1200000,
-      originalPrice: 1600000, 
+      originalPrice: 1700000,
       type: PlanType.app,
-      description: 'Producto Mínimo Viable: Lo esencial para salir al mercado y validar tu negocio rápido.',
-      idealFor: 'Emprendedores que necesitan lanzar ya mismo para buscar inversores o primeros usuarios.',
+      description:
+          'Tu idea, convertida en app lista para las tiendas. Funcional, rápida y con buena UX.',
+      idealFor:
+          'Emprendedores que quieren lanzar una app funcional —de gestión, reservas, clientes o contenido— sin exceso de complejidad.',
       features: [
-        'Desarrollo Híbrido (Android & iOS)',
-        'Funcionalidades Core (Lo vital)',
-        'Autenticación Segura',
-        'Publicación en Tiendas',
-        'Mantenimiento incluido (3 meses)', // <--- NUEVO
+        'Android + iOS desde un único proyecto (Flutter)',
+        'Funcionalidades core de tu negocio',
+        'Autenticación segura (email, Google o Apple)',
+        'Notificaciones push básicas',
+        'Publicación en App Store y Play Store',
+        '3 meses de mantenimiento incluidos',
       ],
     ),
     ServicePlan(
       id: 'app_pro',
-      name: 'App Corporativa Full',
+      name: 'App Empresarial',
+      badge: 'Empresas',
+      isFeatured: true,
       price: 2700000,
-      originalPrice: 3600000, 
+      originalPrice: 3800000,
       type: PlanType.app,
-      description: 'Solución robusta llave en mano. Desarrollo completo estimado en 90 días.',
-      idealFor: 'Empresas que quieren digitalizar operaciones complejas o crear un canal de ventas propio.',
+      description:
+          'Automatizá procesos, reducí la carga laboral y escalá tu negocio con tecnología real.',
+      idealFor:
+          'Empresas que buscan digitalizar operaciones, gestionar equipos y tomar decisiones con datos en tiempo real.',
       features: [
-        'Todo lo del plan MVP',
-        'Panel Admin (Web o Escritorio)', 
-        'Notificaciones Push & Pagos',
-        'Mantenimiento incluido (3 meses)',
+        'Todo lo del plan Starter',
+        'Panel de administración web o de escritorio',
+        'Roles y permisos para múltiples usuarios',
+        'Pagos integrados (MercadoPago / Stripe)',
+        'Reportes y métricas en tiempo real',
+        '3 meses de mantenimiento incluidos',
       ],
     ),
     ServicePlan(
       id: 'app_platform',
-      name: 'Plataforma a Medida',
-      price: 0, 
+      name: 'Plataforma Avanzada',
+      badge: 'Premium',
+      price: 0,
       isCustom: true,
       type: PlanType.app,
-      description: 'Arquitectura compleja tipo Uber/Rappi. Modelo de Partner Tecnológico.',
-      idealFor: 'Startups financiadas que requieren un equipo técnico dedicado y mantenimiento continuo.',
+      description:
+          'Arquitectura de nivel Uber o Rappi. Tecnología sin límites para startups con visión.',
+      idealFor:
+          'Startups con financiamiento que necesitan un socio tecnológico de largo plazo y una arquitectura lista para escalar.',
       features: [
-        'Geolocalización en Tiempo Real',
-        'Arquitectura de Microservicios',
-        'Múltiples Apps (Cliente/Chofer/Admin)',
-        'Infraestructura Escalable (AWS)',
-        'Mantenimiento Continuo (Partner)', // <--- DIFERENTE AQUÍ
+        'Múltiples apps (cliente, operador y administrador)',
+        'Geolocalización y tracking en tiempo real',
+        'Arquitectura de microservicios escalable',
+        'Infraestructura en la nube (AWS / GCP)',
+        'Equipo técnico dedicado (modelo de partner)',
+        'Mantenimiento continuo + SLA garantizado',
       ],
     ),
   ];

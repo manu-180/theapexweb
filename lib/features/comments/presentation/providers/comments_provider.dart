@@ -1,8 +1,8 @@
 // Archivo: lib/features/comments/presentation/providers/comments_provider.dart
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:apex/core/errors/app_exceptions.dart';
 import 'package:apex/features/auth/presentation/providers/auth_providers.dart';
 import 'package:apex/features/comments/domain/models/comment_model.dart';
 import 'package:apex/features/comments/data/repositories/comments_repository.dart';
@@ -20,14 +20,20 @@ class CommentsNotifier extends _$CommentsNotifier {
   @override
   Future<List<Comment>> build() async {
     final repository = ref.watch(commentsRepositoryProvider);
-    
+
     final sub = repository.onDataChanged.listen((_) {
       ref.invalidateSelf();
     });
-    
+
     ref.onDispose(() => sub.cancel());
 
-    return repository.fetchComments();
+    try {
+      return await repository.fetchComments();
+    } catch (e, _) {
+      // Sin backend configurado: estado vacío en lugar de error
+      if (e is InfrastructureException) return [];
+      rethrow;
+    }
   }
 
   Future<void> postComment(String content, {int? parentId, int? rating}) async {
@@ -110,25 +116,30 @@ class CommentsNotifier extends _$CommentsNotifier {
     final previousState = state;
     final currentList = state.valueOrNull ?? [];
 
+    int _clampLikes(int current, bool adding) {
+      final result = adding ? current + 1 : current - 1;
+      return result < 0 ? 0 : result;
+    }
+
     List<Comment> updateList(List<Comment> list) {
       return list.map((c) {
         if (c.id == commentId) {
           final newStatus = !c.isLikedByMe;
           return c.copyWith(
             isLikedByMe: newStatus,
-            likesCount: newStatus ? c.likesCount + 1 : c.likesCount - 1,
+            likesCount: _clampLikes(c.likesCount, newStatus),
           );
         }
         if (c.replies.any((r) => r.id == commentId)) {
           final newReplies = c.replies.map((r) {
-             if (r.id == commentId) {
-               final newStatus = !r.isLikedByMe;
-               return r.copyWith(
-                 isLikedByMe: newStatus,
-                 likesCount: newStatus ? r.likesCount + 1 : r.likesCount - 1,
-               );
-             }
-             return r;
+            if (r.id == commentId) {
+              final newStatus = !r.isLikedByMe;
+              return r.copyWith(
+                isLikedByMe: newStatus,
+                likesCount: _clampLikes(r.likesCount, newStatus),
+              );
+            }
+            return r;
           }).toList();
           return c.copyWith(replies: newReplies);
         }

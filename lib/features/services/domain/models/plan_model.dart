@@ -14,9 +14,9 @@ class ServicePlan {
   final List<String> features;
   final PlanType type;
   final List<CaseStudy>? caseStudies;
-  
-  // NUEVO: Si es true, oculta el precio y el botón de pago
-  final bool isCustom; 
+  final bool isCustom;
+  final String badge;
+  final bool isFeatured;
 
   const ServicePlan({
     required this.id,
@@ -28,7 +28,9 @@ class ServicePlan {
     required this.features,
     required this.type,
     this.caseStudies,
-    this.isCustom = false, // Por defecto tiene precio fijo
+    this.isCustom = false,
+    this.badge = '',
+    this.isFeatured = false,
   });
 
   // Calculamos el porcentaje de descuento
@@ -40,7 +42,6 @@ class ServicePlan {
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-
     return other is ServicePlan &&
         other.id == id &&
         other.name == name &&
@@ -48,23 +49,25 @@ class ServicePlan {
         other.originalPrice == originalPrice &&
         other.description == description &&
         other.idealFor == idealFor &&
-        other.isCustom == isCustom && // <--- Importante comparar esto
+        other.isCustom == isCustom &&
+        other.badge == badge &&
+        other.isFeatured == isFeatured &&
         listEquals(other.features, features) &&
         other.type == type;
   }
 
   @override
-  int get hashCode {
-    return Object.hash(
-      id, 
-      name, 
-      price, 
-      originalPrice, 
-      description, 
-      idealFor, 
-      Object.hashAll(features), 
-      type, 
-      isCustom
-    );
-  }
+  int get hashCode => Object.hash(
+    id,
+    name,
+    price,
+    originalPrice,
+    description,
+    idealFor,
+    Object.hashAll(features),
+    type,
+    isCustom,
+    badge,
+    isFeatured,
+  );
 }

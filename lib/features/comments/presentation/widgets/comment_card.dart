@@ -54,22 +54,11 @@ class _CommentCardState extends ConsumerState<CommentCard> {
         ? "Ocultar respuestas" 
         : "Ver $replyCount ${replyCount == 1 ? 'respuesta' : 'respuestas'}";
 
-    // --- CORRECCIÓN UX: CURSOR CONDICIONAL ---
-    // Si hay respuestas, toda la card es "clicable" (Manito).
-    // Si no hay, es "básico" (Flecha), para no engañar al usuario.
-    final cursorType = comment.replies.isNotEmpty 
-        ? SystemMouseCursors.click 
-        : SystemMouseCursors.basic;
-
     return Padding(
       padding: EdgeInsets.only(bottom: isRoot ? 32.0 : 8.0), 
       child: Column(
         children: [
-          MouseRegion(
-            cursor: cursorType, // <--- AQUI APLICAMOS LA LÓGICA
-            child: GestureDetector(
-              onTap: _toggleReplies, 
-              child: Container(
+          Container(
                 margin: const EdgeInsets.symmetric(vertical: 2), 
                 decoration: BoxDecoration(
                   color: cardColor, 
@@ -181,11 +170,17 @@ class _CommentCardState extends ConsumerState<CommentCard> {
                               ],
                               if (comment.replies.isNotEmpty) ...[
                                  const Spacer(),
-                                 AnimatedCrossFade(
-                                   firstChild: _RepliesBadge(text: replyText, icon: Icons.keyboard_arrow_down_rounded),
-                                   secondChild: _RepliesBadge(text: replyText, icon: Icons.keyboard_arrow_up_rounded),
-                                   crossFadeState: _showReplies ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                                   duration: const Duration(milliseconds: 200),
+                                 MouseRegion(
+                                   cursor: SystemMouseCursors.click,
+                                   child: GestureDetector(
+                                     onTap: _toggleReplies,
+                                     child: AnimatedCrossFade(
+                                       firstChild: _RepliesBadge(text: replyText, icon: Icons.keyboard_arrow_down_rounded),
+                                       secondChild: _RepliesBadge(text: replyText, icon: Icons.keyboard_arrow_up_rounded),
+                                       crossFadeState: _showReplies ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                                       duration: const Duration(milliseconds: 200),
+                                     ),
+                                   ),
                                  ),
                               ]
                             ],
@@ -196,8 +191,6 @@ class _CommentCardState extends ConsumerState<CommentCard> {
                   ],
                 ),
               ),
-            ),
-          ),
           AnimatedSize(
             duration: const Duration(milliseconds: 400),
             curve: Curves.easeOutQuart,
@@ -319,8 +312,12 @@ class _LikeButton extends ConsumerWidget {
         }
         try {
           await ref.read(commentsNotifierProvider.notifier).toggleLike(comment.id);
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        } catch (_) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No se pudo registrar tu reacción. Intenta de nuevo.')),
+            );
+          }
         }
       },
       borderRadius: BorderRadius.circular(20),

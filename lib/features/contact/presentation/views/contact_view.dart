@@ -1,11 +1,12 @@
 // Archivo: lib/features/contact/presentation/views/contact_view.dart
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/providers/network_status_provider.dart';
+import 'package:apex/core/widgets/cursor_glow_frame.dart';
 import 'package:apex/core/widgets/inspector_gadget.dart';
-import 'package:apex/features/contact/presentation/widgets/booking_scheduler.dart'; 
+import 'package:apex/features/contact/presentation/widgets/booking_scheduler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart'; 
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:lottie/lottie.dart';
 import 'package:apex/features/comments/presentation/providers/comments_provider.dart';
@@ -13,11 +14,25 @@ import 'package:apex/features/comments/presentation/widgets/comment_card.dart';
 import 'package:apex/features/comments/presentation/widgets/comment_input_area.dart';
 import 'package:apex/features/comments/presentation/widgets/rating_summary.dart';
 import 'package:apex/features/shared/widgets/footer.dart';
-// IMPORTACIÓN NUEVA: Repositorio de contacto
+import 'package:apex/core/analytics/analytics_service.dart';
+import 'package:apex/core/analytics/analytics_events.dart';
 import 'package:apex/features/contact/data/repositories/contact_repository.dart';
 
-class ContactView extends StatelessWidget {
+class ContactView extends StatefulWidget {
   const ContactView({super.key});
+
+  @override
+  State<ContactView> createState() => _ContactViewState();
+}
+
+class _ContactViewState extends State<ContactView> {
+  final ValueNotifier<Offset> _mousePos = ValueNotifier(Offset.zero);
+
+  @override
+  void dispose() {
+    _mousePos.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,69 +40,92 @@ class ContactView extends StatelessWidget {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isDesktop = constraints.maxWidth > 900;
-          
+
           // Padding lateral dinámico
           final hPadding = isDesktop ? 60.0 : 20.0;
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 40.0, horizontal: hPadding),
-                  child: Column(
-                    children: [
-                      // SECCIÓN SUPERIOR: Formulario Rápido + Comentarios
-                      if (isDesktop)
-                        const Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(flex: 4, child: _ContactForm()),
-                            SizedBox(width: 60),
-                            Expanded(flex: 7, child: _CommentsSection()),
-                          ],
-                        )
-                      else
-                        const Column(
-                          children: [
-                            _ContactForm(),
-                            SizedBox(height: 60),
-                            _CommentsSection(),
-                          ],
-                        ),
-
-                      const SizedBox(height: 80),
-                      const Divider(),
-                      const SizedBox(height: 80),
-
-                      // SECCIÓN INFERIOR: AGENDAR REUNIÓN (ANCHO COMPLETO)
-                      InspectorGadget(
-                        name: "Smart Scheduler",
-                        techSpecs: "Lógica de negocio compleja. Algoritmo de disponibilidad que filtra domingos y horarios ocupados desde la DB en tiempo real. Validación anti-colisiones (Constraint SQL).",
-                        icon: FontAwesomeIcons.calendarCheck,
-                        borderRadius: 24,
-                        child: Container(
-                          constraints: const BoxConstraints(maxWidth: 900), // Ancho máximo para que no se estire infinito
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.1)),
-                            boxShadow: [
+          return MouseRegion(
+            onHover: (event) => _mousePos.value = event.position,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      vertical: 40.0,
+                      horizontal: hPadding,
+                    ),
+                    child: Column(
+                      children: [
+                        // PRIMERO: Calendario / Agendar reunión
+                        InspectorGadget(
+                          name: "Smart Scheduler",
+                          techSpecs:
+                              "Lógica de negocio compleja. Algoritmo de disponibilidad que filtra domingos y horarios ocupados desde la DB en tiempo real. Validación anti-colisiones (Constraint SQL).",
+                          icon: FontAwesomeIcons.calendarCheck,
+                          borderRadius: 24,
+                          child: CursorGlowFrame(
+                            mousePos: _mousePos,
+                            borderRadius: 24,
+                            glowThickness: 2,
+                            intensity: 1.22,
+                            enableHoverLift: true,
+                            hoverScale: 1.01,
+                            lightModeShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10)
-                              )
-                            ]
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 7),
+                                spreadRadius: -6,
+                              ),
+                            ],
+                            child: Container(
+                              constraints: const BoxConstraints(maxWidth: 900),
+                              padding: const EdgeInsets.all(32),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(22),
+                                border: Border.all(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.outline.withOpacity(0.1),
+                                ),
+                              ),
+                              child: const BookingScheduler(),
+                            ),
                           ),
-                          child: const BookingScheduler(),
                         ),
-                      ),
-                    ],
+
+                        const SizedBox(height: 80),
+                        const Divider(),
+                        const SizedBox(height: 80),
+
+                        // DEBAJO: Formulario de contacto + Opiniones
+                        if (isDesktop)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 4,
+                                child: _ContactForm(mousePos: _mousePos),
+                              ),
+                              SizedBox(width: 60),
+                              Expanded(flex: 7, child: _CommentsSection()),
+                            ],
+                          )
+                        else
+                          Column(
+                            children: [
+                              _ContactForm(mousePos: _mousePos),
+                              SizedBox(height: 60),
+                              _CommentsSection(),
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                const Footer(),
-              ],
+                  const Footer(),
+                ],
+              ),
             ),
           );
         },
@@ -98,7 +136,8 @@ class ContactView extends StatelessWidget {
 
 // --- FORMULARIO CON RAYOS X ---
 class _ContactForm extends ConsumerStatefulWidget {
-  const _ContactForm();
+  const _ContactForm({required this.mousePos});
+  final ValueNotifier<Offset> mousePos;
   @override
   ConsumerState<_ContactForm> createState() => _ContactFormState();
 }
@@ -108,18 +147,19 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _messageController = TextEditingController();
-  
-  late FocusNode _messageFocusNode; 
+
+  late FocusNode _messageFocusNode;
   bool _isLoading = false;
-  bool _isMessageFocused = false; 
-  bool _isHovered = false; 
+  bool _isMessageFocused = false;
+  bool _isHovered = false;
 
   @override
   void initState() {
     super.initState();
     _messageFocusNode = FocusNode();
     _messageFocusNode.addListener(() {
-      if (mounted) setState(() => _isMessageFocused = _messageFocusNode.hasFocus);
+      if (mounted)
+        setState(() => _isMessageFocused = _messageFocusNode.hasFocus);
     });
   }
 
@@ -128,7 +168,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
     _nameController.dispose();
     _emailController.dispose();
     _messageController.dispose();
-    _messageFocusNode.dispose(); 
+    _messageFocusNode.dispose();
     super.dispose();
   }
 
@@ -136,11 +176,15 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
     final themeConfig = ref.read(currentAppThemeConfigProvider);
     final themeName = themeConfig.themeName.toLowerCase();
 
-    String lottieAsset = 'assets/animations/envia_apex.json'; 
-    if (themeName.contains('supabase')) lottieAsset = 'assets/animations/envia_supabase.json';
-    else if (themeName.contains('flutter')) lottieAsset = 'assets/animations/envia_flutter.json';
-    else if (themeName.contains('riverpod')) lottieAsset = 'assets/animations/envia_riverpod.json';
-    else if (themeName.contains('assistify')) lottieAsset = 'assets/animations/envia_assistify.json';
+    String lottieAsset = 'assets/animations/envia_apex.json';
+    if (themeName.contains('supabase'))
+      lottieAsset = 'assets/animations/envia_supabase.json';
+    else if (themeName.contains('flutter'))
+      lottieAsset = 'assets/animations/envia_flutter.json';
+    else if (themeName.contains('riverpod'))
+      lottieAsset = 'assets/animations/envia_riverpod.json';
+    else if (themeName.contains('assistify'))
+      lottieAsset = 'assets/animations/envia_assistify.json';
 
     showDialog(
       context: context,
@@ -153,7 +197,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
 
         return Center(
           child: Container(
-            width: 300, 
+            width: 300,
             height: 350,
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -173,10 +217,10 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
                   child: Text(
                     "¡Mensaje Enviado!",
                     style: TextStyle(
-                      color: Colors.white, 
-                      fontSize: 22, 
-                      fontWeight: FontWeight.bold, 
-                      fontFamily: 'Oxanium'
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Oxanium',
                     ),
                   ),
                 ),
@@ -191,48 +235,66 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
   Future<void> _sendMessage() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    
+
+    final analytics = ref.read(analyticsServiceProvider);
+    analytics.trackEvent(AnalyticsEvents.contactFormSubmitted);
+
     try {
-      // REFACTORIZACIÓN APLICADA: Usamos el repositorio en lugar de Supabase directo
-      await ref.read(contactRepositoryProvider).sendContactMessage(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        message: _messageController.text.trim(),
-      );
-      
+      await ref
+          .read(contactRepositoryProvider)
+          .sendContactMessage(
+            name: _nameController.text.trim(),
+            email: _emailController.text.trim(),
+            message: _messageController.text.trim(),
+          );
+
       if (mounted) {
-        _nameController.clear(); 
-        _emailController.clear(); 
+        _nameController.clear();
+        _emailController.clear();
         _messageController.clear();
-        FocusScope.of(context).unfocus(); 
+        FocusScope.of(context).unfocus();
         _showSuccessAnimation();
       }
     } catch (e) {
       if (mounted) {
         final errStr = e.toString().toLowerCase();
-        final isNetworkError = errStr.contains('socket') || 
-                               errStr.contains('network') || 
-                               errStr.contains('xmlhttprequest') || 
-                               errStr.contains('connection');
-                               
-        final userMessage = isNetworkError 
-            ? 'Sin conexión a internet. Verifica tu red.' 
+        final isNetworkError =
+            errStr.contains('socket') ||
+            errStr.contains('network') ||
+            errStr.contains('xmlhttprequest') ||
+            errStr.contains('connection');
+
+        final userMessage = isNetworkError
+            ? 'Sin conexión a internet. Verifica tu red.'
             : 'No pudimos enviar el mensaje. Inténtalo de nuevo.';
 
+        analytics.trackEvent(AnalyticsEvents.contactFormFailed, {
+          'error': userMessage,
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
-                Icon(isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline, color: Colors.white),
+                Icon(
+                  isNetworkError ? Icons.wifi_off_rounded : Icons.error_outline,
+                  color: Colors.white,
+                ),
                 const SizedBox(width: 12),
-                Expanded(child: Text(userMessage, style: const TextStyle(fontWeight: FontWeight.bold))),
+                Expanded(
+                  child: Text(
+                    userMessage,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
               ],
             ),
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
             margin: const EdgeInsets.all(16),
-          )
+          ),
         );
       }
     } finally {
@@ -240,7 +302,7 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
     }
   }
 
- @override
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -249,171 +311,244 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
 
     return InspectorGadget(
       name: "Backend Serverless",
-      techSpecs: "Sin servidores lentos. Uso 'Edge Functions' (código en la nube) que despiertan, procesan tu email y se apagan en milisegundos. Escalable y eficiente.",
+      techSpecs:
+          "Sin servidores lentos. Uso 'Edge Functions' (código en la nube) que despiertan, procesan tu email y se apagan en milisegundos. Escalable y eficiente.",
       icon: FontAwesomeIcons.envelopeOpenText,
-      borderRadius: 24, // Ajustado para que coincida con el borde del formulario
-      child: Container(
-        padding: const EdgeInsets.all(32), 
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLow, 
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: colorScheme.outline.withOpacity(0.1),
-            width: 1,
+      borderRadius:
+          24, // Ajustado para que coincida con el borde del formulario
+      child: CursorGlowFrame(
+        mousePos: widget.mousePos,
+        borderRadius: 24,
+        glowThickness: 2,
+        intensity: 1.22,
+        enableHoverLift: true,
+        hoverScale: 1.01,
+        lightModeShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 7),
+            spreadRadius: -6,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+        ],
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: colorScheme.outline.withOpacity(0.1),
+              width: 1,
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, 
-          children: [
-            Text(
-              '¡Hablemos de tu proyecto!', 
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold, 
-                color: colorScheme.primary,
-                fontFamily: 'Oxanium',
-                letterSpacing: -0.5,
-              )
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Completa el formulario y te responderé a la brevedad.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '¡Hablemos de tu proyecto!',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
+                  fontFamily: 'Oxanium',
+                  letterSpacing: -0.5,
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
-            
-            Form(
-              key: _formKey,
-              child: Opacity(
-                opacity: isOffline ? 0.6 : 1.0, 
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start, 
-                  children: [
-                    _buildTextField(
-                      controller: _nameController, 
-                      label: 'Tu Nombre', 
-                      icon: Icons.person_outline, 
-                      theme: theme, 
-                      validator: (v) => v?.isEmpty == true ? 'Requerido' : null, 
-                      isLastField: false,
-                      enabled: !isOffline,
-                    ),
-                    const SizedBox(height: 20),
-                    _buildTextField(
-                      controller: _emailController, 
-                      label: 'Tu Email', 
-                      icon: Icons.email_outlined, 
-                      keyboardType: TextInputType.emailAddress, 
-                      theme: theme, 
-                      validator: (v) => !v!.contains('@') ? 'Email inválido' : null, 
-                      isLastField: false,
-                      enabled: !isOffline,
-                    ),
-                    const SizedBox(height: 20),
-                    _buildTextField(
-                      controller: _messageController, 
-                      label: 'Mensaje', 
-                      icon: Icons.chat_bubble_outline, 
-                      theme: theme, 
-                      validator: (v) => v == null || v.isEmpty ? 'Escribe un mensaje' : null, 
-                      isLastField: true, 
-                      focusNode: _messageFocusNode,
-                      minLines: (_isMessageFocused || _messageController.text.isNotEmpty) ? 5 : 1, 
-                      maxLines: 5, 
-                      enabled: !isOffline,
-                    ),
-                    const SizedBox(height: 40),
-      
-                    MouseRegion(
-                      cursor: (isOffline || _isLoading) ? SystemMouseCursors.forbidden : SystemMouseCursors.click,
-                      onEnter: (_) => setState(() => _isHovered = true),
-                      onExit: (_) => setState(() => _isHovered = false),
-                      child: GestureDetector(
-                        onTap: (isOffline || _isLoading) ? null : _sendMessage,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeInOut,
-                          width: double.infinity, 
-                          height: 54,
-                          transform: Matrix4.identity()
-                            ..translate(0.0, (_isHovered && !isOffline && !_isLoading) ? -2.0 : 0.0),
-                          decoration: BoxDecoration(
-                            color: isOffline 
-                                ? colorScheme.surfaceContainerHighest 
-                                : (_isLoading ? colorScheme.primary.withOpacity(0.8) : colorScheme.primary),
-                            borderRadius: BorderRadius.circular(16), 
-                            boxShadow: [
-                              if (!isOffline && ! _isLoading)
-                                BoxShadow(
-                                  color: colorScheme.primary.withOpacity(_isHovered ? 0.4 : 0.1),
-                                  blurRadius: _isHovered ? 20 : 10,
-                                  offset: const Offset(0, 8),
-                                )
-                            ],
-                          ),
-                          child: Center(
-                            child: _isLoading 
-                              ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colorScheme.onPrimary)),
-                                    const SizedBox(width: 12),
-                                    Text("Enviando...", style: TextStyle(color: colorScheme.onPrimary, fontWeight: FontWeight.bold, fontFamily: 'Oxanium')),
-                                  ],
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      isOffline ? Icons.wifi_off_rounded : Icons.send_rounded, 
-                                      size: 20, 
-                                      color: isOffline ? colorScheme.onSurfaceVariant : colorScheme.onPrimary
+              const SizedBox(height: 8),
+              Text(
+                'Completa el formulario y te responderé a la brevedad.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              Form(
+                key: _formKey,
+                child: Opacity(
+                  opacity: isOffline ? 0.6 : 1.0,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTextField(
+                        controller: _nameController,
+                        label: 'Tu Nombre',
+                        icon: Icons.person_outline,
+                        theme: theme,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty)
+                            return 'Tu nombre es requerido';
+                          if (v.trim().length < 2)
+                            return 'Nombre demasiado corto';
+                          return null;
+                        },
+                        isLastField: false,
+                        enabled: !isOffline,
+                      ),
+                      const SizedBox(height: 20),
+                      _buildTextField(
+                        controller: _emailController,
+                        label: 'Tu Email',
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                        theme: theme,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty)
+                            return 'Email es requerido';
+                          final emailRegex = RegExp(
+                            r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$',
+                          );
+                          if (!emailRegex.hasMatch(v.trim()))
+                            return 'Ingresa un email válido (ej: tu@email.com)';
+                          return null;
+                        },
+                        isLastField: false,
+                        enabled: !isOffline,
+                      ),
+                      const SizedBox(height: 20),
+                      _buildTextField(
+                        controller: _messageController,
+                        label: 'Mensaje',
+                        icon: Icons.chat_bubble_outline,
+                        theme: theme,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty)
+                            return 'Escribe un mensaje';
+                          if (v.trim().length < 20)
+                            return 'Cuéntanos más (mínimo 20 caracteres)';
+                          return null;
+                        },
+                        isLastField: true,
+                        focusNode: _messageFocusNode,
+                        minLines:
+                            (_isMessageFocused ||
+                                _messageController.text.isNotEmpty)
+                            ? 5
+                            : 1,
+                        maxLines: 5,
+                        enabled: !isOffline,
+                      ),
+                      const SizedBox(height: 40),
+
+                      MouseRegion(
+                        cursor: (isOffline || _isLoading)
+                            ? SystemMouseCursors.forbidden
+                            : SystemMouseCursors.click,
+                        onEnter: (_) => setState(() => _isHovered = true),
+                        onExit: (_) => setState(() => _isHovered = false),
+                        child: GestureDetector(
+                          onTap: (isOffline || _isLoading)
+                              ? null
+                              : _sendMessage,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            curve: Curves.easeInOut,
+                            width: double.infinity,
+                            height: 54,
+                            transform: Matrix4.identity()
+                              ..translate(
+                                0.0,
+                                (_isHovered && !isOffline && !_isLoading)
+                                    ? -2.0
+                                    : 0.0,
+                              ),
+                            decoration: BoxDecoration(
+                              color: isOffline
+                                  ? colorScheme.surfaceContainerHighest
+                                  : (_isLoading
+                                        ? colorScheme.primary.withOpacity(0.8)
+                                        : colorScheme.primary),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                if (!isOffline && !_isLoading)
+                                  BoxShadow(
+                                    color: colorScheme.primary.withOpacity(
+                                      _isHovered ? 0.4 : 0.1,
                                     ),
-                                    const SizedBox(width: 10),
-                                    Text(
-                                      isOffline ? "Sin Conexión" : "Enviar Mensaje", 
-                                      style: TextStyle(
-                                        color: isOffline ? colorScheme.onSurfaceVariant : colorScheme.onPrimary, 
-                                        fontWeight: FontWeight.bold, 
-                                        fontSize: 16, 
-                                        fontFamily: 'Oxanium'
-                                      )
+                                    blurRadius: _isHovered ? 20 : 10,
+                                    offset: const Offset(0, 8),
+                                  ),
+                              ],
+                            ),
+                            child: Center(
+                              child: _isLoading
+                                  ? Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: colorScheme.onPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          "Enviando...",
+                                          style: TextStyle(
+                                            color: colorScheme.onPrimary,
+                                            fontWeight: FontWeight.bold,
+                                            fontFamily: 'Oxanium',
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          isOffline
+                                              ? Icons.wifi_off_rounded
+                                              : Icons.send_rounded,
+                                          size: 20,
+                                          color: isOffline
+                                              ? colorScheme.onSurfaceVariant
+                                              : colorScheme.onPrimary,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          isOffline
+                                              ? "Sin Conexión"
+                                              : "Enviar Mensaje",
+                                          style: TextStyle(
+                                            color: isOffline
+                                                ? colorScheme.onSurfaceVariant
+                                                : colorScheme.onPrimary,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                            fontFamily: 'Oxanium',
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildTextField({
-    required TextEditingController controller, 
-    required String label, 
-    required IconData icon, 
-    required ThemeData theme, 
-    int minLines = 1, 
-    int maxLines = 1, 
-    TextInputType? keyboardType, 
-    String? Function(String?)? validator, 
-    required bool isLastField, 
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required ThemeData theme,
+    int minLines = 1,
+    int maxLines = 1,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    required bool isLastField,
     FocusNode? focusNode,
     bool enabled = true,
   }) {
@@ -431,26 +566,58 @@ class _ContactFormState extends ConsumerState<_ContactForm> {
         maxLines: maxLines,
         keyboardType: keyboardType,
         validator: validator,
-        textInputAction: isLastField ? TextInputAction.send : TextInputAction.next,
+        textInputAction: isLastField
+            ? TextInputAction.send
+            : TextInputAction.next,
         onFieldSubmitted: isLastField ? (_) => _sendMessage() : null,
         textAlignVertical: TextAlignVertical.top,
-        style: TextStyle(color: theme.colorScheme.onSurface, fontFamily: 'Oxanium'),
+        style: TextStyle(
+          color: theme.colorScheme.onSurface,
+          fontFamily: 'Oxanium',
+        ),
         decoration: InputDecoration(
           labelText: label,
           alignLabelWithHint: true,
-          labelStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.6), fontFamily: 'Oxanium'),
+          labelStyle: TextStyle(
+            color: theme.colorScheme.onSurface.withOpacity(0.6),
+            fontFamily: 'Oxanium',
+          ),
           prefixIcon: Padding(
-            padding: const EdgeInsets.only(top: 14.0, bottom: 14.0, left: 12, right: 8), 
+            padding: const EdgeInsets.only(
+              top: 14.0,
+              bottom: 14.0,
+              left: 12,
+              right: 8,
+            ),
             child: Icon(icon, color: primaryColor.withOpacity(0.7), size: 22),
           ),
           prefixIconConstraints: const BoxConstraints(minWidth: 48),
           filled: true,
           fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.1))),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: primaryColor, width: 1.5)),
-          disabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.05))),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: theme.colorScheme.outline.withOpacity(0.1),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: primaryColor, width: 1.5),
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: theme.colorScheme.onSurface.withOpacity(0.05),
+            ),
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
           errorStyle: TextStyle(color: theme.colorScheme.error, fontSize: 12),
         ),
       ),
@@ -466,42 +633,104 @@ class _CommentsSection extends ConsumerStatefulWidget {
 
 class __CommentsSectionState extends ConsumerState<_CommentsSection> {
   Comment? _replyingTo;
-  void _onReply(Comment comment) { setState(() => _replyingTo = comment); }
-  void _onCancelReply() { setState(() => _replyingTo = null); }
+  void _onReply(Comment comment) {
+    setState(() => _replyingTo = comment);
+  }
+
+  void _onCancelReply() {
+    setState(() => _replyingTo = null);
+  }
 
   @override
   Widget build(BuildContext context) {
     final commentsState = ref.watch(commentsNotifierProvider);
     final theme = Theme.of(context);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Opiniones de clientes', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+        Text(
+          'Opiniones de clientes',
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         const SizedBox(height: 20),
-        
+
         // --- AQUÍ APLICAMOS EL INSPECTOR ---
         // Envolvemos el Resumen de Calificaciones. Es un bloque compacto y visible.
         InspectorGadget(
           name: "Sincronización en Vivo",
-          techSpecs: "WebSockets activos. Escucho la base de datos en tiempo real: si alguien comenta ahora mismo, lo verás aparecer mágicamente sin tener que recargar la página.",
+          techSpecs:
+              "WebSockets activos. Escucho la base de datos en tiempo real: si alguien comenta ahora mismo, lo verás aparecer mágicamente sin tener que recargar la página.",
           icon: FontAwesomeIcons.comments,
           // preferBelow: false por defecto (sale arriba, que es lo que queremos)
           child: commentsState.when(
             data: (comments) => RatingSummary(comments: comments),
-            loading: () => const RatingSummarySkeleton(), 
-            error: (_, __) => const SizedBox.shrink()
+            loading: () => const RatingSummarySkeleton(),
+            error: (err, __) {
+              final msg = err.toString().toLowerCase();
+              final isNetwork =
+                  msg.contains('name not resolved') ||
+                  msg.contains('connection') ||
+                  msg.contains('socket') ||
+                  msg.contains('network') ||
+                  msg.contains('failed to load');
+              final text = isNetwork
+                  ? 'No se pudo conectar al servidor. Comprueba tu conexión a internet.'
+                  : 'No pudimos cargar las calificaciones';
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.errorContainer.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.error.withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.star_border_rounded,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        text,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => ref.invalidate(commentsNotifierProvider),
+                      icon: Icon(
+                        Icons.refresh_rounded,
+                        color: Theme.of(context).colorScheme.error,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ),
-        // -----------------------------------
 
+        // -----------------------------------
         const SizedBox(height: 30),
-        CommentInputArea(replyingTo: _replyingTo, onCancelReply: _onCancelReply),
+        CommentInputArea(
+          replyingTo: _replyingTo,
+          onCancelReply: _onCancelReply,
+        ),
         const SizedBox(height: 30),
         Divider(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
         const SizedBox(height: 20),
         commentsState.when(
-          loading: () => const _SkeletonList(), 
+          loading: () => const _SkeletonList(),
           error: (err, stack) => Center(
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 24),
@@ -509,18 +738,24 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
               decoration: BoxDecoration(
                 color: theme.colorScheme.errorContainer.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: theme.colorScheme.error.withOpacity(0.3)),
+                border: Border.all(
+                  color: theme.colorScheme.error.withOpacity(0.3),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.cloud_off_rounded, color: theme.colorScheme.error, size: 40),
+                  Icon(
+                    Icons.cloud_off_rounded,
+                    color: theme.colorScheme.error,
+                    size: 40,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     "No pudimos cargar los comentarios",
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.error,
-                      fontWeight: FontWeight.bold
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -528,7 +763,7 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
                     "Por favor, verifica tu conexión e inténtalo de nuevo.",
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -549,15 +784,22 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
             if (comments.isEmpty) {
               return Center(
                 child: Padding(
-                  padding: const EdgeInsets.all(20.0), 
+                  padding: const EdgeInsets.all(20.0),
                   child: Text(
-                    'Sé el primero en dejar una reseña.', 
-                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant)
-                  )
-                )
+                    'Sé el primero en dejar una reseña.',
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ),
               );
             }
-            return Column(children: comments.map((comment) => CommentCard(comment: comment, onReply: _onReply)).toList());
+            return Column(
+              children: comments
+                  .map(
+                    (comment) =>
+                        CommentCard(comment: comment, onReply: _onReply),
+                  )
+                  .toList(),
+            );
           },
         ),
       ],
@@ -567,56 +809,94 @@ class __CommentsSectionState extends ConsumerState<_CommentsSection> {
 
 class _SkeletonList extends StatelessWidget {
   const _SkeletonList();
-  
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Shimmer.fromColors(
       baseColor: colorScheme.onSurface.withOpacity(0.05),
       highlightColor: colorScheme.onSurface.withOpacity(0.1),
       child: Column(
-        children: List.generate(3, (index) => Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white10),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const CircleAvatar(radius: 20, backgroundColor: Colors.white),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(width: 120, height: 12, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-                        Container(width: 30, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: List.generate(5, (i) => const Padding(
-                        padding: EdgeInsets.only(right: 4.0),
-                        child: Icon(Icons.star, size: 12, color: Colors.white),
-                      )),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(width: double.infinity, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-                    const SizedBox(height: 6),
-                    Container(width: MediaQuery.of(context).size.width * 0.4, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-                  ],
+        children: List.generate(
+          3,
+          (index) => Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const CircleAvatar(radius: 20, backgroundColor: Colors.white),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            width: 120,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          Container(
+                            width: 30,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: List.generate(
+                          5,
+                          (i) => const Padding(
+                            padding: EdgeInsets.only(right: 4.0),
+                            child: Icon(
+                              Icons.star,
+                              size: 12,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        width: double.infinity,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.4,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        )),
+        ),
       ),
     );
   }
@@ -645,11 +925,32 @@ class RatingSummarySkeleton extends StatelessWidget {
               flex: 2,
               child: Column(
                 children: [
-                  Container(width: 60, height: 40, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8))),
+                  Container(
+                    width: 60,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                   const SizedBox(height: 12),
-                  Container(width: 80, height: 12, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                  Container(
+                    width: 80,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                   const SizedBox(height: 8),
-                  Container(width: 50, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                  Container(
+                    width: 50,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -657,18 +958,43 @@ class RatingSummarySkeleton extends StatelessWidget {
             Expanded(
               flex: 3,
               child: Column(
-                children: List.generate(5, (index) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Row(
-                    children: [
-                      Container(width: 10, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(2))),
-                      const SizedBox(width: 8),
-                      Expanded(child: Container(height: 6, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)))),
-                      const SizedBox(width: 8),
-                      Container(width: 15, height: 10, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(2))),
-                    ],
+                children: List.generate(
+                  5,
+                  (index) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Container(
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 15,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                )),
+                ),
               ),
             ),
           ],

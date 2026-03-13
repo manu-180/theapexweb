@@ -1,13 +1,71 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// --- CORS RESTRINGIDO ---
+const ALLOWED_ORIGINS = [
+  'https://www.theapexweb.com',
+  'https://theapexweb.com',
+];
+
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin') || '';
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',
+  };
+}
+
+// --- RATE LIMIT (in-memory, per-instance) ---
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_MAX = 5;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= RATE_LIMIT_MAX;
+}
+
+// --- VALIDACIÓN ---
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function sanitizeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+function validateContactPayload(body: unknown): { name: string; email: string; message: string } {
+  if (!body || typeof body !== 'object') throw new Error('Payload inválido');
+  const { name, email, message } = body as Record<string, unknown>;
+
+  if (typeof name !== 'string' || name.trim().length < 2)
+    throw new Error('Nombre inválido (mínimo 2 caracteres)');
+  if (typeof email !== 'string' || !EMAIL_REGEX.test(email))
+    throw new Error('Email inválido');
+  if (typeof message !== 'string' || message.trim().length < 10)
+    throw new Error('Mensaje demasiado corto (mínimo 10 caracteres)');
+
+  return {
+    name: sanitizeHtml(name.trim()),
+    email: email.trim().toLowerCase(),
+    message: sanitizeHtml(message.trim()),
+  };
+}
 
 // --- CONFIGURACIÓN ---
 const ADMIN_EMAIL = "manunv97@gmail.com";
-const SENDER_EMAIL = "Manuel Navarro <soporte@assistify.lat>"; 
+const SENDER_EMAIL = "Manuel Navarro <soporte@assistify.lat>";
 
 // --- BRANDING ---
 const COLOR_BG = "#0f172a";
@@ -15,16 +73,9 @@ const COLOR_CARD = "#1e293b";
 const COLOR_ACCENT = "#22d3ee";
 const COLOR_TEXT_MAIN = "#f8fafc";
 const COLOR_TEXT_MUTED = "#94a3b8";
-
-// --- ÍCONOS (NUEVOS PNGs HOSTED) ---
-// 1. Flecha APEX hacia ARRIBA (Cyan)
 const ICON_ARROW_UP = "https://img.icons8.com/ios-filled/50/22d3ee/collapse-arrow.png";
-
-// 2. Sobre Abierto Fachero (Cyan) - Reemplazo del checkmark
 const ICON_ENVELOPE = "https://img.icons8.com/ios-filled/100/22d3ee/open-envelope.png";
 
-
-// --- HTML: RESPUESTA AL CLIENTE ---
 const generateUserHtml = (name: string, message: string) => `
 <!DOCTYPE html>
 <html>
@@ -88,8 +139,6 @@ const generateUserHtml = (name: string, message: string) => `
 </html>
 `;
 
-// --- HTML: NOTIFICACIÓN PARA TI (ADMIN) ---
-// --- HTML: NOTIFICACIÓN PARA TI (ADMIN) PROFESIONAL ---
 const generateAdminHtml = (name: string, email: string, message: string) => `
 <!DOCTYPE html>
 <html>
@@ -119,24 +168,38 @@ const generateAdminHtml = (name: string, email: string, message: string) => `
 `;
 
 serve(async (req) => {
+  const cors = getCorsHeaders(req);
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: cors });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Método no permitido' }), {
+      headers: { ...cors, 'Content-Type': 'application/json' },
+      status: 405,
+    });
   }
 
   try {
-    const { name, email, message } = await req.json();
-
-    if (!name || !email || !message) {
-      throw new Error('Faltan datos');
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    if (!checkRateLimit(clientIp)) {
+      return new Response(JSON.stringify({ error: 'Demasiadas solicitudes. Intenta en un minuto.' }), {
+        headers: { ...cors, 'Content-Type': 'application/json' },
+        status: 429,
+      });
     }
+
+    const rawBody = await req.json();
+    const { name, email, message } = validateContactPayload(rawBody);
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (!resendApiKey) {
-      throw new Error('Falta configuración de API Key');
+      console.error('RESEND_API_KEY not configured');
+      throw new Error('Configuración de servidor incompleta');
     }
 
-    const emailPromises = [
-      // 1. Al Cliente
+    const [userRes, adminRes] = await Promise.all([
       fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendApiKey}` },
@@ -147,7 +210,6 @@ serve(async (req) => {
           html: generateUserHtml(name, message),
         })
       }),
-      // 2. A Ti
       fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendApiKey}` },
@@ -159,19 +221,27 @@ serve(async (req) => {
           html: generateAdminHtml(name, email, message),
         })
       })
-    ];
+    ]);
 
-    await Promise.all(emailPromises);
+    if (!userRes.ok || !adminRes.ok) {
+      const failedTarget = !userRes.ok ? 'cliente' : 'admin';
+      const status = !userRes.ok ? userRes.status : adminRes.status;
+      console.error(`Resend failed for ${failedTarget}: ${status}`);
+      throw new Error(`Error al enviar email (${failedTarget})`);
+    }
 
     return new Response(JSON.stringify({ success: true, message: 'Emails enviados' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...cors, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
+    const isValidation = error.message?.includes('inválido') || error.message?.includes('corto') || error.message?.includes('caracteres');
+    const statusCode = isValidation ? 400 : 500;
+
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
+      headers: { ...cors, 'Content-Type': 'application/json' },
+      status: statusCode,
     });
   }
 });
