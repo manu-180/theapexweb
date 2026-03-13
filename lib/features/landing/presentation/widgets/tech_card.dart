@@ -77,6 +77,8 @@ class _TechCardState extends ConsumerState<TechCard> {
 
   void _onClick() {
     if (widget.onTapOverride != null) {
+      _previewApplied = false;
+      _themeBeforePreview = null;
       widget.onTapOverride!();
       if ((widget.themeNoticeLabel ?? '').isNotEmpty) {
         _showThemeAppliedBanner(widget.themeNoticeLabel!);
