@@ -20,6 +20,7 @@ class TechCard extends ConsumerStatefulWidget {
     this.themeNoticeLabel,
     this.themeNoticeDuration,
     this.themeBannerBelowAppBar = true,
+    this.neutralGlassEffect = false,
   });
 
   final AppTheme theme;
@@ -34,6 +35,8 @@ class TechCard extends ConsumerStatefulWidget {
   final Duration? themeNoticeDuration;
   /// true: cartel debajo del app bar (home, temas Flutter/Supabase/Riverpod). false: cartel a la altura del app bar (BotLode, Assistify, Contact Engine; el drawer tapa el app bar).
   final bool themeBannerBelowAppBar;
+  /// true: efecto glass con gris neutro (sin tinte celeste). Usar para Contact Engine.
+  final bool neutralGlassEffect;
 
   @override
   ConsumerState<TechCard> createState() => _TechCardState();
@@ -140,16 +143,16 @@ class _TechCardState extends ConsumerState<TechCard> {
     final surfaceColor = colorScheme.surface;
     // En modo claro usamos una superficie mas solida para separar mejor la card del fondo.
     final glassBase = surfaceColor.withValues(alpha: isDark ? 0.62 : 0.96);
+    // Gris neutro para efecto glass cuando neutralGlassEffect (ej. Contact Engine); si no, tono frío/celeste.
+    final glassTint = widget.neutralGlassEffect
+        ? (isDark ? const Color(0xFFB0B0B0) : const Color(0xFFE0E0E0))
+        : (isDark ? const Color(0xFFB8C8E0) : const Color(0xFFE2EAF5));
     final glassCold = Color.alphaBlend(
-      (isDark ? const Color(0xFFB8C8E0) : const Color(0xFFE2EAF5)).withValues(
-        alpha: isDark ? 0.06 : 0.08,
-      ),
+      glassTint.withValues(alpha: isDark ? 0.06 : 0.08),
       glassBase,
     );
     final hoverGlass = Color.alphaBlend(
-      (isDark ? const Color(0xFFB8C8E0) : const Color(0xFFE2EAF5)).withValues(
-        alpha: isDark ? 0.10 : 0.12,
-      ),
+      glassTint.withValues(alpha: isDark ? 0.10 : 0.12),
       colorScheme.surfaceContainerHigh.withValues(alpha: isDark ? 0.75 : 0.96),
     );
     final cardShadow = isDark

@@ -28,46 +28,73 @@ const _supabaseColor = Color(0xFF3ECF8E);
 const _riverpodColor = Color(0xFF6E56F8);
 const _botlodeColor = Color(0xFFFFC000);
 const _assistifyColor = Color(0xFF00A8E8);
-const _contactEngineColor = Color(0xFF6B7280);
+const _contactEngineColor = Color(0xFF15803D); // Verde bosque (green-700)
 const _neutralColor = Color(0xFF64748B);
 
 // Fondos neutros fijos — el color del tema NUNCA toca el fondo
 const _darkSurface = Color(0xFF111318); // Gris-azul muy oscuro, neutro premium
 const _lightSurface = Color(0xFFF4F6F8); // Gris frío muy suave
 
+// Grises neutros puros (sin matiz azul) para temas que deben verse 100% gris (ej. Contact Engine)
+const _darkSurfaceNeutral = Color(0xFF121212);
+const _lightSurfaceNeutral = Color(0xFFF5F5F5);
+
 ThemeData _createTheme({
   required Color seedColor,
   required Brightness brightness,
   required String fontFamily,
+  bool useNeutralGraySurfaces = false,
 }) {
   final isDark = brightness == Brightness.dark;
-  final surface = isDark ? _darkSurface : _lightSurface;
+  final surface = useNeutralGraySurfaces
+      ? (isDark ? _darkSurfaceNeutral : _lightSurfaceNeutral)
+      : (isDark ? _darkSurface : _lightSurface);
+
+  // Colores de contenedores: grises neutros puros o gris-azul según el tema
+  final surfaceContainerLowest = isDark
+      ? (useNeutralGraySurfaces ? const Color(0xFF0D0D0D) : const Color(0xFF0C0E12))
+      : const Color(0xFFFFFFFF);
+  final surfaceContainerLow = isDark
+      ? (useNeutralGraySurfaces ? const Color(0xFF1A1A1A) : const Color(0xFF161A20))
+      : const Color(0xFFF0F2F5);
+  final surfaceContainer = isDark
+      ? (useNeutralGraySurfaces ? const Color(0xFF262626) : const Color(0xFF1C2028))
+      : const Color(0xFFE8ECF0);
+  final surfaceContainerHigh = isDark
+      ? (useNeutralGraySurfaces ? const Color(0xFF333333) : const Color(0xFF222830))
+      : const Color(0xFFDDE2E8);
+  final surfaceContainerHighest = isDark
+      ? (useNeutralGraySurfaces ? const Color(0xFF404040) : const Color(0xFF282E38))
+      : const Color(0xFFD2D8E0);
 
   // El ColorScheme hereda primaries/secondaries del seed pero
   // recibe una surface neutra para que el fondo no se tiña.
-  final colorScheme = ColorScheme.fromSeed(
+  ColorScheme colorScheme = ColorScheme.fromSeed(
     seedColor: seedColor,
     brightness: brightness,
     surface: surface,
   ).copyWith(
-    // Garantizamos que el scaffold y las superficies contenedoras
-    // sean variantes neutras del mismo tono base, sin tinte.
-    surfaceContainerLowest: isDark
-        ? const Color(0xFF0C0E12)
-        : const Color(0xFFFFFFFF),
-    surfaceContainerLow: isDark
-        ? const Color(0xFF161A20)
-        : const Color(0xFFF0F2F5),
-    surfaceContainer: isDark
-        ? const Color(0xFF1C2028)
-        : const Color(0xFFE8ECF0),
-    surfaceContainerHigh: isDark
-        ? const Color(0xFF222830)
-        : const Color(0xFFDDE2E8),
-    surfaceContainerHighest: isDark
-        ? const Color(0xFF282E38)
-        : const Color(0xFFD2D8E0),
+    surfaceContainerLowest: surfaceContainerLowest,
+    surfaceContainerLow: surfaceContainerLow,
+    surfaceContainer: surfaceContainer,
+    surfaceContainerHigh: surfaceContainerHigh,
+    surfaceContainerHighest: surfaceContainerHighest,
   );
+
+  // Contact Engine (y cualquier tema con superficies grises): forzar primary a gris.
+  // fromSeed() no usa bien un seed gris y termina tiñendo primary de celeste; lo fijamos explícito.
+  if (useNeutralGraySurfaces) {
+    colorScheme = colorScheme.copyWith(
+      primary: seedColor,
+      onPrimary: isDark ? const Color(0xFFE5E5E5) : Colors.white,
+      primaryContainer: isDark
+          ? seedColor.withValues(alpha: 0.25)
+          : seedColor.withValues(alpha: 0.18),
+      onPrimaryContainer: isDark
+          ? const Color(0xFFD4D4D4)
+          : const Color(0xFF1F2937),
+    );
+  }
 
   return ThemeData(
     useMaterial3: true,
@@ -212,11 +239,13 @@ final Map<AppTheme, AppThemeConfig> appThemeConfigMap = {
       seedColor: _contactEngineColor,
       brightness: Brightness.light,
       fontFamily: _fontFamily,
+      useNeutralGraySurfaces: true, // Tema 100% gris, sin matiz celeste
     ),
     darkTheme: _createTheme(
       seedColor: _contactEngineColor,
       brightness: Brightness.dark,
       fontFamily: _fontFamily,
+      useNeutralGraySurfaces: true, // Tema 100% gris, sin matiz celeste
     ),
   ),
 };

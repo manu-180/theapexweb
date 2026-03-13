@@ -129,32 +129,32 @@ class _DrawerShell extends StatelessWidget {
 
 class ContactEngineDrawerContent extends StatelessWidget {
   const ContactEngineDrawerContent({super.key});
-  static const _accent = Color(0xFF6B7280);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accent = Theme.of(context).colorScheme.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // HERO
         _Hero(
-          accent: _accent,
+          accent: accent,
           isDark: isDark,
-          icon: const Icon(
+          icon: Icon(
             FontAwesomeIcons.crosshairs,
             size: 26,
-            color: _accent,
+            color: accent,
           ),
           title: 'Contact Engine',
           tagline:
               'Encuentra clientes y convierte conversaciones en ventas, de forma automática.',
           statusLabel: 'Sistema Activo',
-          statusColor: _accent,
+          statusColor: accent,
         ),
         // IMPACT
         _ImpactRow(
-          accent: _accent,
+          accent: accent,
           chips: const [
             _ChipData(
               icon: Icons.schedule_rounded,
@@ -180,7 +180,7 @@ class ContactEngineDrawerContent extends StatelessWidget {
           child: _Section(
             icon: Icons.flag_rounded,
             title: 'Lo que logra en tu negocio',
-            accent: _accent,
+            accent: accent,
             child: const Column(
               children: [
                 _Feature(
@@ -218,7 +218,7 @@ class ContactEngineDrawerContent extends StatelessWidget {
           child: _Section(
             icon: Icons.hub_rounded,
             title: 'Cómo funciona',
-            accent: _accent,
+            accent: accent,
             child: const Column(
               children: [
                 _FlowStep(

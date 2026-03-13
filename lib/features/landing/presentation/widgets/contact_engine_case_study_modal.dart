@@ -6,12 +6,11 @@ import 'package:go_router/go_router.dart';
 class ContactEngineCaseStudyModal extends StatelessWidget {
   const ContactEngineCaseStudyModal({super.key});
 
-  static const _contactGray = Color(0xFF6B7280);
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final accent = colorScheme.primary;
     final textTheme = theme.textTheme;
 
     return Dialog(
@@ -28,8 +27,8 @@ class ContactEngineCaseStudyModal extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    _contactGray.withOpacity(0.20),
-                    _contactGray.withOpacity(0.08),
+                    accent.withOpacity(0.20),
+                    accent.withOpacity(0.08),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -45,13 +44,13 @@ class ContactEngineCaseStudyModal extends StatelessWidget {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: _contactGray.withOpacity(0.12),
+                      color: accent.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _contactGray.withOpacity(0.28)),
+                      border: Border.all(color: accent.withOpacity(0.28)),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       FontAwesomeIcons.crosshairs,
-                      color: _contactGray,
+                      color: accent,
                       size: 22,
                     ),
                   ),
@@ -188,18 +187,18 @@ class ContactEngineCaseStudyModal extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: _contactGray.withOpacity(0.10),
+                        color: accent.withOpacity(0.10),
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: _contactGray.withOpacity(0.24),
+                          color: accent.withOpacity(0.24),
                         ),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.trending_up_rounded,
-                            color: _contactGray,
+                            color: accent,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -240,7 +239,7 @@ class ContactEngineCaseStudyModal extends StatelessWidget {
                             ),
                             label: const Text('Agendar consulta gratis'),
                             style: FilledButton.styleFrom(
-                              backgroundColor: _contactGray,
+                              backgroundColor: accent,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 24,

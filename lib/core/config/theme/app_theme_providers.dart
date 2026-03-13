@@ -1,6 +1,7 @@
 // Archivo: lib/core/config/theme/app_theme_providers.dart
 import 'package:flutter/material.dart';
 import 'package:apex/core/config/theme/app_theme.dart';
+import 'package:apex/core/config/theme/app_theme_config.dart' as theme_config;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,28 +14,28 @@ SharedPreferences sharedPreferences(SharedPreferencesRef ref) {
   throw UnimplementedError('SharedPreferences no inicializado en main.dart');
 }
 
-// 2. Modelo de Configuración del Tema
+// 2. Modelo de Configuración del Tema (expone lo que viene de app_theme_config)
 class AppThemeConfig {
   final AppTheme theme;
   final ThemeData lightTheme;
   final ThemeData darkTheme;
+  final String themeName;
 
-  // Helpers para acceder rápido a los assets desde la UI
+  // Helpers para acceder rápido a los assets desde la UI (desde enum)
   String? get logoAsset => theme.logoAsset;
   IconData? get logoIcon => theme.icon;
-  String get themeName => theme.name;
 
   const AppThemeConfig({
     required this.theme,
     required this.lightTheme,
     required this.darkTheme,
+    required this.themeName,
   });
 }
 
 @Riverpod(keepAlive: true)
 class DynamicTheme extends _$DynamicTheme {
   static const _themePrefsKey = 'selected_theme_key';
-  static final Map<AppTheme, AppThemeConfig> _configCache = {};
 
   @override
   AppThemeConfig build() {
@@ -53,7 +54,7 @@ class DynamicTheme extends _$DynamicTheme {
       }
     }
 
-    return _getOrCreateConfig(initialTheme);
+    return _getConfig(initialTheme);
   }
 
   void setTheme(AppTheme theme, {bool persist = true}) {
@@ -61,27 +62,23 @@ class DynamicTheme extends _$DynamicTheme {
     if (persist) {
       ref.read(sharedPreferencesProvider).setString(_themePrefsKey, theme.name);
     }
-    state = _getOrCreateConfig(theme);
+    state = _getConfig(theme);
     final s = state.lightTheme.colorScheme.surface;
     debugPrint(
       '[DynamicTheme] surface light = #${s.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}',
     );
   }
 
-  static AppThemeConfig _getOrCreateConfig(AppTheme theme) {
-    // No cacheamos indefinidamente para que hot-reload refleje cambios en getThemeData.
-    return _configCache.putIfAbsent(theme, () {
-      debugPrint('[DynamicTheme] creando config para ${theme.name}');
-      return AppThemeConfig(
-        theme: theme,
-        lightTheme: theme.getThemeData(Brightness.light),
-        darkTheme: theme.getThemeData(Brightness.dark),
-      );
-    });
+  /// Usa appThemeConfigMap como única fuente de colores/tema (sin caché, hot reload refleja cambios).
+  static AppThemeConfig _getConfig(AppTheme theme) {
+    final config = theme_config.appThemeConfigMap[theme]!;
+    return AppThemeConfig(
+      theme: theme,
+      lightTheme: config.lightTheme,
+      darkTheme: config.darkTheme,
+      themeName: config.themeName,
+    );
   }
-
-  /// Limpia el cache (útil en desarrollo para reflejar cambios en getThemeData).
-  static void clearCache() => _configCache.clear();
 }
 
 // 4. Providers de lectura fácil para la UI

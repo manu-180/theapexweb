@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:apex/core/config/theme/app_theme.dart';
+import 'package:apex/core/config/theme/app_theme_config.dart' as theme_config;
 import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/widgets/inspector_gadget.dart'; // <--- IMPORTACIÓN RAYOS X
 import 'package:apex/features/landing/presentation/widgets/project_drawer.dart';
@@ -386,10 +387,14 @@ class _ContactEngineCard extends ConsumerWidget {
   final ValueNotifier<Offset> mousePos;
   const _ContactEngineCard(this.mousePos);
 
-  static const _contactEngineGray = Color(0xFF6B7280);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final contactEngineTheme = isDark
+        ? theme_config.appThemeConfigMap[AppTheme.contactEngine]!.darkTheme
+        : theme_config.appThemeConfigMap[AppTheme.contactEngine]!.lightTheme;
+    final accent = contactEngineTheme.colorScheme.primary;
+
     return TechCard(
       mousePos: mousePos,
       theme: AppTheme.contactEngine,
@@ -397,18 +402,19 @@ class _ContactEngineCard extends ConsumerWidget {
       themeNoticeLabel: 'Contact Engine',
       themeNoticeDuration: const Duration(milliseconds: 2000),
       themeBannerBelowAppBar: false,
+      neutralGlassEffect: true,
       onTapOverride: () {
         showProjectDrawer(context, content: const ContactEngineDrawerContent());
         Future.delayed(const Duration(milliseconds: 150), () {
           ref.read(dynamicThemeProvider.notifier).setTheme(AppTheme.contactEngine);
         });
       },
-      icon: const Icon(
+      icon: Icon(
         FontAwesomeIcons.crosshairs,
         size: 28,
-        color: _contactEngineGray,
+        color: accent,
       ),
-      accentColor: _contactEngineGray,
+      accentColor: accent,
       bullets: const [
         'Hace búsquedas en Google (por rubro y ciudad) y extrae los contactos por vos.',
         'Encuentra clientes potenciales de forma automática todos los días.',

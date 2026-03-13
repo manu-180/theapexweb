@@ -106,7 +106,7 @@ String _getThemeColorHex(AppTheme theme) {
     case AppTheme.assistify:
       return "#00A8E8";
     case AppTheme.contactEngine:
-      return "#6B7280";
+      return "#15803D";
     default:
       return "#64748B"; // Neutral
   }

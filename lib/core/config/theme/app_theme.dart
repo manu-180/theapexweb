@@ -55,7 +55,7 @@ enum AppTheme {
       AppTheme.riverpod => const Color(0xFF6E56F8),
       AppTheme.botlode => const Color(0xFFFFC000),
       AppTheme.assistify => const Color(0xFF00A8E8),
-      AppTheme.contactEngine => const Color(0xFF6B7280),
+      AppTheme.contactEngine => const Color(0xFF15803D),
     };
 
     final isDark = brightness == Brightness.dark;
