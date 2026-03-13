@@ -126,7 +126,11 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isMobile = MediaQuery.of(context).size.width < 900;
+    // Modo móvil (drawer + hamburger) solo cuando el ancho es bajo; CTA se oculta antes para dar margen
+    final width = MediaQuery.sizeOf(context).width;
+    final isMobile = width < 880;
+    // Ocultar CTA en barra cuando el ancho aprieta (Home se acerca a APEX); se mantiene en el drawer móvil
+    final showCtaInBar = width >= 1120;
     final currentPath = GoRouterState.of(context).uri.path;
 
     int activeIndex = _navItems.indexWhere((item) {
@@ -165,27 +169,37 @@ class _MainLayoutState extends ConsumerState<MainLayout> {
                 ),
               ),
 
-              const SizedBox(width: 16),
-
-              InspectorGadget(
-                name: 'CTA Agendar consulta',
-                techSpecs: 'Botón principal que lleva a la pantalla de contacto/agendado. Diseño destacado para máxima conversión desde cualquier pantalla.',
-                icon: FontAwesomeIcons.calendarCheck,
-                child: FilledButton.icon(
-                  onPressed: () => context.goNamed('contact'),
-                  icon: const Icon(Icons.calendar_month_rounded, size: 16),
-                  label: const Text(
-                    'Agendar consulta gratis',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                child: showCtaInBar
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(width: 16),
+                          InspectorGadget(
+                            name: 'CTA Agendar consulta',
+                            techSpecs: 'Botón principal que lleva a la pantalla de contacto/agendado. Diseño destacado para máxima conversión desde cualquier pantalla.',
+                            icon: FontAwesomeIcons.calendarCheck,
+                            child: FilledButton.icon(
+                              onPressed: () => context.goNamed('contact'),
+                              icon: const Icon(Icons.calendar_month_rounded, size: 16),
+                              label: const Text(
+                                'Agendar consulta gratis',
+                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
               ),
 
-              const SizedBox(width: 16),
               InspectorGadget(
                 name: 'Presencia en línea',
                 techSpecs: 'Indicador de estado (Online/Offline). Útil para soporte o para mostrar disponibilidad en tiempo real.',
@@ -776,40 +790,43 @@ class _BrandLogo extends ConsumerWidget {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () => context.goNamed('home'),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            if (isNeutral)
-              apexIcon
-            else if (themeConfig.logoAsset != null)
-              Image.asset(
-                themeConfig.logoAsset!,
-                key: ValueKey(themeConfig.logoAsset),
-                height: 28,
-                width: 28,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
-                errorBuilder: (context, error, stackTrace) => apexIcon,
-              )
-            else
-              Icon(themeConfig.logoIcon ?? FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 0, maxWidth: double.infinity),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (isNeutral)
+                apexIcon
+              else if (themeConfig.logoAsset != null)
+                Image.asset(
+                  themeConfig.logoAsset!,
+                  key: ValueKey(themeConfig.logoAsset),
+                  height: 28,
+                  width: 28,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  errorBuilder: (context, error, stackTrace) => apexIcon,
+                )
+              else
+                Icon(themeConfig.logoIcon ?? FontAwesomeIcons.chevronUp, color: theme.colorScheme.primary, size: 22),
 
-            const SizedBox(width: 12),
-            
-            Flexible(
-              child: Text(
-                'Manuel Navarro',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
-                  height: 1.0,
+              const SizedBox(width: 12),
+
+              Flexible(
+                child: Text(
+                  'APEX',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                    height: 1.0,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
