@@ -3,8 +3,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:apex/app.dart';
-import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:apex/core/config/env_config.dart';
+import 'package:apex/core/config/router/app_router.dart';
+import 'package:apex/core/config/theme/app_theme_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:web/web.dart' as web;
@@ -107,6 +108,8 @@ void _cleanOAuthCodeFromUrl() {
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Capturar #/about etc. antes de cualquier MaterialApp (evita perder el hash en web).
+  captureInitialPathFromPlatform();
   runApp(const _BootstrapApp());
 }
 

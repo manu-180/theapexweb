@@ -68,44 +68,50 @@ class CommentsRepository {
   Future<List<Comment>> fetchComments() async {
     if (_supabase == null) return [];
 
-    final rootsResponse = await _supabase
-        .from('comments_with_metadata')
-        .select()
-        .filter('parent_id', 'is', null)
-        .order('created_at', ascending: false)
-        .limit(50);
+    try {
+      final rootsResponse = await _supabase
+          .from('comments_with_metadata')
+          .select()
+          .filter('parent_id', 'is', null)
+          .order('created_at', ascending: false)
+          .limit(50);
 
-    final roots = (rootsResponse as List).map((json) => Comment.fromJson(json)).toList();
+      final roots = (rootsResponse as List).map((json) => Comment.fromJson(json)).toList();
 
-    if (roots.isEmpty) return [];
+      if (roots.isEmpty) return [];
 
-    final rootIds = roots.map((c) => c.id).toList();
+      final rootIds = roots.map((c) => c.id).toList();
 
-    final repliesResponse = await _supabase
-        .from('comments_with_metadata')
-        .select()
-        .filter('parent_id', 'in', rootIds)
-        .order('created_at', ascending: true);
+      final repliesResponse = await _supabase
+          .from('comments_with_metadata')
+          .select()
+          .filter('parent_id', 'in', rootIds)
+          .order('created_at', ascending: true);
 
-    final replies = (repliesResponse as List).map((json) => Comment.fromJson(json)).toList();
+      final replies = (repliesResponse as List).map((json) => Comment.fromJson(json)).toList();
 
-    final Map<int, List<Comment>> childrenMap = {};
-    for (var r in replies) {
-      childrenMap.putIfAbsent(r.parentId!, () => []).add(r);
+      final Map<int, List<Comment>> childrenMap = {};
+      for (var r in replies) {
+        childrenMap.putIfAbsent(r.parentId!, () => []).add(r);
+      }
+
+      final processedParents = roots.map((p) {
+        return p.copyWith(replies: childrenMap[p.id] ?? []);
+      }).toList();
+
+      final adminIndex = processedParents.indexWhere((c) => c.userId == _kOwnerUuid);
+
+      if (adminIndex > 0) {
+        final adminComment = processedParents.removeAt(adminIndex);
+        processedParents.insert(0, adminComment);
+      }
+
+      return processedParents;
+    } catch (e, stack) {
+      debugPrint('[CommentsRepository] fetchComments error: $e');
+      debugPrint('[CommentsRepository] Stack: $stack');
+      rethrow;
     }
-
-    final processedParents = roots.map((p) {
-      return p.copyWith(replies: childrenMap[p.id] ?? []);
-    }).toList();
-
-    final adminIndex = processedParents.indexWhere((c) => c.userId == _kOwnerUuid);
-
-    if (adminIndex > 0) {
-      final adminComment = processedParents.removeAt(adminIndex);
-      processedParents.insert(0, adminComment);
-    }
-
-    return processedParents;
   }
 
   Future<void> postComment({

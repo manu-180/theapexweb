@@ -1,5 +1,6 @@
 // Archivo: lib/features/comments/presentation/providers/comments_provider.dart
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:apex/core/errors/app_exceptions.dart';
@@ -29,7 +30,9 @@ class CommentsNotifier extends _$CommentsNotifier {
 
     try {
       return await repository.fetchComments();
-    } catch (e, _) {
+    } catch (e, stack) {
+      debugPrint('[Comments] Error al cargar comentarios/calificaciones: $e');
+      debugPrint('[Comments] Stack: $stack');
       // Sin backend configurado: estado vacío en lugar de error
       if (e is InfrastructureException) return [];
       rethrow;

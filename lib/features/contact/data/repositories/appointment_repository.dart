@@ -1,4 +1,5 @@
 // Archivo: lib/features/contact/data/repositories/appointment_repository.dart
+import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:apex/core/errors/app_exceptions.dart';
@@ -24,12 +25,18 @@ class AppointmentRepository {
   Future<List<int>> getBookedHours(DateTime date) async {
     _requireClient();
     final dateString = date.toIso8601String().split('T')[0];
-    final response = await _supabase!
-        .from('appointments')
-        .select('hour_slot')
-        .eq('date_slot', dateString);
-    final List<dynamic> data = response;
-    return data.map((e) => e['hour_slot'] as int).toList();
+    try {
+      final response = await _supabase!
+          .from('appointments')
+          .select('hour_slot')
+          .eq('date_slot', dateString);
+      final List<dynamic> data = response;
+      return data.map((e) => e['hour_slot'] as int).toList();
+    } catch (e, stack) {
+      debugPrint('[AppointmentRepository] getBookedHours error: $e');
+      debugPrint('[AppointmentRepository] Stack: $stack');
+      rethrow;
+    }
   }
 
   Future<void> createAppointment(Appointment appointment) async {

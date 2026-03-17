@@ -1,4 +1,5 @@
 // Archivo: lib/core/config/router/app_router.dart
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -12,10 +13,61 @@ part 'app_router.g.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
+/// Rutas válidas de la app (para respetar la URL al cargar en web).
+const _validPaths = ['/', '/services', '/about', '/contact'];
+
+/// Ruta capturada al arranque (antes de cualquier MaterialApp) para no perder el hash.
+String? _capturedInitialPath;
+
+/// Llamar desde main() al inicio para guardar #/about etc. antes de que el hash se pierda.
+void captureInitialPathFromPlatform() {
+  if (!kIsWeb) return;
+  final fragment = Uri.base.fragment;
+  if (fragment.isEmpty) return;
+  final path = fragment.startsWith('/') ? fragment : '/$fragment';
+  if (_validPaths.contains(path)) {
+    _capturedInitialPath = path;
+    if (kDebugMode) debugPrint('[Router] captureInitialPathFromPlatform() → "$path"');
+  }
+}
+
+String _initialLocation() {
+  if (!kIsWeb) return '/';
+  // Preferir la ruta capturada al arranque (el hash puede limpiarse tras el loading).
+  if (_capturedInitialPath != null) {
+    if (kDebugMode) debugPrint('[Router] _initialLocation() → "$_capturedInitialPath" (captured at startup)');
+    return _capturedInitialPath!;
+  }
+  final fragment = Uri.base.fragment;
+  if (kDebugMode) {
+    debugPrint('[Router] Uri.base: ${Uri.base}');
+    debugPrint('[Router] fragment: "$fragment" (isEmpty: ${fragment.isEmpty})');
+  }
+  if (fragment.isEmpty) return '/';
+  final path = fragment.startsWith('/') ? fragment : '/$fragment';
+  final use = _validPaths.contains(path) ? path : '/';
+  if (kDebugMode) debugPrint('[Router] _initialLocation() → "$use"');
+  return use;
+}
+
+String? _redirectFromHash(BuildContext context, GoRouterState state) {
+  if (!kIsWeb) return null;
+  final fragment = Uri.base.fragment;
+  if (fragment.isEmpty) return null;
+  final path = fragment.startsWith('/') ? fragment : '/$fragment';
+  if (!_validPaths.contains(path)) return null;
+  if (state.matchedLocation == path) return null;
+  if (kDebugMode) debugPrint('[Router] redirect: "${state.matchedLocation}" → "$path" (hash)');
+  return path;
+}
+
 @riverpod
 GoRouter goRouter(GoRouterRef ref) {
+  final initial = _initialLocation();
+  if (kDebugMode) debugPrint('[Router] goRouter build, initialLocation: "$initial"');
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: initial,
+    redirect: _redirectFromHash,
     navigatorKey: _rootNavigatorKey,
     errorBuilder: (context, state) {
       return MainLayout(

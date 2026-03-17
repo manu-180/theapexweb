@@ -97,12 +97,15 @@ class BookingNotifier extends _$BookingNotifier {
 
       state = state.copyWith(availableHours: freeSlots, isLoading: false);
     } on AppException catch (e) {
+      debugPrint('[Booking] Error al cargar horarios (AppException): ${e.message}');
       state = state.copyWith(
         availableHours: [],
         isLoading: false,
         errorMessage: e.message,
       );
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[Booking] Error al cargar horarios: $e');
+      debugPrint('[Booking] Stack: $stack');
       final msg = e.toString().toLowerCase();
       final isNetworkError = msg.contains('name not resolved') ||
           msg.contains('connection') ||
